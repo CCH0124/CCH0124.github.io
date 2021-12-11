@@ -3,7 +3,7 @@ title: Spring security - user logout 與自動登入
 date: 2021-10-30
 description: "Spring security 使用者註銷與自動登入"
 tags: ["Spring security"]
-draft: true
+draft: false
 ---
 ## logout
 以下是一個使用者登出後的配置，登出成功後頁面會跳轉到 `/api/v1/index`

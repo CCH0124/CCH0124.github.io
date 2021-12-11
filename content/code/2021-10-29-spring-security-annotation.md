@@ -3,7 +3,7 @@ title: Spring security - annotation
 date: 2021-10-29
 description: "Spring security 註解使用"
 tags: ["Spring security"]
-draft: true
+draft: false
 ---
 
 註解是為了可以方便讓我們使用，以下將會介紹註解。實驗過程可藉由更改 `commaSeparatedStringToAuthorityList` 方法所傳遞的權限進行調整
