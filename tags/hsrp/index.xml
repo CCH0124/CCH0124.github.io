@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>HSRP on</title><link>https://cch0124.github.io/tags/hsrp/</link><description>Recent content in HSRP on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 06 Apr 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/hsrp/index.xml" rel="self" type="application/rss+xml"/><item><title>負載均衡</title><link>https://cch0124.github.io/blog/2019-04-06-hsrp/</link><pubDate>Sat, 06 Apr 2019 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/blog/2019-04-06-hsrp/</guid><description>HSRP Introduction HSRP 是提供 first-hop 來提供高網路可用性的標準方法。它使一組路由器接口能夠協同工作，向 LAN 上的主機呈現單個虛擬路由或 default gateway 的方法。在網路的多個路由器上配置 HSRP 時，它會提供虛擬媒體訪問控制（MAC,virtual Media Access Control）位址和一組已配置的路由器之間共享的 IP 地址。
+當其中一個路由器被選擇為 active 路由器，另一個路由器作為 standby 路由器。在一組設有 HSRP 路由器接口中，active 路由器是路由封包的首選路由器；standby 路由器是在 active 路由器出現故障或滿足預設條件時接管路由任務的路由器。
+HSRP 支持的任何路由器接口
+Implement HSRP Topology 這邊 Cloud1 是透過虛擬機網路卡取得 IP，這邊不詳述。
+目標 配置 EIGRP 設定 HSRP 測試 EIGRP Configuration 我將 R1、R2、R3、R4 配置 EIGRP 協定並將 AS 設定為 100。 這邊用 R1、R2 做範例，其中會在 EIGRP 中加入預設路由。
+R1 router eigrp 100 network 172.16.1.0 0.0.0.3 redistribute static metric 100000 1000 255 1 1500 R2 router eigrp 100 network 10.</description></item></channel></rss>

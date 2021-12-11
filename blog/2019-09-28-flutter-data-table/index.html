@@ -1,0 +1,175 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>資料表實現</h1><p class=mb-1>September 20, 2019</p><p>&mdash;</p></div><div class=content><h1 id=目標>目標</h1><ul><li>頁面顯示資料表使用 <code>DataTable</code></li><li>配合 <code>scroll</code> 使資料表能夠上下左右滑動</li></ul><p>以下會先以描述 <code>DataTable</code> Widget 在描述實作過程。</p><h2 id=what-is-datatable>what is DataTable</h2><p><code>DataTable</code> 可實現數據的操作（排序、選擇等）和顯示。但這篇文章只有說明到顯示部分。但此 <code>DataTable</code> 並無做到表頭的固定，覺得可惜。少了表頭固定當滑動資料表時會無法對應該欄位是在針對什麼描述。</p><p>要組成一個 <a href=https://api.flutter.dev/flutter/material/DataTable-class.html><code>DataTable</code></a> 可需要 <a href=https://api.flutter.dev/flutter/material/DataColumn-class.html><code>DataColumn</code></a>、<a href=https://api.flutter.dev/flutter/material/DataRow-class.html><code>DataRow</code></a> 和 <a href=https://api.flutter.dev/flutter/material/DataCell-class.html><code>DataCell</code></a> 組件做配置。</p><p>而在 <code>DataTable</code> <a href=https://github.com/flutter/flutter/blob/master/packages/flutter/lib/src/material/data_table.dart>原始碼</a> 中，可以知道他可以針對表頭高度、欄位間格等做設定。在原始碼中已給預設值，但可依照環境要求進行設定。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart>DataTable({
+    Key key,
+    <span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.columns,
+    <span style=color:#66d9ef>this</span>.sortColumnIndex,
+    <span style=color:#66d9ef>this</span>.sortAscending <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>,
+    <span style=color:#66d9ef>this</span>.onSelectAll,
+    <span style=color:#66d9ef>this</span>.dataRowHeight <span style=color:#f92672>=</span> kMinInteractiveDimension,
+    <span style=color:#66d9ef>this</span>.headingRowHeight <span style=color:#f92672>=</span> <span style=color:#ae81ff>56.0</span>,
+    <span style=color:#66d9ef>this</span>.horizontalMargin <span style=color:#f92672>=</span> <span style=color:#ae81ff>24.0</span>,
+    <span style=color:#66d9ef>this</span>.columnSpacing <span style=color:#f92672>=</span> <span style=color:#ae81ff>56.0</span>,
+    <span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.rows,
+  }) <span style=color:#f92672>:</span> <span style=color:#66d9ef>assert</span>(columns <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(columns.isNotEmpty),
+       <span style=color:#66d9ef>assert</span>(sortColumnIndex <span style=color:#f92672>==</span> <span style=color:#66d9ef>null</span> <span style=color:#f92672>||</span> (sortColumnIndex <span style=color:#f92672>&gt;=</span> <span style=color:#ae81ff>0</span> <span style=color:#f92672>&amp;&amp;</span> sortColumnIndex <span style=color:#f92672>&lt;</span> columns.length)),
+       <span style=color:#66d9ef>assert</span>(sortAscending <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(dataRowHeight <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(headingRowHeight <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(horizontalMargin <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(columnSpacing <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(rows <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(<span style=color:#f92672>!</span>rows.any((DataRow row) <span style=color:#f92672>=&gt;</span> row.cells.length <span style=color:#f92672>!=</span> columns.length)),
+       _onlyTextColumn <span style=color:#f92672>=</span> _initOnlyTextColumn(columns),
+       <span style=color:#66d9ef>super</span>(key: key);
+</code></pre></div><blockquote><p>其中官方明了"如果數據非常大量可以使用 <code>PaginatedDataTable</code> 做分頁"</p></blockquote><h2 id=implementation>Implementation</h2><h2 id=defined-user-data>Defined User Data</h2><p>定義一個 <code>user</code> 資料。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>User</span> {
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> firstName;
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> lastName;
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>int</span> age;
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> gender;
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>double</span> height;
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>double</span> weight;
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> sport;
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> phoneBrands;
+
+  User({<span style=color:#66d9ef>this</span>.firstName, <span style=color:#66d9ef>this</span>.lastName, <span style=color:#66d9ef>this</span>.age, <span style=color:#66d9ef>this</span>.gender, <span style=color:#66d9ef>this</span>.height, <span style=color:#66d9ef>this</span>.weight, <span style=color:#66d9ef>this</span>.sport, <span style=color:#66d9ef>this</span>.phoneBrands});
+
+  <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>final</span> List<span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span><span style=color:#f92672>&gt;</span> userDataColumn <span style=color:#f92672>=</span> [
+    <span style=color:#e6db74>&#34;firstName&#34;</span>,
+    <span style=color:#e6db74>&#39;lastName&#39;</span>,
+    <span style=color:#e6db74>&#39;age&#39;</span>,
+    <span style=color:#e6db74>&#39;gender&#39;</span>,
+    <span style=color:#e6db74>&#39;height&#39;</span>, <span style=color:#75715e>// U+2211 unicode for sum
+</span><span style=color:#75715e></span>    <span style=color:#e6db74>&#39;weight&#39;</span>,
+    <span style=color:#e6db74>&#39;sport&#39;</span>,
+    <span style=color:#e6db74>&#39;phoneBrands&#39;</span>
+  ];
+
+  <span style=color:#66d9ef>static</span> List<span style=color:#f92672>&lt;</span>User<span style=color:#f92672>&gt;</span> getUsers() {
+    <span style=color:#66d9ef>return</span> <span style=color:#f92672>&lt;</span>User<span style=color:#f92672>&gt;</span>[
+      User(firstName: <span style=color:#e6db74>&#34;A&#34;</span>, lastName: <span style=color:#e6db74>&#34;Bc&#34;</span>,age: <span style=color:#ae81ff>10</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>170.2</span>, weight: <span style=color:#ae81ff>60</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;apple&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Chen&#34;</span>, lastName: <span style=color:#e6db74>&#34;Hong&#34;</span>,age: <span style=color:#ae81ff>10</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>150.2</span>, weight: <span style=color:#ae81ff>40</span>, sport: <span style=color:#e6db74>&#34;basketball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;apple&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Clair&#34;</span>, lastName: <span style=color:#e6db74>&#34;Mary&#34;</span>,age: <span style=color:#ae81ff>13</span>,gender: <span style=color:#e6db74>&#34;F&#34;</span>,height: <span style=color:#ae81ff>160</span>, weight: <span style=color:#ae81ff>49</span>, sport: <span style=color:#e6db74>&#34;tennis&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;apple&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Hatake&#34;</span>, lastName: <span style=color:#e6db74>&#34;Kakashi&#34;</span>,age: <span style=color:#ae81ff>28</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>165</span>, weight: <span style=color:#ae81ff>60</span>, sport: <span style=color:#e6db74>&#34;golf&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;oppo&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Uzumaki&#34;</span>, lastName: <span style=color:#e6db74>&#34;Naruto&#34;</span>,age: <span style=color:#ae81ff>16</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>158.3</span>, weight: <span style=color:#ae81ff>52.2</span>, sport: <span style=color:#e6db74>&#34;soccer&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;apple&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Uchiha&#34;</span>, lastName: <span style=color:#e6db74>&#34;Sasuke&#34;</span>,age: <span style=color:#ae81ff>16</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>161</span>, weight: <span style=color:#ae81ff>58.9</span>, sport: <span style=color:#e6db74>&#34;tennis&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;apple&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Haruno&#34;</span>, lastName: <span style=color:#e6db74>&#34;Sakura&#34;</span>,age: <span style=color:#ae81ff>16</span>,gender: <span style=color:#e6db74>&#34;F&#34;</span>,height: <span style=color:#ae81ff>152</span>, weight: <span style=color:#ae81ff>43.2</span>, sport: <span style=color:#e6db74>&#34;tennis&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;apple&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Jiraiya&#34;</span>, lastName: <span style=color:#e6db74>&#34;&#34;</span>,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;samsung&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Gai&#34;</span>, lastName: <span style=color:#e6db74>&#34;&#34;</span>,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Hyuga&#34;</span>, lastName: <span style=color:#e6db74>&#34;Neji&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Rock&#34;</span>, lastName: <span style=color:#e6db74>&#34;Lee&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Tenten&#34;</span>, lastName: <span style=color:#e6db74>&#34;&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Sarutobi&#34;</span>, lastName: <span style=color:#e6db74>&#34;Asuma&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Yamanaka&#34;</span>, lastName: <span style=color:#e6db74>&#34;Ino&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Nara&#34;</span>, lastName: <span style=color:#e6db74>&#34;Shikamaru&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Akimichi&#34;</span>, lastName: <span style=color:#e6db74>&#34;Choji&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Yuuhi&#34;</span>, lastName: <span style=color:#e6db74>&#34;Kurenai&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Hyuga&#34;</span>, lastName: <span style=color:#e6db74>&#34;Choji&#34;</span>,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Akimichi&#34;</span>, lastName: <span style=color:#e6db74>&#34;Hinata&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Aburame&#34;</span>, lastName: <span style=color:#e6db74>&#34;Shino&#34;</span> ,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+      User(firstName: <span style=color:#e6db74>&#34;Inuzuka&#34;</span>, lastName: <span style=color:#e6db74>&#34;Kiba&#34;</span>,age: <span style=color:#ae81ff>38</span>,gender: <span style=color:#e6db74>&#34;M&#34;</span>,height: <span style=color:#ae81ff>182</span>, weight: <span style=color:#ae81ff>79</span>, sport: <span style=color:#e6db74>&#34;baseball&#34;</span>, phoneBrands: <span style=color:#e6db74>&#34;football&#34;</span>),
+    ];
+  }
+}
+</code></pre></div><h3 id=display-to-page>Display To Page</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>UserDataTable</span> <span style=color:#66d9ef>extends</span> StatelessWidget {
+  List<span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span><span style=color:#f92672>&gt;</span> value;
+  List<span style=color:#f92672>&lt;</span><span style=color:#66d9ef>dynamic</span><span style=color:#f92672>&gt;</span> record;
+  <span style=color:#66d9ef>String</span> title;
+  UserDataTable(
+      {<span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.value, <span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.record, <span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.title});
+
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> Padding(
+      padding: EdgeInsets.all(<span style=color:#ae81ff>10</span>),
+      child: <span style=color:#66d9ef>new</span> Column( <span style=color:#75715e>/// Layout 設計
+</span><span style=color:#75715e></span>        children: <span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span>[
+          <span style=color:#66d9ef>new</span> Align(
+            alignment: Alignment.topLeft, <span style=color:#75715e>/// 位置
+</span><span style=color:#75715e></span>            child: <span style=color:#66d9ef>new</span> Container(
+              child: <span style=color:#66d9ef>new</span> Text(
+                (title <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>) <span style=color:#f92672>?</span> title <span style=color:#f92672>:</span> <span style=color:#e6db74>&#34;&#34;</span>,
+                style: TextStyle(color: Colors.blue, fontSize: <span style=color:#ae81ff>24</span>),
+              ),
+            ),
+          ),
+          <span style=color:#66d9ef>new</span> Expanded(
+            child: <span style=color:#66d9ef>new</span> Scrollbar(
+              child: ListView( <span style=color:#75715e>/// 縱軸移動
+</span><span style=color:#75715e></span>                children: <span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span>[
+                  <span style=color:#66d9ef>new</span> SingleChildScrollView(
+                    scrollDirection: Axis.horizontal, <span style=color:#75715e>/// 橫軸移動 
+</span><span style=color:#75715e></span>                    child: <span style=color:#66d9ef>new</span> Container(
+                      child: <span style=color:#66d9ef>new</span> DataTable(
+                        dataRowHeight: <span style=color:#ae81ff>30</span>, <span style=color:#75715e>/// 每一列的高度
+</span><span style=color:#75715e></span>                        headingRowHeight: <span style=color:#ae81ff>25</span>, <span style=color:#75715e>/// 表頭列的高度
+</span><span style=color:#75715e></span>                        horizontalMargin: <span style=color:#ae81ff>10</span>, 
+                        columnSpacing: <span style=color:#ae81ff>12</span>, <span style=color:#75715e>/// 每一行的間距
+</span><span style=color:#75715e></span>                        columns: createDataColumns(context, <span style=color:#66d9ef>this</span>.value), <span style=color:#75715e>/// 建立表頭部分
+</span><span style=color:#75715e></span>                        rows: createDataRows(context, <span style=color:#66d9ef>this</span>.record), <span style=color:#75715e>/// 一個 DataRow 一筆資料，一筆資料的數值用 DataCells 表示
+</span><span style=color:#75715e></span>                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  createDataRows(BuildContext context, List<span style=color:#f92672>&lt;</span>User<span style=color:#f92672>&gt;</span> tableData) {
+    <span style=color:#66d9ef>return</span> tableData.map((f) {
+      <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> DataRow(cells: [
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.firstName)),
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.lastName)),
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.age.toString())),
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.gender)),
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.height.toString())),
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.weight.toString())),
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.sport)),
+        <span style=color:#66d9ef>new</span> DataCell(<span style=color:#66d9ef>new</span> Text(f.phoneBrands)),
+      ]);
+    }).toList();
+  }
+
+  createDataColumns(BuildContext context, List<span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span><span style=color:#f92672>&gt;</span> userDataColumn) {
+    <span style=color:#66d9ef>return</span> userDataColumn.map((f) {
+      <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> DataColumn(
+        label: <span style=color:#66d9ef>new</span> Text(f, style: TextStyle(color: Colors.red)),
+        numeric: <span style=color:#66d9ef>false</span>,
+        tooltip: <span style=color:#e6db74>&#34;</span><span style=color:#e6db74>$</span>f<span style=color:#e6db74>&#34;</span>,
+      );
+    }).toList();
+  }
+
+}
+</code></pre></div><h3 id=main>main</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>import</span> <span style=color:#e6db74>&#39;package:flutter/material.dart&#39;</span>;
+...
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>F2Page</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  _F2PageState createState() <span style=color:#f92672>=&gt;</span> _F2PageState();
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>_F2PageState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>F2Page<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> Scaffold(
+      appBar: AppBar(
+        elevation: <span style=color:#ae81ff>0.0</span>,
+        backgroundColor: drawerBackgroundColor,
+        title: Text(<span style=color:#e6db74>&#34;F2&#34;</span>),
+      ),
+      body: <span style=color:#66d9ef>new</span> UserDataTable(
+        value: User.userDataColumn,
+        record: User.getUsers(),
+        title: <span style=color:#e6db74>&#34;User&#34;</span>),
+    );
+  }
+}
+</code></pre></div><p>程式的進入點這邊不顯示說明。</p><h2 id=conclusion>Conclusion</h2><p>當一個 <code>DataTable</code> 資料長度過長可搭配 <code>SingleChildScrollView</code> 要垂直還是水平移動，但這只能擇一。如果資料長度同時是橫軸過長和縱軸過長，需搭配 <code>ListView</code> 和 <code>SingleChildScrollView</code> 實現縱軸和橫軸的 <code>scroll</code>。</p><p>缺點部分像是表頭不移動，這從原始 <code>DataTable</code> 是無法設定的。目前也還在研究中 XD</p><figure><img src=/images/gif/20190928.gif width=auto height=auto></figure></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-09-01-schedule/ title="at 和 crontab 使用"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-09-23-flutter-bottom/ title=底部滑動按鈕><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

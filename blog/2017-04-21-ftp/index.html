@@ -1,0 +1,132 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>File Transfer Protocol(FTP)</h1><p class=mb-1>April 21, 2017</p><p>&mdash;</p></div><div class=content><h1 id=ftp>FTP</h1><p>讓我們透過 Network 在 Server 和 Client 之間傳遞檔案。</p><p>FTP 傳輸分兩種模式</p><ul><li>port FTP<ul><li>一般狀態，port 為 21，port 20 為傳輸資料</li></ul></li><li>pasv FTP<ul><li>屬於被動模式，port 也是 21。連線後使用者會跟 server 端要求資料傳輸的 port</li></ul></li></ul><p><img src=https://i.imgur.com/aYpx8JD.png alt></p><p>常見 FTP 軟體有 <code>Wuftpd</code>、<code>Proftpd</code>、<code>Vsftpd</code>、<code>Pureftpd</code> 等。因為學校是教學 Vsftpd 所以會以這個為主。</p><h2 id=environment>environment</h2><ul><li>ubuntu 16<ul><li>IP 192.168.137.141</li><li>vsftpd</li></ul></li><li>tool<ul><li>filezilla（驗證）</li></ul></li></ul><h2 id=install-ftp>Install FTP</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo apt-get install vsftpd -y
+</code></pre></div><h2 id=service-enable>service enable</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo systemctl start vsftpd <span style=color:#75715e># 啟動服務</span>
+$ sudo systemctl status vsftpd <span style=color:#75715e># 查看服務狀態</span>
+$ sudo systemctl stop vsftpd <span style=color:#75715e># 停用服務</span>
+</code></pre></div><h2 id=configuring-ftp>Configuring FTP</h2><p>通常服務配置檔都在 <code>/etc</code> 目錄下。利用 whereis 可以查找執行檔和原始檔。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ whereis vsftpd
+vsftpd: /usr/sbin/vsftpd /etc/vsftpd.conf /usr/share/man/man8/vsftpd.8.gz
+</code></pre></div><h3 id=edit-ftp-file>Edit FTP file</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vim /etc/vsftpd.conf
+</code></pre></div><h3 id=modify>Modify</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>anonymous_enable<span style=color:#f92672>=</span>NO <span style=color:#75715e># 禁用匿名者登入</span>
+local_enable<span style=color:#f92672>=</span>YES    <span style=color:#75715e># 允許本機使用者登陸</span>
+write_enable<span style=color:#f92672>=</span>YES	<span style=color:#75715e># 啟用更改檔案系統的 FTP 指令，允許使用者寫入，預設註解</span>
+local_umask<span style=color:#f92672>=</span>022		<span style=color:#75715e># 本機用戶的檔案創建的 umask 值，預設註解</span>
+dirmessage_enable<span style=color:#f92672>=</span>YES   <span style=color:#75715e># 使用者進入目錄時顯示消息</span>
+xferlog_enable<span style=color:#f92672>=</span>YES		<span style=color:#75715e># 維護一個 log 檔案，詳細紀載上傳和下載</span>
+connect_from_port_20<span style=color:#f92672>=</span>YES <span style=color:#75715e># 使用服務器機器上的端口 20（ftp-data）進行 PORT 樣式連接</span>
+xferlog_file<span style=color:#f92672>=</span>/var/log/vsftpd.log <span style=color:#75715e># 指定 log 檔案</span>
+xferlog_std_format<span style=color:#f92672>=</span>YES  <span style=color:#75715e># 標準的 log 檔案格式，預設註解</span>
+listen<span style=color:#f92672>=</span>NO   			<span style=color:#75715e># 防止 vsftpd 在獨立模式下運行</span>
+listen_ipv6<span style=color:#f92672>=</span>YES		        <span style=color:#75715e># vsftpd 監聽 IPv6</span>
+pam_service_name<span style=color:#f92672>=</span>vsftpd         <span style=color:#75715e># vsftpd 使用 PAM 服務的名稱</span>
+userlist_enable<span style=color:#f92672>=</span>YES  	        <span style=color:#75715e># 使 vsftpd 限制使用者列表，須自行添加</span>
+tcp_wrappers<span style=color:#f92672>=</span>YES  		<span style=color:#75715e># 用來限制訪問，須自行添加</span>
+use_localtime<span style=color:#f92672>=</span>YES   <span style=color:#75715e># 使用本地時間</span>
+secure_chroot_dir<span style=color:#f92672>=</span>/var/run/vsftpd/empty <span style=color:#75715e>#不需要檔案權限時將指定到此目錄</span>
+idle_session_timeout<span style=color:#f92672>=</span><span style=color:#ae81ff>60</span> <span style=color:#75715e># 閒置 60 秒會將此使用者剔除，預設註解</span>
+allow_writeable_chroot<span style=color:#f92672>=</span>YES <span style=color:#75715e># 允許 chroot 能被寫入</span>
+force_dot_files<span style=color:#f92672>=</span>YES <span style=color:#75715e># 顯示隱藏檔案，須自行添加</span>
+download_enable<span style=color:#f92672>=</span>YES <span style=color:#75715e># 設置為 NO，則禁止下載</span>
+anon_max_rate<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span> <span style=color:#75715e># 限制 ftp 傳輸速率，0 無限制。byte 為單位</span>
+rsa_cert_file<span style=color:#f92672>=</span>/etc/ssl/certs/ssl-cert-snakeoil.pem 
+rsa_private_key_file<span style=color:#f92672>=</span>/etc/ssl/private/ssl-cert-snakeoil.key
+</code></pre></div><h3 id=setting-allowdeny-ftp-access>Setting allow/deny FTP access</h3><p>預設下，<code>userlist_enable = YES</code>，則 <code>userlist_file =/etc/vsftpd.userlist</code> 中列出的用戶將被拒絕，使用 <code>userlist_deny=YES</code> 選項進行登錄訪問限制。</p><p>但是，選項 <code>userlist_deny=NO</code> 會扭曲預設設置的含義，因此只允許用戶名在 <code>userlist_file=/etc/vsftpd.userlist</code> 中明確列出的用戶登錄 FTP 服務器。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>userlist_enable<span style=color:#f92672>=</span>YES
+userlist_file<span style=color:#f92672>=</span>/etc/vsftpd.userlist
+userlist_deny<span style=color:#f92672>=</span>NO
+</code></pre></div><h3 id=restrict-ftp-users-to-their-home-directories>restrict FTP users to their Home directories</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>chroot_local_user<span style=color:#f92672>=</span>YES <span style=color:#75715e># 本機使用者將在登錄後，僅能在家目錄</span>
+allow_writeable_chroot<span style=color:#f92672>=</span>YES <span style=color:#75715e># 基於安全，vsftpd 不允許 chroot 目錄可寫，此設定可來禁用，須自行添加</span>
+</code></pre></div><h3 id=ftp-user-connection-settings>FTP user connection settings</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>max_clients<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span> <span style=color:#75715e># 最多三人連線使用，須自行添加</span>
+max_per_ip<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span> <span style=color:#75715e># 同一 IP 最多三人連線，須自行添加</span>
+max_login_fails<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span> <span style=color:#75715e># 最大登錄嘗試次數</span>
+delay_failed_login<span style=color:#f92672>=</span><span style=color:#ae81ff>10</span> <span style=color:#75715e># 嘗試登錄失敗，需要暫停的秒數</span>
+</code></pre></div><h2 id=testing-ftp-server-in-ubuntu>Testing FTP Server in Ubuntu</h2><h5 id=add-user>Add user</h5><p>我們會以三個使用者做為測試。下面是新增使用者方式。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo useradd -m -c <span style=color:#e6db74>&#34;Test Account&#34;</span> -s /bin/bash naruto
+$ sudo passwd naruto
+</code></pre></div><h5 id=testing-userlist>Testing userlist</h5><p>先將使用者新增至 .userlist 檔案裡</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ echo <span style=color:#e6db74>&#34;naruto&#34;</span> | sudo tee -a /etc/vsftpd.userlist
+naruto
+$ cat /etc/vsftpd.userlist
+naruto
+</code></pre></div><p>naruto 使用者</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ftp localhost
+Connected to localhost.
+<span style=color:#ae81ff>220</span> <span style=color:#f92672>(</span>vsFTPd 3.0.3<span style=color:#f92672>)</span>
+Name <span style=color:#f92672>(</span>localhost:cch<span style=color:#f92672>)</span>: naruto
+<span style=color:#ae81ff>331</span> Please specify the password.
+Password:
+<span style=color:#ae81ff>230</span> Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp&gt; ls
+<span style=color:#ae81ff>200</span> EPRT command successful. Consider using EPSV.
+<span style=color:#ae81ff>150</span> Here comes the directory listing.
+<span style=color:#ae81ff>226</span> Directory send OK.
+ftp&gt;
+</code></pre></div><p>itahi 使用者</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ftp localhost
+Connected to localhost.
+<span style=color:#ae81ff>220</span> <span style=color:#f92672>(</span>vsFTPd 3.0.3<span style=color:#f92672>)</span>
+Name <span style=color:#f92672>(</span>localhost:cch<span style=color:#f92672>)</span>: itahi
+<span style=color:#ae81ff>530</span> Permission denied.
+Login failed.
+ftp&gt;
+</code></pre></div><p>可以知道 itahi 被 <code>.userlist</code> 檔案限制住了，<code>userlist_deny</code> 是影響 <code>.userlist</code> 檔案的限制方式。</p><h3 id=anonymous-connection-ftp-server>Anonymous connection FTP server</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ftp localhost
+Connected to localhost.
+<span style=color:#ae81ff>220</span> <span style=color:#f92672>(</span>vsFTPd 3.0.3<span style=color:#f92672>)</span>
+Name <span style=color:#f92672>(</span>localhost:cch<span style=color:#f92672>)</span>: anonymous
+<span style=color:#ae81ff>530</span> Permission denied.
+Login failed.
+ftp&gt;
+</code></pre></div><p>因為設定檔的配置，因此無法使用 anonymous 登入</p><h2 id=restrict-users-from-home-directory>Restrict users from home directory</h2><p>創建一個群組，並將使用者帳號分配正確的擁有權和權限，也將用戶限制為家目錄或特定目錄。</p><h3 id=create-users-and-groups>Create users and groups</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo groupadd ftpgroup
+</code></pre></div><p>將 naruto 使用者加入至 <code>ftpgroup</code> 群組</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo usermod -G ftpgroup naruto
+$ id naruto <span style=color:#75715e># 查看帳號 UID、GID 等資訊</span>
+uid<span style=color:#f92672>=</span>1001<span style=color:#f92672>(</span>naruto<span style=color:#f92672>)</span> gid<span style=color:#f92672>=</span>1001<span style=color:#f92672>(</span>naruto<span style=color:#f92672>)</span> groups<span style=color:#f92672>=</span>1001<span style=color:#f92672>(</span>naruto<span style=color:#f92672>)</span>,1003<span style=color:#f92672>(</span>ftpgroup<span style=color:#f92672>)</span>
+</code></pre></div><p>再新增一個使用者 <code>madara</code> 至 <code>ftpgroup</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo useradd -G ftpgroup madara
+$ sudo passwd madara
+$ sudo usermod -s /sbin/nologin madara <span style=color:#75715e># 限制此用戶不能取得 shell</span>
+</code></pre></div><h3 id=modify-ssh-configuration>Modify SSH configuration</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vi /etc/ssh/sshd_config
+<span style=color:#75715e># 新增以下</span>
+Subsystem sftp internal-sftp
+        Match Group ftpgroup
+        ChrootDirectory /home
+        ForceCommand internal-sftp
+        X11Forwarding no
+        AllowTcpForwarding no
+$ sudo systemctl restart sshd.service
+</code></pre></div><h3 id=verify>Verify</h3><h5 id=ssh>SSH</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ssh -l naruto 192.168.137.141
+The authenticity of host <span style=color:#e6db74>&#39;192.168.137.141 (192.168.137.141)&#39;</span> can<span style=color:#e6db74>&#39;t be established.
+</span><span style=color:#e6db74>ECDSA key fingerprint is SHA256:rNlo0Ial3bX7JECrwMtFUYzIAVUtN96i8d9sl9UgM2I.
+</span><span style=color:#e6db74>Are you sure you want to continue connecting (yes/no)? yes
+</span><span style=color:#e6db74>Warning: Permanently added &#39;</span>192.168.137.141<span style=color:#e6db74>&#39; (ECDSA) to the list of known hosts.
+</span><span style=color:#e6db74>naruto@192.168.137.141&#39;</span>s password:
+This service allows sftp connections only.
+Connection to 192.168.137.141 closed.
+</code></pre></div><h5 id=sftp>sftp</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sftp naruto@192.168.137.141
+naruto@192.168.137.141<span style=color:#960050;background-color:#1e0010>&#39;</span>s password:
+Connected to 192.168.137.141.
+sftp&gt; ls
+cch     itahi   naruto
+</code></pre></div><h2 id=restrict-users-to-a-specific-directory>Restrict users to a specific directory</h2><p>將新使用者限制為自定義目錄</p><h3 id=create-user-and-group>Create user and group</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo groupadd ftpgroup2
+$ sudo mkdir -p /sftp/chroot
+$ sudo chown root:root /sftp/chroot/
+$ sudo useradd -G ftpgroup2 -s /sbin/nologin brouto
+$ sudo passwd brouto
+$ sudo mkdir /sftp/chroot/brouto
+$ sudo chown brouto:brouto /sftp/chroot/brouto/
+$ sudo chmod <span style=color:#ae81ff>700</span> /sftp/chroot/brouto/
+</code></pre></div><h3 id=modify-ssh-configuration-1>Modify SSH configuration</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Subsystem sftp internal-sftp
+        Match Group ftpgroup2
+        ChrootDirectory /sftp/chroot/
+        ForceCommand internal-sftp
+        X11Forwarding no
+        AllowTcpForwarding no
+</code></pre></div><h3 id=verify-1>Verify</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo mkdir /sftp/chroot/manager
+$ sftp brouto@192.168.137.141
+brouto@192.168.137.141<span style=color:#e6db74>&#39;s password:
+</span><span style=color:#e6db74>Connected to 192.168.137.141.
+</span><span style=color:#e6db74>sftp&gt; ls
+</span><span style=color:#e6db74>brouto   manager
+</span><span style=color:#e6db74>sftp&gt; cd manager/ 
+</span><span style=color:#e6db74>sftp&gt; ls
+</span><span style=color:#e6db74>sftp&gt; mkdir asd
+</span><span style=color:#e6db74>Couldn&#39;</span>t create directory: Permission denied <span style=color:#75715e># 將此登入使用者限制了</span>
+sftp&gt;
+</code></pre></div><p>透過 ssh 裡的 sftp 設定會有以下效果</p><ul><li>使用者登入不允許進行 Shell 操作（只能使用 SFTP 傳輸檔案）</li><li>不允取使用者建立 SSH Tunnel（TCP Forwarding）</li><li>不允取使用者建立 X11 Forwarding</li><li>登入後透過 chroot 限制存取目錄，只能在自己家目錄新增刪除檔案目錄</li></ul><blockquote><p>若將多個使用者 chroot 到同一個目錄，應變更每個使用者家目錄的權限，防止所有使用者瀏覽其他使用者的家目錄。</p></blockquote><h2 id=example>Example</h2><p>學校情境範例</p><p>須讓系統有一個使用者，user01 登入自己的目錄(/home/user01)，密碼 passw0rd，此使用者不得遠端 SSH 燈入主機，僅准 FTP 連線。使用者不得切換其他使用者目錄。秀出隱藏檔案。使用者一分鐘沒動作就踢除。</p><p>答案在上面 XD，我是透過此情境加上上課內容寫出此篇文章。</p><h2 id=ref>Ref</h2><p><a href=https://www.linuxsysadmins.com/install-vsftpd-with-ssltls-in-ubuntu-server/>vsftpd with SSL/TLS</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2017-04-16-lvm/ title="LVM（Logical Volume Manager）"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2017-08-14-iptables/ title=Iptables><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

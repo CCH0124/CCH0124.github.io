@@ -1,0 +1,280 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>LNMP 與 wordpress</h1><p class=mb-1>May 28, 2018</p><p>&mdash;</p></div><div class=content><h2 id=install-and-setting>Install And Setting</h2><h3 id=nginx-install>Nginx install</h3><p>可以透過 <code>apt show</code> 或 <code>apt search</code> 去查詢 nginx 版本</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo apt install nginx -y <span style=color:#75715e># 安裝</span>
+</code></pre></div><p>服務使用</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo systemctl start nginx.service
+$ sudo systemctl stop nginx.service
+$ sudo systemctl restart nginx.service
+$ sudo systemctl status nginx.service
+</code></pre></div><h3 id=check-nginx-web-service>Check Nginx Web Service</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ps -aux | grep nginx
+root      <span style=color:#ae81ff>12900</span>  0.0  0.0 <span style=color:#ae81ff>124976</span>  <span style=color:#ae81ff>1420</span> ?        Ss   21:03   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data  <span style=color:#ae81ff>12901</span>  0.0  0.1 <span style=color:#ae81ff>125336</span>  <span style=color:#ae81ff>3184</span> ?        S    21:03   0:00 nginx: worker process
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo systemctl status nginx.service
+● nginx.service - A high performance web server and a reverse proxy server
+   Loaded: loaded <span style=color:#f92672>(</span>/lib/systemd/system/nginx.service; enabled; vendor preset: enabled<span style=color:#f92672>)</span>
+   Active: active <span style=color:#f92672>(</span>running<span style=color:#f92672>)</span> since Thu 2019-09-05 21:03:15 CST; 11min ago
+ Main PID: <span style=color:#ae81ff>12900</span> <span style=color:#f92672>(</span>nginx<span style=color:#f92672>)</span>
+    Tasks: <span style=color:#ae81ff>2</span>
+   Memory: 3.6M
+      CPU: 40ms
+   CGroup: /system.slice/nginx.service
+           ├─12900 nginx: master process /usr/sbin/nginx -g daemon on; master_process on
+           └─12901 nginx: worker process
+
+Sep <span style=color:#ae81ff>05</span> 21:03:15 ubuntu systemd<span style=color:#f92672>[</span>1<span style=color:#f92672>]</span>: Starting A high performance web server and a reverse proxy server...
+Sep <span style=color:#ae81ff>05</span> 21:03:15 ubuntu systemd<span style=color:#f92672>[</span>1<span style=color:#f92672>]</span>: nginx.service: Failed to read PID from file /run/nginx.pid: Invalid argument
+Sep <span style=color:#ae81ff>05</span> 21:03:15 ubuntu systemd<span style=color:#f92672>[</span>1<span style=color:#f92672>]</span>: Started A high performance web server and a reverse proxy server.
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl http://localhost 
+<span style=color:#75715e># nginx 預設頁面</span>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Welcome to nginx!&lt;/title&gt;
+&lt;style&gt;
+    body <span style=color:#f92672>{</span>
+        width: 35em;
+        margin: <span style=color:#ae81ff>0</span> auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    <span style=color:#f92672>}</span>
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to nginx!&lt;/h1&gt;
+&lt;p&gt;If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.&lt;/p&gt;
+
+&lt;p&gt;For online documentation and support please refer to
+&lt;a href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;http://nginx.org/&#34;</span>&gt;nginx.org&lt;/a&gt;.&lt;br/&gt;
+Commercial support is available at
+&lt;a href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;http://nginx.com/&#34;</span>&gt;nginx.com&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Thank you <span style=color:#66d9ef>for</span> using nginx.&lt;/em&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+cch@ubuntu:~$
+</code></pre></div><p>如果無法取得 nginx 預設頁面，至 <code>/var/log/nginx/error.log</code> 查看問題。適當地從 log 中找尋錯誤，也是可以解決問題的。</p><h3 id=nginx-confing-file>Nginx Confing File</h3><p>目錄：<code>/etc/nginx</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ls /etc/nginx/
+conf.d        fastcgi_params  koi-win     nginx.conf    scgi_params      sites-enabled  uwsgi_params
+fastcgi.conf  koi-utf         mime.types  proxy_params  sites-available  snippets       win-utf
+</code></pre></div><p>其中 <code>nginx.conf</code> 設定檔，所有基本設置都在此檔案內。
+<code>sites-enabled</code> 啟用站台設定，裡面有著初始站台預設設定值，如有更改檔名則 <code>nginx.conf</code> 配置需更改。
+<code>sites-available</code> 可以啟用的站台</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ls -l sites-enabled/ <span style=color:#75715e># 裡面是 ln 至 site-available </span>
+total <span style=color:#ae81ff>0</span>
+lrwxrwxrwx <span style=color:#ae81ff>1</span> root root <span style=color:#ae81ff>34</span> Sep  <span style=color:#ae81ff>5</span> 21:03 default -&gt; /etc/nginx/sites-available/default
+</code></pre></div><p>查看 <code>nginx.conf</code> 預設值</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>user www-data; <span style=color:#75715e># 定義 nginx 運作使用者</span>
+worker_processes auto; <span style=color:#75715e># 定義 nginx 的 process，在這邊設定為 CPU 總核心數目</span>
+pid /run/nginx.pid; <span style=color:#75715e># process ID</span>
+
+<span style=color:#75715e># events 區塊，主要是影響 Nginx 伺服器與使用者的網路連接</span>
+<span style=color:#75715e># 此區塊對 Nginx 效能影響很大，但扔然需要依照實際狀況調整</span>
+events <span style=color:#f92672>{</span>
+        worker_connections 768; <span style=color:#75715e># 允許每個 worker process 同時開啟的最大連接數</span>
+                                <span style=color:#75715e># 設定每個 worker process 都有能力同時接收網路連線</span>
+        <span style=color:#75715e># multi_accept on; 預設為註解，代表一次只能接收一個網路連線，建議啟用</span>
+<span style=color:#f92672>}</span>
+
+http <span style=color:#f92672>{</span>
+
+        <span style=color:#75715e>##</span>
+        <span style=color:#75715e># Basic Settings</span>
+        <span style=color:#75715e>##</span>
+
+        sendfile on; <span style=color:#75715e># 啟用高效率文件傳輸模式，如果使用 IO 負載重的建議設為 off</span>
+        <span style=color:#75715e># 用 sendfile 此 tcp_nopush 才有作用</span>
+        <span style=color:#75715e># 當接到要求後不會馬上傳送出去，等到一定量在傳輸</span>
+        <span style=color:#75715e># 這樣做法有助於解決網路阻塞</span>
+        <span style=color:#75715e># 對於大文件頗有幫助</span>
+        tcp_nopush on; 
+        tcp_nodelay on; <span style=color:#75715e># 與 tcp_nopush 是相反的</span>
+        keepalive_timeout 65; <span style=color:#75715e># 最常連接時間</span>
+        types_hash_max_size 2048; <span style=color:#75715e># 設定越大，使用記憶體越多，但檢索速度變快</span>
+        <span style=color:#75715e># server_tokens off;</span>
+
+        <span style=color:#75715e># server_names_hash_bucket_size 64;</span>
+        <span style=color:#75715e># server_name_in_redirect off;</span>
+
+        include /etc/nginx/mime.types; <span style=color:#75715e># 定義包含文件類型對應表</span>
+        default_type application/octet-stream; <span style=color:#75715e># 預設文件類型</span>
+
+        <span style=color:#75715e>##</span>
+        <span style=color:#75715e># SSL Settings</span>
+        <span style=color:#75715e>##</span>
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; <span style=color:#75715e># Dropping SSLv3, ref: POODLE</span>
+        ssl_prefer_server_ciphers on;
+
+        <span style=color:#75715e>##</span>
+        <span style=color:#75715e># Logging Settings</span>
+        <span style=color:#75715e>##</span>
+        <span style=color:#75715e># 設定 log 部分</span>
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        <span style=color:#75715e>##</span>
+        <span style=color:#75715e># Gzip Settings</span>
+        <span style=color:#75715e>##</span>
+
+        gzip on; <span style=color:#75715e># 啟用壓縮</span>
+        gzip_disable <span style=color:#e6db74>&#34;msie6&#34;</span>;
+
+        <span style=color:#75715e># gzip_vary on;</span>
+        <span style=color:#75715e># gzip_proxied any;</span>
+        <span style=color:#75715e># gzip_comp_level 6; # 壓縮等級</span>
+        <span style=color:#75715e># gzip_buffers 16 8k; # 壓縮緩衝</span>
+        <span style=color:#75715e># gzip_http_version 1.1; # 壓縮版本</span>
+        <span style=color:#75715e># gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;</span>
+
+        <span style=color:#75715e>##</span>
+        <span style=color:#75715e># Virtual Host Configs</span>
+        <span style=color:#75715e>##</span>
+
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+<span style=color:#f92672>}</span>
+...
+</code></pre></div><p>查看 <code>sites-available/default</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e># Default server configuration</span>
+<span style=color:#75715e>#</span>
+server <span style=color:#f92672>{</span>
+        <span style=color:#75715e># 開 port 80</span>
+        listen <span style=color:#ae81ff>80</span> default_server;
+        listen <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:80 default_server;
+
+        <span style=color:#75715e># SSL 設定區塊，如果啟用 `http/2` 則必須成功設定 SSL 方能使用</span>
+        <span style=color:#75715e># SSL configuration</span>
+        <span style=color:#75715e># </span>
+        <span style=color:#75715e># listen 443 ssl default_server;</span>
+        <span style=color:#75715e># listen [::]:443 ssl default_server;</span>
+        <span style=color:#75715e>#</span>
+        <span style=color:#75715e># Note: You should disable gzip for SSL traffic.</span>
+        <span style=color:#75715e># See: https://bugs.debian.org/773332</span>
+        <span style=color:#75715e>#</span>
+        <span style=color:#75715e># Read up on ssl_ciphers to ensure a secure configuration.</span>
+        <span style=color:#75715e># See: https://bugs.debian.org/765782</span>
+        <span style=color:#75715e>#</span>
+        <span style=color:#75715e># Self signed certs generated by the ssl-cert package</span>
+        <span style=color:#75715e># Don&#39;t use them in a production server!</span>
+        <span style=color:#75715e>#</span>
+        <span style=color:#75715e># include snippets/snakeoil.conf;</span>
+
+        root /var/www/html; <span style=color:#75715e># 設定主目錄</span>
+
+        <span style=color:#75715e># Add index.php to the list if you are using PHP</span>
+        index index.html index.htm index.nginx-debian.html;
+        <span style=color:#75715e># 設定伺服器名稱</span>
+        server_name _;
+
+        location / <span style=color:#f92672>{</span>
+                <span style=color:#75715e># First attempt to serve request as file, then</span>
+                <span style=color:#75715e># as directory, then fall back to displaying a 404.</span>
+                try_files $uri $uri/ <span style=color:#f92672>=</span>404;
+        <span style=color:#f92672>}</span>
+
+        <span style=color:#75715e># pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000</span>
+        <span style=color:#75715e>#</span>
+        <span style=color:#75715e>#location ~ \.php$ {</span>
+        <span style=color:#75715e>#       include snippets/fastcgi-php.conf;</span>
+        <span style=color:#75715e>#</span>
+        <span style=color:#75715e>#       # With php7.0-cgi alone:</span>
+        <span style=color:#75715e>#       fastcgi_pass 127.0.0.1:9000;</span>
+        <span style=color:#75715e>#       # With php7.0-fpm:</span>
+        <span style=color:#75715e>#       fastcgi_pass unix:/run/php/php7.0-fpm.sock;</span>
+        <span style=color:#75715e>#}</span>
+
+        <span style=color:#75715e># deny access to .htaccess files, if Apache&#39;s document root</span>
+        <span style=color:#75715e># concurs with nginx&#39;s one</span>
+        <span style=color:#75715e>#</span>
+        <span style=color:#75715e>#location ~ /\.ht {</span>
+        <span style=color:#75715e>#       deny all;</span>
+        <span style=color:#75715e>#}</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><p>但上述的預設是否可用 ? 原則上自行測試是可用，但上限對外則不適合，如服務的人多流量高，則必須適當調整 nginx 和 Linux 參數
+記住有做更動須重啟服務</p><h2 id=php-fpm-install>PHP-fpm Install</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo apt install php -y
+</code></pre></div><p>設定檔 <code>/etc/php/7.0</code></p><p>服務使用</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo systemctl start php7.0-fpm.service
+$ sudo systemctl stop php7.0-fpm.service
+$ sudo systemctl restart php7.0-fpm.service
+$ sudo systemctl status php7.0-fpm.service
+</code></pre></div><h3 id=php-config-setting>PHP config setting</h3><p>預設即可，在依照硬體因素和網站服務設定，只需增加時間區</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vi /etc/php/7.0/fpm/php.ini
+date.timezone <span style=color:#f92672>=</span><span style=color:#e6db74>&#34;Asia/Taipei&#34;</span>
+cgi.fix_pathinfo<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span> <span style=color:#75715e># 安全設定，與 PHP 語法 $_SERVER[&#39;PATH_INFO&#39;] 有關</span>
+$ sudo vi /etc/php/7.0/fpm/pool.d/www.conf <span style=color:#75715e># 效能校條可以從此檔案，本人未詳細研究</span>
+</code></pre></div><h2 id=mariadb-install>Mariadb Install</h2><p>有另外寫一篇 Mariadb Install，內容有資料庫建立及刪除。</p><p>參考 <a href=https://cch0124.github.io/mariadb/>mariadb install</a></p><h2 id=nginx-設定-php-fpm>nginx 設定 php-fpm</h2><p><code>Nginx</code> 將 HTTP request 轉給 PHP 有兩種方式，第一種使用 <code>IP</code>，第二種用 <code>Socket</code>
+<code>Socket</code> 效能較優，<code>fastcgi_splite_path_info</code> 正規語法，原本預設 <code>nginx</code> 是讀不到 <code>path_info</code> 值。
+第一個擷取的值會給 <code>$fastcgi_script_name</code>，第二個擷取的值會給 <code>$fastcgi_path_info</code>
+假設原始請求為 <code>/show.php/article/0001</code>，透過切割後 <code>script_filename</code> : /path/to/php/show.php，<code>path_info</code>: /article/0001</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vi /etc/nginx/sites-enabled/default
+...
+        <span style=color:#75715e>#pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000</span>
+        <span style=color:#75715e>#</span>
+        location ~ <span style=color:#ae81ff>\.</span>php$ <span style=color:#f92672>{</span>
+                fastcgi_split_path_info ^<span style=color:#f92672>(</span>.+<span style=color:#ae81ff>\.</span>php<span style=color:#f92672>)(</span>/.+<span style=color:#f92672>)</span>$;
+                include fastcgi.conf;
+                try_files $uri 404;
+                <span style=color:#75715e># With php7.0-fpm:</span>
+                fastcgi_pass unix:/run/php/php7.0-fpm.sock;
+                fastcgi_index index.php; <span style=color:#75715e># 設定 PHP 首頁</span>
+        <span style=color:#f92672>}</span>
+...
+</code></pre></div><p>重啟服務，利用 <code>phpinfo</code> 檢查是否有透過 <code>nginx</code> 解析。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo su -c <span style=color:#e6db74>&#34;echo \&#34;&lt;?php phpinfo(); ?&gt;\&#34; | tee /var/www/html/index.php&#34;</span>
+&lt;?php phpinfo<span style=color:#f92672>()</span>; ?&gt;
+$ curl http://localhost/index.php <span style=color:#75715e># 驗證</span>
+</code></pre></div><h2 id=nginx-virtualhost>nginx VirtualHost</h2><p>設定檔 <code>/etc/nginx/default</code>，一個站台一個 virtualhost，用 <code>include</code> 方式匯入。</p><p>範例</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>server <span style=color:#f92672>{</span>
+        listen 80;
+        listen <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:80;
+
+        root /home/class/A;
+        server_name A.osx.stu.edu.tw;
+
+        index index.php;
+<span style=color:#f92672>}</span>
+
+server <span style=color:#f92672>{</span>
+        listen 80;
+        listen <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:80;
+
+        root /home/class/B;
+        server_name B.osx.stu.edu.tw;
+
+        index index.php;
+<span style=color:#f92672>}</span>
+</code></pre></div><h2 id=實作>實作</h2><ol><li>安裝 nginx + php7 + php-fpm + mariadb</li><li>安裝 phpmyadmin</li></ol><ul><li>安裝至 ~/wordpress/myadmin</li></ul><ol start=3><li>設定 Nginx</li></ol><ul><li>修改主目錄</li></ul><p>第一步驟在前面教學已完成。
+第二步驟</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ wget https://files.phpmyadmin.net/phpMyAdmin/4.9.0.1/phpMyAdmin-4.9.0.1-all-languages.zip
+$ mkdir ~/wordpress/
+$ mv phpMyAdmin-4.9.0.1-all-languages myadmin
+$ mv myadmin/ wordpress/
+</code></pre></div><p>第三步驟</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vim /etc/nginx/sites-enabled/default
+...
+<span style=color:#75715e>#root /var/www/html;</span>
+root /home/cch/wordpress/;
+...
+$ sudo systemctl restart nginx.service
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ cd wordpress/myadmin/
+~/wordpress/myadmin$ cp config.sample.inc.php config.inc.php
+~/wordpress/myadmin$ vi config.inc.php
+$cfg<span style=color:#f92672>[</span><span style=color:#e6db74>&#39;blowfish_secret&#39;</span><span style=color:#f92672>]</span> <span style=color:#75715e>#用 / 搜尋 blowfish_secret，找到後隨意填入字元</span>
+</code></pre></div><p>出現了問題，有些套件沒裝到</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo apt install php php-mysql php-gd php-cli php-curl php-mcrypt php-common php-fpm php-mbstring php-xml -y
+</code></pre></div><p>最後瀏覽器輸入 <code>http://192.168.137.142/myadmin/index.php</code> 即可瀏覽。<code>192.168.137.142</code> 為主機 IP。</p><p>上述為 phpmyadmin 的實作，接下來是實作創建資料庫，後續是為了 wordpress 架設</p><ol><li>建立資料庫名稱為 <code>wordpressDB</code></li></ol><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>MariaDB <span style=color:#f92672>[(</span>none<span style=color:#f92672>)]</span>&gt; CREATE DATABASE wordpressDB;
+</code></pre></div><ol start=2><li>帳號密碼為 <code>pressadm</code>:<code>pressadm</code>，給 wordpress 使用</li></ol><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>MariaDB <span style=color:#f92672>[(</span>none<span style=color:#f92672>)]</span>&gt; CREATE USER <span style=color:#e6db74>&#39;pressadm&#39;</span>@<span style=color:#e6db74>&#39;%&#39;</span>;
+Query OK, <span style=color:#ae81ff>0</span> rows affected <span style=color:#f92672>(</span>0.05 sec<span style=color:#f92672>)</span>
+
+MariaDB <span style=color:#f92672>[(</span>none<span style=color:#f92672>)]</span>&gt; GRANT USAGE ON *.* TO <span style=color:#e6db74>&#39;pressadm&#39;</span>@<span style=color:#e6db74>&#39;%&#39;</span>;
+Query OK, <span style=color:#ae81ff>0</span> rows affected <span style=color:#f92672>(</span>0.04 sec<span style=color:#f92672>)</span>
+
+MariaDB <span style=color:#f92672>[(</span>none<span style=color:#f92672>)]</span>&gt; use mysql;
+Reading table information <span style=color:#66d9ef>for</span> completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+MariaDB <span style=color:#f92672>[</span>mysql<span style=color:#f92672>]</span>&gt; UPDATE user SET password<span style=color:#f92672>=</span>PASSWORD<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;pressadm&#34;</span><span style=color:#f92672>)</span> WHERE user<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;pressadm&#39;</span>;
+Query OK, <span style=color:#ae81ff>1</span> row affected <span style=color:#f92672>(</span>0.04 sec<span style=color:#f92672>)</span>
+Rows matched: <span style=color:#ae81ff>1</span>  Changed: <span style=color:#ae81ff>1</span>  Warnings: <span style=color:#ae81ff>0</span>
+MariaDB <span style=color:#f92672>[</span>mysql<span style=color:#f92672>]</span>&gt; GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON <span style=color:#e6db74>`</span>wordpressDB<span style=color:#e6db74>`</span>.* TO <span style=color:#e6db74>&#39;pressadm&#39;</span>@<span style=color:#e6db74>&#39;%&#39;</span>
+    -&gt; ;
+Query OK, <span style=color:#ae81ff>0</span> rows affected <span style=color:#f92672>(</span>0.01 sec<span style=color:#f92672>)</span>
+
+MariaDB <span style=color:#f92672>[</span>mysql<span style=color:#f92672>]</span>&gt; FLUSH PRIVILEGES;
+Query OK, <span style=color:#ae81ff>0</span> rows affected <span style=color:#f92672>(</span>0.04 sec<span style=color:#f92672>)</span>
+</code></pre></div><p>上述的步驟，也可以從 phpmyadmin 使用。</p><p>安裝 wordpress 及設定。</p><ol><li>安裝</li></ol><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ wget https://tw.wordpress.org/wordpress-5.2.3-zh_TW.zip
+$ unzip wordpress-5.2.3-zh_TW.zip
+</code></pre></div><p>因為上述有創建 wordpress 目錄因此接壓縮會到這目錄下。
+設定檔部分在 phpmyadmin 時已經設定了。</p><p>瀏覽器輸入 <code>http://192.168.137.142/index.php</code>，即可進入設定畫面。如下</p><p><img src=https://i.imgur.com/bPwoVa7.png alt></p><p>隨然設定了，但是會出現權限問題，要如下設定</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo chown -R www-data:www-data /home/cch/wordpress
+</code></pre></div><p>大致上 wordpress 就建置完成了。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2018-05-26-mariadb/ title="mariadb 安裝使用"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2018-09-15-disk-mount/ title=掛載硬碟><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

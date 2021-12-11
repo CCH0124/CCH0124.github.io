@@ -1,0 +1,118 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day08</h1><p class=mb-1>August 29, 2020</p><p>&mdash;</p></div><div class=content><p><code>POD</code> 和容器一樣，應該只運行一個應用，這樣才有輕量化的感覺。舉例來說，前端和後端應該要在各自的 <code>POD</code> 上，這樣的優勢有很多，像是被調度到不同節點上運行，提高資源使用上的效率。然而，<code>Kubernetes</code> 的伸縮功能，可針對每個獨立的 <code>POD</code> 進行，這樣提高了<em>靈活性</em>。但是，實際上有些系統設計需要在一個 <code>POD</code> 中運行多個容器，而這些的設計想必又會有一套原則去實踐，如下：</p><ul><li>Sidecar pattern</li><li>Ambassador pattern</li><li>Adapter pattern</li><li>等等</li></ul><h2 id=管理-pod-容器>管理 POD 容器</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>frontend</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span> <span style=color:#75715e># 容器名稱</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span> <span style=color:#75715e># image</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>busybox</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>busybox:latest</span>
+    <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;bin/sh&#34;</span>, <span style=color:#e6db74>&#34;-c&#34;</span>, <span style=color:#e6db74>&#34;sleep 3600&#34;</span>]
+</code></pre></div><p>以上面的 <code>POD</code> 資源清單來看，<code>containers</code> 是被用來定義容器清單。在 <code>POD</code> 中必定要有一個容器，因此該字段必須是要定義的。然而容器的環境設置還有許多參數可設定，可用以下方式去查看，會列出關於 <code>containers</code> 的相關字段。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl explain pods.spec.containers
+KIND:     Pod
+VERSION:  v1
+
+RESOURCE: containers &lt;<span style=color:#f92672>[]</span>Object&gt;
+...
+</code></pre></div><h2 id=image-取得策略>Image 取得策略</h2><p>上面 <code>yaml</code> 在 <code>containers</code> 中有定義 <code>image</code> 字段，用來獲取定義的 <code>image</code>。我們都知道 <code>POD</code> 是用來運行容器，想必節點上必須要有 <code>CRI</code>，這邊以 <code>Docker</code> 為例，其獲取 <code>image</code> 過程如下圖。</p><p><img src=https://static.coderbridge.com/img/techbridge/images/kdchang/docker101/linux-vs-docker-comparison-architecture-docker-components.png alt> 來自"TechBridge技術共筆部落格"</p><p>運作大致是，運行容器時，容器的引擎會於本地尋找所定義的 <code>image</code> 檔案，當不存在時會從 <code>Registry</code> 下載到本地端。而在 <code>Kubernetes</code> 中可讓用戶自定義關於容器 <code>image</code> 的取得策略，其字段為 <code>imagePullPolicy</code>，其可有以下值做設定，詳細可參考<a href=https://kubernetes.io/docs/concepts/containers/images/#updating-images>官網</a>。</p><ul><li>Always<ul><li>總是從倉庫下載，不論本地有無</li><li>latest 標籤使用此決策</li></ul></li><li>Never<ul><li>本地有就使用，否則需手動下載</li></ul></li><li>IfNotPresent<ul><li>本地不存在下載</li><li>預設設定</li></ul></li></ul><p>可嘗試使用上面的 <code>yaml</code> 建立 <code>POD</code>，用 <code>-o yaml</code> 觀察 <code>imagePullPolicy</code> 是否預設為 <code>IfNotPresent</code>，當 <code>image</code> 帶有 <code>latest</code> 標籤時始以 <code>Always</code> 作為預設。而 <code>imagePullPolicy</code> 設置如下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>frontend</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+    <span style=color:#f92672>imagePullPolicy</span>: <span style=color:#ae81ff>Always</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>busybox</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>busybox:latest</span>
+    <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;/bin/sh&#34;</span>, <span style=color:#e6db74>&#34;-c&#34;</span>, <span style=color:#e6db74>&#34;sleep 3600&#34;</span>]
+</code></pre></div><h2 id=port-映射>Port 映射</h2><p>在 <code>Docker</code> 網路設計中，每個容器的網路需要透過 <code>NAT</code> 機制將其暴露到網路中才能被其他節點上的容器訪問。但在 <code>Kubernetes</code> 中，每個 <code>POD</code> 的 <code>IP</code> 位址都在同一個網路上，而這樣的設計讓其它節點的 <code>POD</code> 客戶端可直接訪問，因此 <code>Port</code> 的定義可為集群的客戶端提供一個快速連接 <code>POD</code> 的可訪問 <code>Port</code> 途徑。</p><p>其 <code>yaml</code> 配置如下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-ports-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>frontend</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+    <span style=color:#f92672>imagePullPolicy</span>: <span style=color:#ae81ff>Always</span>
+    <span style=color:#f92672>ports</span>: <span style=color:#75715e># 從這邊開始</span>
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>http</span> <span style=color:#75715e># 可被 Service 資源調用</span>
+      <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span> <span style=color:#75715e># 在 POD 對象的 IP 地址上映射的容器 Port</span>
+      <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>TCP</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>busybox</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>busybox:latest</span>
+    <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;/bin/sh&#34;</span>, <span style=color:#e6db74>&#34;-c&#34;</span>, <span style=color:#e6db74>&#34;sleep 3600&#34;</span>]
+</code></pre></div><p>上述的設定無法讓集群外部的使用者進行訪問，解決此方式是將節點的 <code>IP</code> 和 <code>Port</code> 將其映射至集群外部，可使用 <code>hostPort</code> 和 <code>hostIP</code> 將其資訊應設至主機上，叫好的方式是使用 <code>Service</code> 資源。</p><ul><li>hostPort<ul><li>將接收的請求藉由 <code>NAT</code> 轉發至由 <code>containerPort</code> 提供的指定 <code>Port</code></li></ul></li><li>hostIP<ul><li><code>hostPort</code> 要綁定的 <code>IP</code>，默認是 <code>0.0.0.0</code> 表所有可用 <code>IP</code> 地址</li></ul></li></ul><h2 id=環境變數>環境變數</h2><p>容器是一種隔離技術，對於應用程式其環境配置相當麻煩，因此環境變數這個概念，使得該概念可在容器啟用時傳遞一個可配置的訊息。在 <code>POD</code> 中的容器環境變數傳遞方法有以下</p><ul><li><code>env</code></li><li><code>envFrom</code></li><li><code>ConfigMap</code></li><li><code>Secret</code></li></ul><p>下面為 <code>env</code> 使用範例</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#75715e># 官方範例</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>envar-demo</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>purpose</span>: <span style=color:#ae81ff>demonstrate-envars</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>envar-demo-container</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>gcr.io/google-samples/node-hello:1.0</span>
+    <span style=color:#f92672>env</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>DEMO_GREETING</span>
+      <span style=color:#f92672>value</span>: <span style=color:#e6db74>&#34;Hello from the environment&#34;</span>
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>DEMO_FAREWELL</span>
+      <span style=color:#f92672>value</span>: <span style=color:#e6db74>&#34;Such a sweet sorrow&#34;</span>
+</code></pre></div><p>當上述 <code>yaml</code> 成功啟動時，透過 <code>exec</code> 去驗證，是否以環境變數傳遞。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec envar-demo -- printenv
+PATH<span style=color:#f92672>=</span>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOSTNAME<span style=color:#f92672>=</span>envar-demo
+DEMO_GREETING<span style=color:#f92672>=</span>Hello from the environment <span style=color:#75715e># this</span>
+DEMO_FAREWELL<span style=color:#f92672>=</span>Such a sweet sorrow <span style=color:#75715e># this</span>
+KUBERNETES_SERVICE_PORT<span style=color:#f92672>=</span><span style=color:#ae81ff>443</span>
+KUBERNETES_SERVICE_PORT_HTTPS<span style=color:#f92672>=</span><span style=color:#ae81ff>443</span>
+KUBERNETES_PORT<span style=color:#f92672>=</span>tcp://10.8.0.1:443
+KUBERNETES_PORT_443_TCP<span style=color:#f92672>=</span>tcp://10.8.0.1:443
+KUBERNETES_PORT_443_TCP_PROTO<span style=color:#f92672>=</span>tcp
+KUBERNETES_PORT_443_TCP_PORT<span style=color:#f92672>=</span><span style=color:#ae81ff>443</span>
+KUBERNETES_PORT_443_TCP_ADDR<span style=color:#f92672>=</span>10.8.0.1
+KUBERNETES_SERVICE_HOST<span style=color:#f92672>=</span>10.8.0.1
+NPM_CONFIG_LOGLEVEL<span style=color:#f92672>=</span>info
+NODE_VERSION<span style=color:#f92672>=</span>4.4.2
+HOME<span style=color:#f92672>=</span>/root
+</code></pre></div><h2 id=共享節點網路>共享節點網路</h2><p>簡單來說就是把主機的網路掛到 <code>POD</code> 中，使用 <code>hostNetwork</code> 字段即可實現。如下圖所示</p><figure><img src=/images/k8s/K8s-day08.jpg width=auto height=auto></figure><p>我們定義以下 <code>yaml</code> 驗證。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-host-net-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>frontend</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+    <span style=color:#f92672>imagePullPolicy</span>: <span style=color:#ae81ff>Always</span>
+    <span style=color:#f92672>ports</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>http</span>
+      <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+      <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>TCP</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>busybox</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>busybox:latest</span>
+    <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;/bin/sh&#34;</span>, <span style=color:#e6db74>&#34;-c&#34;</span>, <span style=color:#e6db74>&#34;sleep 3600&#34;</span>]
+  <span style=color:#f92672>hostNetwork</span>: <span style=color:#66d9ef>True</span>
+</code></pre></div><p>從 <code>IP</code> 可以看出來它變成節點 <code>IP</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -o wide
+NAME                READY   STATUS    RESTARTS   AGE     IP                NODE     NOMINATED NODE   READINESS GATES
+pod-host-net-demo   2/2     Running   <span style=color:#ae81ff>0</span>          116s    192.168.134.135   node02   &lt;none&gt;           &lt;none&gt;
+</code></pre></div><h2 id=pod-容器安全>POD 容器安全</h2><p>在 <code>POD</code> 中可以設置容器的權限和訪問控制。在 <code>POD</code> 等級使用 <code>$ kubectl explain pods.spec.securityContext</code> 查看，至於容器則是 <code>$ kubectl explain pods.spec.containers.securityContext</code> 。詳細可參考<a href=https://kubernetes.io/docs/tasks/configure-pod-container/security-context/>官方資源</a></p><h2 id=總結>總結</h2><p>今天描述了 <code>POD</code> 資源清單定義容器的一些應用，上面資源清單可使用 <code>kubectl apply -f</code> 方式去部署 <code>POD</code>，同時在熟練前面幾個章節介紹的指令去觀察 <code>POD</code>，像是 <code>describe</code>、<code>get</code>、<code>-o wide</code> 等。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-08-28-namespace-pod-resource-operation/ title="kubernetes - day07"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-08-30-label-selector/ title="kubernetes - day09"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

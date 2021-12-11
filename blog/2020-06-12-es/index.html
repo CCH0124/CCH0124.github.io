@@ -1,0 +1,980 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Elasticsearch 筆記</h1><p class=mb-1>June 12, 2020</p><p>&mdash;</p></div><div class=content><p>特點</p><ul><li>分散式的即時文件儲存，每個字段都可被索引並可搜索</li><li>分散式即時分析搜索引擎<ul><li>不規則查詢</li></ul></li><li>高擴展，可處裡 PB 級<em>結構</em>或<em>非結構</em>化數據</li><li>Lucene 實現索引和搜索功能</li></ul><p>透過簡單的 RESTful API 來隱藏 Lucene 的複雜性，讓搜索變簡單</p><h3 id=es-能做什麼>ES 能做什麼</h3><ul><li>全文檢索</li><li>模糊查詢</li><li>數據分析<ul><li>聚合等</li></ul></li></ul><h3 id=elasticsearch-的交互方式>Elasticsearch 的交互方式</h3><ul><li>基於 HTTP 協定，以 JSON 為數據交互格式的 RESTful API</li></ul><h5 id=_cat>_cat</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl <span style=color:#e6db74>&#39;http://192.168.227.141:9200/_cat&#39;</span>
+^.^
+/_cat/allocation
+/_cat/shards
+/_cat/shards/<span style=color:#f92672>{</span>index<span style=color:#f92672>}</span>
+/_cat/master
+/_cat/nodes
+/_cat/tasks
+/_cat/indices
+/_cat/indices/<span style=color:#f92672>{</span>index<span style=color:#f92672>}</span>
+/_cat/segments
+/_cat/segments/<span style=color:#f92672>{</span>index<span style=color:#f92672>}</span>
+/_cat/count
+/_cat/count/<span style=color:#f92672>{</span>index<span style=color:#f92672>}</span>
+/_cat/recovery
+/_cat/recovery/<span style=color:#f92672>{</span>index<span style=color:#f92672>}</span>
+/_cat/health
+/_cat/pending_tasks
+/_cat/aliases
+/_cat/aliases/<span style=color:#f92672>{</span>alias<span style=color:#f92672>}</span>
+/_cat/thread_pool
+/_cat/thread_pool/<span style=color:#f92672>{</span>thread_pools<span style=color:#f92672>}</span>
+/_cat/plugins
+/_cat/fielddata
+/_cat/fielddata/<span style=color:#f92672>{</span>fields<span style=color:#f92672>}</span>
+/_cat/nodeattrs
+/_cat/repositories
+/_cat/snapshots/<span style=color:#f92672>{</span>repository<span style=color:#f92672>}</span>
+/_cat/templates
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl <span style=color:#e6db74>&#39;http://192.168.227.141:9200/_cat/health&#39;</span>
+<span style=color:#ae81ff>1595807442</span> 23:50:42 docker-cluster green <span style=color:#ae81ff>3</span> <span style=color:#ae81ff>2</span> <span style=color:#ae81ff>4</span> <span style=color:#ae81ff>2</span> <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>0</span> - 100.0%
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl <span style=color:#e6db74>&#39;http://192.168.227.141:9200/_cat/nodes&#39;</span>
+172.18.0.4 <span style=color:#ae81ff>25</span> <span style=color:#ae81ff>85</span> <span style=color:#ae81ff>2</span> 0.18 0.53 0.58 mr  * es-master
+172.18.0.2 <span style=color:#ae81ff>12</span> <span style=color:#ae81ff>85</span> <span style=color:#ae81ff>2</span> 0.18 0.53 0.58 dmr - es-node2
+172.18.0.3  <span style=color:#ae81ff>8</span> <span style=color:#ae81ff>85</span> <span style=color:#ae81ff>2</span> 0.18 0.53 0.58 dmr - es-node3
+</code></pre></div><h2 id=elasticsearch-儲存>ElasticSearch 儲存</h2><ol><li>面向文檔
+表示可以儲存整個對象或 <code>document</code>。並還可以索引(<code>index</code>)每個文檔都可搜索。在 ES 中，可以對文檔進行索引、搜索、排序、過濾等。
+傳統資料庫以一張表來存儲，並用 <code>SQL</code> 指令進行查詢
+<img src=https://i.imgur.com/Y0QMoPF.png alt>
+在 ES 中每一條數據為一個 <code>document</code></li><li>JSON
+從上面圖中的 ES 來說，每一條 <code>document</code> 會以 <code>JSON</code> 進行存儲</li></ol><h5 id=index>Index</h5><p>lab702/doc/1 &ndash;> index/type/id</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -XPOST <span style=color:#e6db74>&#39;http://192.168.227.141:9200/lab702/doc/1&#39;</span> -i -H <span style=color:#e6db74>&#34;Content-Type:application/json&#34;</span> -d <span style=color:#e6db74>&#39;{&#34;name&#34;:&#34;itacho&#34;, &#34;age&#34;: &#34;26&#34;, &#34;sex&#34;:&#34;boy&#34;}&#39;</span>
+HTTP/1.1 <span style=color:#ae81ff>201</span> Created
+Location: /lab702/doc/1
+Warning: <span style=color:#ae81ff>299</span> Elasticsearch-7.7.0-81a1e9eda8e6183f5237786246f6dced26a10eaf <span style=color:#e6db74>&#34;[types removal] Specifying types in document index requests is deprecated, use the typeless endpoints instead (/{index}/_doc/{id}, /{index}/_doc, or /{index}/_create/{id}).&#34;</span>
+content-type: application/json; charsetUTF-8
+content-length: <span style=color:#ae81ff>153</span>
+
+<span style=color:#f92672>{</span><span style=color:#e6db74>&#34;_index&#34;</span>:<span style=color:#e6db74>&#34;lab702&#34;</span>,<span style=color:#e6db74>&#34;_type&#34;</span>:<span style=color:#e6db74>&#34;doc&#34;</span>,<span style=color:#e6db74>&#34;_id&#34;</span>:<span style=color:#e6db74>&#34;1&#34;</span>,<span style=color:#e6db74>&#34;_version&#34;</span>:1,<span style=color:#e6db74>&#34;result&#34;</span>:<span style=color:#e6db74>&#34;created&#34;</span>,<span style=color:#e6db74>&#34;_shards&#34;</span>:<span style=color:#f92672>{</span><span style=color:#e6db74>&#34;total&#34;</span>:2,<span style=color:#e6db74>&#34;successful&#34;</span>:2,<span style=color:#e6db74>&#34;failed&#34;</span>:0<span style=color:#f92672>}</span>,<span style=color:#e6db74>&#34;_seq_no&#34;</span>:0,<span style=color:#e6db74>&#34;_primary_term&#34;</span>:1<span style=color:#f92672>}</span>
+</code></pre></div><h5 id=_search>_search</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl <span style=color:#e6db74>&#39;http://192.168.227.141:9200/lab702/_search&#39;</span> -i -H <span style=color:#e6db74>&#34;Content-Type:application/json&#34;</span> -d <span style=color:#e6db74>&#39;{&#34;query&#34;:{&#34;match_all&#34;:{}}}&#39;</span>
+HTTP/1.1 <span style=color:#ae81ff>200</span> OK
+content-type: application/json; charsetUTF-8
+content-length: <span style=color:#ae81ff>269</span>
+
+<span style=color:#f92672>{</span><span style=color:#e6db74>&#34;took&#34;</span>:2,<span style=color:#e6db74>&#34;timed_out&#34;</span>:false,<span style=color:#e6db74>&#34;_shards&#34;</span>:<span style=color:#f92672>{</span><span style=color:#e6db74>&#34;total&#34;</span>:1,<span style=color:#e6db74>&#34;successful&#34;</span>:1,<span style=color:#e6db74>&#34;skipped&#34;</span>:0,<span style=color:#e6db74>&#34;failed&#34;</span>:0<span style=color:#f92672>}</span>,<span style=color:#e6db74>&#34;hits&#34;</span>:<span style=color:#f92672>{</span><span style=color:#e6db74>&#34;total&#34;</span>:<span style=color:#f92672>{</span><span style=color:#e6db74>&#34;value&#34;</span>:1,<span style=color:#e6db74>&#34;relation&#34;</span>:<span style=color:#e6db74>&#34;eq&#34;</span><span style=color:#f92672>}</span>,<span style=color:#e6db74>&#34;max_score&#34;</span>:1.0,<span style=color:#e6db74>&#34;hits&#34;</span>:<span style=color:#f92672>[{</span><span style=color:#e6db74>&#34;_index&#34;</span>:<span style=color:#e6db74>&#34;lab702&#34;</span>,<span style=color:#e6db74>&#34;_type&#34;</span>:<span style=color:#e6db74>&#34;doc&#34;</span>,<span style=color:#e6db74>&#34;_id&#34;</span>:<span style=color:#e6db74>&#34;1&#34;</span>,<span style=color:#e6db74>&#34;_score&#34;</span>:1.0,<span style=color:#e6db74>&#34;_source&#34;</span>:<span style=color:#f92672>{</span><span style=color:#e6db74>&#34;name&#34;</span>:<span style=color:#e6db74>&#34;itacho&#34;</span>, <span style=color:#e6db74>&#34;age&#34;</span>: <span style=color:#e6db74>&#34;26&#34;</span>, <span style=color:#e6db74>&#34;sex&#34;</span>:<span style=color:#e6db74>&#34;boy&#34;</span><span style=color:#f92672>}}]}}</span>
+</code></pre></div><h2 id=es-數據結構>ES 數據結構</h2><p>在資料庫中，會有 database 在定義 table 在定義屬性最會插入數據。
+而在 ES 中一個 index 相當於一個 database。結構如下圖，其中 &ldquo;id&rdquo; 和 &ldquo;name&rdquo; 可以稱為 <code>field</code>。</p><p><img src=https://i.imgur.com/VeFTH1k.png alt></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=color:#960050;background-color:#1e0010>$</span> <span style=color:#960050;background-color:#1e0010>curl</span> <span style=color:#960050;background-color:#1e0010>&#39;http://</span><span style=color:#ae81ff>192.168</span><span style=color:#960050;background-color:#1e0010>.</span><span style=color:#ae81ff>227.141</span><span style=color:#960050;background-color:#1e0010>:</span><span style=color:#ae81ff>9200</span><span style=color:#960050;background-color:#1e0010>/lab</span><span style=color:#ae81ff>702</span><span style=color:#960050;background-color:#1e0010>/doc/</span><span style=color:#ae81ff>1</span><span style=color:#960050;background-color:#1e0010>?pretty</span><span style=color:#66d9ef>true</span><span style=color:#960050;background-color:#1e0010>&#39;</span>
+{
+  <span style=color:#f92672>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>, <span style=color:#960050;background-color:#1e0010>//</span> <span style=color:#960050;background-color:#1e0010>索引</span>
+  <span style=color:#f92672>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>, <span style=color:#960050;background-color:#1e0010>//</span> <span style=color:#960050;background-color:#1e0010>類型</span>
+  <span style=color:#f92672>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>, <span style=color:#960050;background-color:#1e0010>//</span> <span style=color:#960050;background-color:#1e0010>document</span> <span style=color:#960050;background-color:#1e0010>唯一</span> <span style=color:#960050;background-color:#1e0010>ID</span>
+  <span style=color:#f92672>&#34;_version&#34;</span> : <span style=color:#ae81ff>1</span>, <span style=color:#960050;background-color:#1e0010>//</span> <span style=color:#960050;background-color:#1e0010>更新時會遞增，document</span> <span style=color:#960050;background-color:#1e0010>只要發生變化都會使此關鍵字遞增，確保程序的一部分不會覆蓋另一部分所做的更改</span>
+  <span style=color:#f92672>&#34;_seq_no&#34;</span> : <span style=color:#ae81ff>0</span>, 
+  <span style=color:#f92672>&#34;_primary_term&#34;</span> : <span style=color:#ae81ff>1</span>,
+  <span style=color:#f92672>&#34;found&#34;</span> : <span style=color:#66d9ef>true</span>,
+  <span style=color:#f92672>&#34;_source&#34;</span> : { <span style=color:#960050;background-color:#1e0010>//</span> <span style=color:#960050;background-color:#1e0010>查詢數據</span>
+    <span style=color:#f92672>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;itacho&#34;</span>,
+    <span style=color:#f92672>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;26&#34;</span>,
+    <span style=color:#f92672>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>
+  }
+}
+
+</code></pre></div><p>詳細介紹可查看<a href=https://zhuanlan.zhihu.com/p/34680841>此篇</a></p><h2 id=檢索>檢索</h2><p><code>http://192.168.227.141:9200/lab702/doc/1</code> 該語句為檢索在 lab702 index 中的 doc type 且編號為 1 的數據，相當與 SQL 指令 <code>SELECT * FROM table WHERE id1</code></p><h5 id=簡單檢索>簡單檢索</h5><p>MySQL：<code>SELECT * FROM table</code>
+ES：<code>GET /index/type/_search</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl <span style=color:#e6db74>&#39;http://192.168.227.141:9200/lab702/doc/_search?prettytrue&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;took&#34;</span> : 418, <span style=color:#75715e># 查詢時間</span>
+  <span style=color:#e6db74>&#34;timed_out&#34;</span> : false,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;skipped&#34;</span> : 0,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>{</span> <span style=color:#75715e># 查詢內容</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;value&#34;</span> : 3,
+      <span style=color:#e6db74>&#34;relation&#34;</span> : <span style=color:#e6db74>&#34;eq&#34;</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#e6db74>&#34;max_score&#34;</span> : 1.0,
+    <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>[</span>
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 1.0,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;itacho&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;26&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love MLB&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;baseball&#34;</span>,
+            <span style=color:#e6db74>&#34;cooking&#34;</span>,
+            <span style=color:#e6db74>&#34;music&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>,
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;2&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 1.0,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;naruto&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;18&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love NBA&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;cooking&#34;</span>,
+            <span style=color:#e6db74>&#34;music&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>,
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;3&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 1.0,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;madara&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;82&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Hate world&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;running&#34;</span>,
+            <span style=color:#e6db74>&#34;LOL&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>]</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><p>回應內容有被匹配到的 document，在此範例中是將所有 <code>document</code> 取出</p><h5 id=全文檢索>全文檢索</h5><p>此範例是找出 field 值有 madara 的相關 document。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl <span style=color:#e6db74>&#39;http://192.168.227.141:9200/lab702/doc/_search?qmadara&amp;prettytrue&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;took&#34;</span> : 6,
+  <span style=color:#e6db74>&#34;timed_out&#34;</span> : false,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;skipped&#34;</span> : 0,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;value&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;relation&#34;</span> : <span style=color:#e6db74>&#34;eq&#34;</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#e6db74>&#34;max_score&#34;</span> : 0.9808291,
+    <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>[</span>
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;3&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 0.9808291,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;madara&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;82&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Hate world&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;running&#34;</span>,
+            <span style=color:#e6db74>&#34;LOL&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>]</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h5 id=搜索模糊查詢>搜索（模糊查詢）</h5><p>查詢所有 document 中 field 值分詞包含 love 的 document</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl <span style=color:#e6db74>&#39;http://192.168.227.141:9200/lab702/doc/_search?qlove&amp;prettytrue&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;took&#34;</span> : 4,
+  <span style=color:#e6db74>&#34;timed_out&#34;</span> : false,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;skipped&#34;</span> : 0,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;value&#34;</span> : 2,
+      <span style=color:#e6db74>&#34;relation&#34;</span> : <span style=color:#e6db74>&#34;eq&#34;</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#e6db74>&#34;max_score&#34;</span> : 0.4700036,
+    <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>[</span>
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 0.4700036,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;itacho&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;26&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love MLB&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;baseball&#34;</span>,
+            <span style=color:#e6db74>&#34;cooking&#34;</span>,
+            <span style=color:#e6db74>&#34;music&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>,
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;2&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 0.4700036,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;naruto&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;18&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love NBA&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;cooking&#34;</span>,
+            <span style=color:#e6db74>&#34;music&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>]</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h5 id=聚合>聚合</h5><p>MySQL：<code>Group By</code>
+ES：<code>aggs</code></p><p>ES 預設將聚合禁止，用以下方式將聚合的 field 添加優化</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X PUT <span style=color:#e6db74>&#34;localhost:9200/lab702/_mapping?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;
+</span><span style=color:#e6db74>{
+</span><span style=color:#e6db74>  &#34;properties&#34;: {
+</span><span style=color:#e6db74>    &#34;interests&#34;: {
+</span><span style=color:#e6db74>      &#34;type&#34;:     &#34;text&#34;,
+</span><span style=color:#e6db74>      &#34;fielddata&#34;: true
+</span><span style=color:#e6db74>    }
+</span><span style=color:#e6db74>  }
+</span><span style=color:#e6db74>}
+</span><span style=color:#e6db74>&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;acknowledged&#34;</span> : true
+<span style=color:#f92672>}</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -XPOST <span style=color:#e6db74>&#39;http://192.168.227.141:9200/lab702/doc/_search?prettytrue&#39;</span> -i -H <span style=color:#e6db74>&#34;Content-Type:application/json&#34;</span> -d <span style=color:#e6db74>&#39;{&#34;aggs&#34;:{&#34;all_inter&#34;:{&#34;terms&#34;:{&#34;field&#34;:&#34;interests&#34;}}}}&#39;</span>
+HTTP/1.1 <span style=color:#ae81ff>200</span> OK
+Warning: <span style=color:#ae81ff>299</span> Elasticsearch-7.7.0-81a1e9eda8e6183f5237786246f6dced26a10eaf <span style=color:#e6db74>&#34;[types removal] Specifying types in search requests is deprecated.&#34;</span>
+content-type: application/json; charsetUTF-8
+content-length: <span style=color:#ae81ff>1839</span>
+
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;took&#34;</span> : 29,
+  <span style=color:#e6db74>&#34;timed_out&#34;</span> : false,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;skipped&#34;</span> : 0,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;value&#34;</span> : 3,
+      <span style=color:#e6db74>&#34;relation&#34;</span> : <span style=color:#e6db74>&#34;eq&#34;</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#e6db74>&#34;max_score&#34;</span> : 1.0,
+    <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>[</span>
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 1.0,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;itacho&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;26&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love MLB&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;baseball&#34;</span>,
+            <span style=color:#e6db74>&#34;cooking&#34;</span>,
+            <span style=color:#e6db74>&#34;music&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>,
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;2&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 1.0,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;naruto&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;18&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love NBA&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;cooking&#34;</span>,
+            <span style=color:#e6db74>&#34;music&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>,
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+        <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+        <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;3&#34;</span>,
+        <span style=color:#e6db74>&#34;_score&#34;</span> : 1.0,
+        <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;madara&#34;</span>,
+          <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;82&#34;</span>,
+          <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+          <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Hate world&#34;</span>,
+          <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+            <span style=color:#e6db74>&#34;running&#34;</span>,
+            <span style=color:#e6db74>&#34;LOL&#34;</span>
+          <span style=color:#f92672>]</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>]</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;aggregations&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;all_inter&#34;</span> : <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;doc_count_error_upper_bound&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;sum_other_doc_count&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;buckets&#34;</span> : <span style=color:#f92672>[</span>
+        <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;key&#34;</span> : <span style=color:#e6db74>&#34;cooking&#34;</span>,
+          <span style=color:#e6db74>&#34;doc_count&#34;</span> : <span style=color:#ae81ff>2</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;key&#34;</span> : <span style=color:#e6db74>&#34;music&#34;</span>,
+          <span style=color:#e6db74>&#34;doc_count&#34;</span> : <span style=color:#ae81ff>2</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;key&#34;</span> : <span style=color:#e6db74>&#34;baseball&#34;</span>,
+          <span style=color:#e6db74>&#34;doc_count&#34;</span> : <span style=color:#ae81ff>1</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;key&#34;</span> : <span style=color:#e6db74>&#34;lol&#34;</span>,
+          <span style=color:#e6db74>&#34;doc_count&#34;</span> : <span style=color:#ae81ff>1</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;key&#34;</span> : <span style=color:#e6db74>&#34;running&#34;</span>,
+          <span style=color:#e6db74>&#34;doc_count&#34;</span> : <span style=color:#ae81ff>1</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>]</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><h2 id=搜索原理>搜索原理</h2><h3 id=正排索引和倒排索引>正排索引和倒排索引</h3><ul><li>正排索引<ul><li>紀錄 document ID 倒 document 內容、單詞的關聯關係</li><li>分詞過程</li></ul></li></ul><p>正排索引</p><table><thead><tr><th>ID</th><th>Content</th></tr></thead><tbody><tr><td>1</td><td>火影行動</td></tr><tr><td>2</td><td>探索火影行動</td></tr><tr><td>3</td><td>火影特別行動</td></tr><tr><td>4</td><td>火影紀錄篇</td></tr><tr><td>5</td><td>特工火影特別探索</td></tr></tbody></table><ul><li>倒排索引<ul><li>單詞到 document ID 的關係</li><li>分詞<ul><li>將句子拆分為單詞</li></ul></li><li>檢索<ul><li>B+tree 資料結構</li><li>火影特工行動<ul><li>對應到倒排索引表中"火影"、&ldquo;行動"和"特工&rdquo;，因此會將紀錄的對應回傳</li><li>會利用相關性得分來尋找最符合<ul><li>其紀錄中的 3 和 5 命中的多，從 3 的值來說分詞為三個但命中兩個機率為 2/3，而 5 則為 2/4</li></ul></li></ul></li></ul></li><li><a href=https://godleon.github.io/blog/Elasticsearch/Elasticsearch-getting-started/#Posting-List>Posting List</a><ul><li>Document ID</li><li>Term Frequency<ul><li>單詞在 document 中出現次數，與相關性得分有關</li></ul></li><li>Position<ul><li>單詞在 document 的位置，與搜尋有關</li><li>從 0 開始</li></ul></li><li>Offset<ul><li>單詞的開始與結束位置</li></ul></li></ul></li><li>相關性得分</li><li>每個 document 都會有一個倒排索引</li></ul></li></ul><p>正排索引</p><table><thead><tr><th>ID</th><th>Content</th></tr></thead><tbody><tr><td>1</td><td>火影行動</td></tr><tr><td>2</td><td>探索火影行動</td></tr><tr><td>3</td><td>火影特別行動</td></tr><tr><td>4</td><td>火影紀錄篇</td></tr><tr><td>5</td><td>特工火影特別探索</td></tr></tbody></table><p>Posting List，以火影為例，並用2個詞作為分詞</p><table><thead><tr><th>ID</th><th>TF</th><th>Position</th><th>Offset</th></tr></thead><tbody><tr><td>1</td><td>1</td><td>0</td><td>&lt;0,1></td></tr><tr><td>2</td><td>1</td><td>1</td><td>&lt;2,3></td></tr><tr><td>3</td><td>1</td><td>0</td><td>&lt;0,1></td></tr><tr><td>4</td><td>1</td><td>0</td><td>&lt;0,1></td></tr><tr><td>5</td><td>1</td><td>1</td><td>&lt;2,3></td></tr></tbody></table><p>ES 維護的倒排索引表</p><table><thead><tr><th>詞</th><th>紀錄</th></tr></thead><tbody><tr><td>火影</td><td>1,2,3,4,5</td></tr><tr><td>行動</td><td>1,2,3</td></tr><tr><td>探索</td><td>2,5</td></tr><tr><td>特別</td><td>3,5</td></tr><tr><td>記錄篇</td><td>4</td></tr><tr><td>特工</td><td>5</td></tr></tbody></table><h3 id=分詞>分詞</h3><ul><li>在 Elasticsearch 中稱為 <em>Analysis</em></li><li>將文本轉換成一系列單詞的過程</li></ul><p>以"特工火影特別探索"為例，可分成"特工"、&ldquo;火影&rdquo;、&ldquo;特別探索&rdquo;、&ldquo;探索&rdquo;</p><h5 id=分詞機制>分詞機制</h5><ul><li>Character Filter<ul><li>對原始文本進行處理</li><li>特殊符號或 Html 標籤等</li></ul></li><li>Tokenizer<ul><li>對原始文本進行分詞<ul><li>&ldquo;火影忍者&rdquo;，可分成"火影"、&ldquo;忍者&rdquo;</li></ul></li></ul></li><li>Token Filters<ul><li>分詞後關鍵字進行加工<ul><li>轉小寫、刪除語氣詞、同意詞等</li></ul></li></ul></li></ul><p><img src=https://i.imgur.com/QpDZRnh.png alt></p><ul><li>ES 自帶分詞器<ul><li>Standard</li><li>Simple</li><li>Whitespace</li><li>Stop</li><li>Keyword<ul><li>不分詞</li></ul></li><li>Pattern</li><li>Language</li><li>&mldr;</li></ul></li><li>中文分詞<ul><li>IK</li><li>Jieba</li><li>Hanlp</li><li>THULAC</li></ul></li></ul><h5 id=api-_analyze>API _analyze</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/_analyze?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;analyzer&#34; : &#34;standard&#34;,&#34;text&#34; : &#34;Hello {orld&#34;}&#39;</span>
+  <span style=color:#e6db74>&#34;tokens&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;hello&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 5,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>0</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;world&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 6,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 11,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>1</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+ <span style=color:#75715e># standard 不支持中文</span>
+</code></pre></div><h5 id=對索引字段進行分詞測試>對索引字段進行分詞測試</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/lab702/_analyze?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;field&#34; : &#34;about&#34;,&#34;text&#34; : &#34;Hello world!! I Love JAVA&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;tokens&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;hello&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 5,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>0</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;world&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 6,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 11,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>1</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;i&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 14,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 15,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>2</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;love&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 16,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 20,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>3</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;java&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 21,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 25,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>4</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><h5 id=自定義分詞器>自定義分詞器</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/_analyze?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;tokenizer&#34; : &#34;standard&#34;,&#34;filter&#34; : [&#34;uppercase&#34;], &#34;text&#34; : &#34;Hello JAVA&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;tokens&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;HELLO&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 5,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>0</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;JAVA&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 6,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 10,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;&lt;ALPHANUM&gt;&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>1</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><h3 id=ik-分詞>IK 分詞</h3><p>在 docker-compose 中的 elasticsearch 服務新增一個掛載 plugins 的 volume，之後的套件透過本機的資料夾就可以連接到該 elasticsearch 的容器中。</p><ul><li>IK 提供 <em>ik_smart</em> 和 <em>ik_max_word</em><ul><li>前者最少切分</li><li>後者最細粒度劃分</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/_analyze?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;analyzer&#34; : &#34;ik_smart&#34;,&#34;text&#34; : &#34;火影忍者它有夠難看&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;tokens&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;火影忍者&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 4,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_WORD&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>0</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;它有&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 4,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 6,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_WORD&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>1</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;夠&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 6,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 7,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_CHAR&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>2</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;難&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 7,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 8,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_CHAR&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>3</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;看&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 8,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 9,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_CHAR&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>4</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+<span style=color:#75715e># 相比 standard 來得更好些</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/_analyze?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;analyzer&#34; : &#34;ik_max_word&#34;,&#34;text&#34; : &#34;火影忍者它有夠難看&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;tokens&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;火影忍者&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 4,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_WORD&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>0</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;火影&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 2,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_WORD&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>1</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;忍者&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 2,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 4,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_WORD&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>2</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;它有&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 4,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 6,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_WORD&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>3</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;夠&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 6,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 7,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_CHAR&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>4</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;難&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 7,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 8,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_CHAR&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>5</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;看&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 8,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 9,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;CN_CHAR&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>6</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><h3 id=自定義分類器>自定義分類器</h3><ul><li>Character Filter<ul><li>HTML strip<ul><li>去 HTML 標籤</li></ul></li><li>Mapping<ul><li>字符串替換操作</li></ul></li><li>Pattern Replace<ul><li>正規表示替換</li></ul></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/_analyze?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;tokenizer&#34;: &#34;keyword&#34;, &#34;char_filter&#34;: [&#34;html_strip&#34;], &#34;text&#34;: &#34;&lt;div&gt;&lt;b&gt;火影忍者&lt;/b&gt;&lt;/div&gt;&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;tokens&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;token&#34;</span> : <span style=color:#e6db74>&#34;\n火影忍者\n&#34;</span>,
+      <span style=color:#e6db74>&#34;start_offset&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;end_offset&#34;</span> : 22,
+      <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;word&#34;</span>,
+      <span style=color:#e6db74>&#34;position&#34;</span> : <span style=color:#ae81ff>0</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><h2 id=document-操作>document 操作</h2><ul><li>簡單的 CRUD</li></ul><h5 id=創建>創建</h5><ol><li>索引一個 document
+<code>document</code> 透過 <code>index API</code> 被索引。使數據能夠被儲存與搜索。但一開始須先知道 <code>document</code>，而 <code>document</code> 透過其 <code>_index</code>、<code>_type</code>、<code>_id</code> 這些唯一值確定。我們可以自己決定一個<code>_id</code>，或者使用 <code>index API</code> 自動生成。</li></ol><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X POST <span style=color:#e6db74>&#34;localhost:9200/test/doc/1?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;text&#34;: &#34;&lt;div&gt;&lt;b&gt;火影忍者&lt;/b&gt;&lt;/div&gt;&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;test&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+  <span style=color:#e6db74>&#34;_version&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;result&#34;</span> : <span style=color:#e6db74>&#34;created&#34;</span>,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 2,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 0,
+  <span style=color:#e6db74>&#34;_primary_term&#34;</span> : <span style=color:#ae81ff>1</span>
+<span style=color:#f92672>}</span>
+<span style=color:#75715e># localhost:9200/index/type/id</span>
+<span style=color:#75715e># id 不指定會自動生成</span>
+</code></pre></div><h5 id=取得>取得</h5><p>同樣使用 <code>_index</code>、<code>_type</code>、<code>_id</code>，這邊就用 <code>GET</code> 去獲取。當不指定 <code>id</code> 時會獲取全部。</p><ul><li>指定 id</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/test/doc/1?prettytrue&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;test&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+  <span style=color:#e6db74>&#34;_version&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 0,
+  <span style=color:#e6db74>&#34;_primary_term&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;found&#34;</span> : true,
+  <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;text&#34;</span> : <span style=color:#e6db74>&#34;&lt;div&gt;&lt;b&gt;火影忍者&lt;/b&gt;&lt;/div&gt;&#34;</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><ul><li>搜尋全部</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/lab702/doc/_search?prettytrue&#34;</span>
+<span style=color:#75715e># localhost:9200/index/type/_search</span>
+<span style=color:#75715e>#  _search API</span>
+</code></pre></div><ul><li>檢索 document 一部分
+通常，<code>GET</code> 請求會返回 document 全部，並儲存在 <code>_source</code> 參數中。但可以利用 <code>_source</code> 針對要的 <code>field</code> 進行過濾。</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/lab702/doc/2?_sourcename,about&amp;prettytrue&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;2&#34;</span>,
+  <span style=color:#e6db74>&#34;_version&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 2,
+  <span style=color:#e6db74>&#34;_primary_term&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;found&#34;</span> : true,
+  <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;naruto&#34;</span>,
+    <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love NBA&#34;</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><p>只想得到 <code>_source</code> 字段而不要其它數據，可以如下請求</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/lab702/doc/2/_source?prettytrue&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;naruto&#34;</span>,
+  <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;18&#34;</span>,
+  <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+  <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love NBA&#34;</span>,
+  <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#e6db74>&#34;cooking&#34;</span>,
+    <span style=color:#e6db74>&#34;music&#34;</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/lab702/doc/2/_source?_sourcename,about&amp;prettytrue&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;naruto&#34;</span>,
+  <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love NBA&#34;</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><h5 id=刪除>刪除</h5><p>使用 <code>DELETE</code>，並指定要刪除的 <code>_index</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X DELETE <span style=color:#e6db74>&#34;localhost:9200/test/doc/1/?prettytrue&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;test&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+  <span style=color:#e6db74>&#34;_version&#34;</span> : 2,
+  <span style=color:#e6db74>&#34;result&#34;</span> : <span style=color:#e6db74>&#34;deleted&#34;</span>,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 2,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 2,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;_primary_term&#34;</span> : <span style=color:#ae81ff>1</span>
+<span style=color:#f92672>}</span>
+<span style=color:#75715e># 在搜尋刪除 id 驗證</span>
+$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/test/doc/1?prettytrue&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;test&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+  <span style=color:#e6db74>&#34;found&#34;</span> : false
+<span style=color:#f92672>}</span>
+<span style=color:#75715e># test 的索引還在</span>
+$ curl -XGET 127.0.0.1:9200/_cat/indices
+green open lab702    gm1but48QvSphA3-zCTtmw <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>1</span>  <span style=color:#ae81ff>3</span> <span style=color:#ae81ff>0</span> 12.8kb  6.4kb
+green open test      JkovYmndSLumkIT2v5cxbA <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>1</span>  <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>0</span>  7.4kb  3.7kb
+green open cch       4wwHrlA_TwG2REimQGzdrw <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>1</span>  <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>0</span>  8.3kb  4.1kb
+green open .kibana_1 M2_Fwd1TSqemehM846kb0Q <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>52</span> <span style=color:#ae81ff>1</span> 91.4kb 30.2kb
+
+</code></pre></div><h5 id=局部更新>局部更新</h5><p><code>_update</code> 關鍵字，但通常覆蓋即可</p><h5 id=批量插入-_bulk>批量插入 _bulk</h5><p>每個 json 之間不能有換行，當資料量很大時很適合此方式，可借由 <code>split</code> 指令去切檔案大小在用 <code>_bulk</code> 上傳至 ES 中。</p><p>方式有以下</p><ul><li><code>POST /_bulk</code></li><li><code>POST /&lt;index>/_bulk</code></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e># 官方範例</span>
+curl -X POST <span style=color:#e6db74>&#34;localhost:9200/_bulk?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;
+</span><span style=color:#e6db74>{ &#34;index&#34; : { &#34;_index&#34; : &#34;test&#34;, &#34;_id&#34; : &#34;1&#34; } } # 指定 index 與 id
+</span><span style=color:#e6db74>{ &#34;field1&#34; : &#34;value1&#34; }
+</span><span style=color:#e6db74>{ &#34;delete&#34; : { &#34;_index&#34; : &#34;test&#34;, &#34;_id&#34; : &#34;2&#34; } }
+</span><span style=color:#e6db74>{ &#34;create&#34; : { &#34;_index&#34; : &#34;test&#34;, &#34;_id&#34; : &#34;3&#34; } }
+</span><span style=color:#e6db74>{ &#34;field1&#34; : &#34;value3&#34; }
+</span><span style=color:#e6db74>{ &#34;update&#34; : {&#34;_id&#34; : &#34;1&#34;, &#34;_index&#34; : &#34;test&#34;} }
+</span><span style=color:#e6db74>{ &#34;doc&#34; : {&#34;field2&#34; : &#34;value2&#34;} }
+</span><span style=color:#e6db74>&#39;</span>
+
+$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/test/doc/1?prettytrue&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;test&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+  <span style=color:#e6db74>&#34;_version&#34;</span> : 2, <span style=color:#75715e># 先前有定義過此 id，這次將它覆蓋</span>
+  <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 5,
+  <span style=color:#e6db74>&#34;_primary_term&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;found&#34;</span> : true,
+  <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;field1&#34;</span> : <span style=color:#e6db74>&#34;value1&#34;</span>,
+    <span style=color:#e6db74>&#34;field2&#34;</span> : <span style=color:#e6db74>&#34;value2&#34;</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X POST <span style=color:#e6db74>&#34;localhost:9200/index/doc/_bulk&#34;</span> -s -H <span style=color:#e6db74>&#34;Content-Type: application/x-ndjson&#34;</span>  --data-binary <span style=color:#e6db74>&#34;@file.json&#34;</span>
+</code></pre></div><h5 id=檢索多-document>檢索多 document</h5><p>合併多個請求可避免每個請求單獨的網路開銷。使用方式是在請求中使用 <code>multi-get</code> 或 <code>mget API</code>。</p><p><code>mget API</code> 是一個 <code>docs</code> 的數組，數組中每個節點定義一個 document 的<code>_index</code>、<code>_type</code>和<code>_id</code> 數據，其中也可以搭配 <code>_source</code> 參數。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/_mget?prettytrue&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;docs&#34;:[{&#34;_index&#34;: &#34;test&#34;, &#34;_type&#34;: &#34;doc&#34;, &#34;_id&#34;: 3},{&#34;_index&#34;: &#34;lab702&#34;, &#34;_type&#34;: &#34;doc&#34;, &#34;_id&#34;: 1, &#34;_source&#34;:&#34;about&#34;}]}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;docs&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;test&#34;</span>,
+      <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+      <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;3&#34;</span>,
+      <span style=color:#e6db74>&#34;_version&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 4,
+      <span style=color:#e6db74>&#34;_primary_term&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;found&#34;</span> : true,
+      <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;field1&#34;</span> : <span style=color:#e6db74>&#34;value3&#34;</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+      <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+      <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+      <span style=color:#e6db74>&#34;_version&#34;</span> : 2,
+      <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;_primary_term&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;found&#34;</span> : true,
+      <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love MLB&#34;</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+<span style=color:#75715e># 回應時也是一個 docs 的數組，每個 document 包含一個回應，且按照順序。而此效果與使用 GET 方式是回應相同內容</span>
+</code></pre></div><p>檢所同一 <code>_index</code> 中或 <code>_type</code>，可在請求時定義 <code>_index</code> 或 <code>_index/_type</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/lab702/doc/_mget?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{ &#34;ids&#34;:[&#34;3&#34;, &#34;1&#34;]}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;docs&#34;</span> : <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+      <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+      <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;3&#34;</span>,
+      <span style=color:#e6db74>&#34;_version&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 3,
+      <span style=color:#e6db74>&#34;_primary_term&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;found&#34;</span> : true,
+      <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;madara&#34;</span>,
+        <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;82&#34;</span>,
+        <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+        <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Hate world&#34;</span>,
+        <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+          <span style=color:#e6db74>&#34;running&#34;</span>,
+          <span style=color:#e6db74>&#34;LOL&#34;</span>
+        <span style=color:#f92672>]</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;lab702&#34;</span>,
+      <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;doc&#34;</span>,
+      <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;1&#34;</span>,
+      <span style=color:#e6db74>&#34;_version&#34;</span> : 2,
+      <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;_primary_term&#34;</span> : 1,
+      <span style=color:#e6db74>&#34;found&#34;</span> : true,
+      <span style=color:#e6db74>&#34;_source&#34;</span> : <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;itacho&#34;</span>,
+        <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#e6db74>&#34;26&#34;</span>,
+        <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#e6db74>&#34;boy&#34;</span>,
+        <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#e6db74>&#34;I Love MLB&#34;</span>,
+        <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>[</span>
+          <span style=color:#e6db74>&#34;baseball&#34;</span>,
+          <span style=color:#e6db74>&#34;cooking&#34;</span>,
+          <span style=color:#e6db74>&#34;music&#34;</span>
+        <span style=color:#f92672>]</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><p>然而，當請求的資訊有錯誤，其也會反映在回應內容中。</p><h2 id=mapping>Mapping</h2><p>定義資料庫中的表的結構的定義，透過 <code>mapping</code> 來控制索引儲存數據的設置</p><ul><li>定義 <code>index</code> 下的 <code>field</code> 名稱</li><li>定義 <code>field</code> 的類型<ul><li>數值</li><li>字串</li><li>布林</li><li>&mldr;</li></ul></li><li>定義倒排索引相關配置<ul><li>document id</li><li>postion</li><li>得分</li><li>&mldr;</li></ul></li></ul><h5 id=獲取索引-mapping>獲取索引 mapping</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/lab702/_mapping?pretty&#34;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;lab702&#34;</span> : <span style=color:#f92672>{</span> <span style=color:#75715e># index 名稱</span>
+    <span style=color:#e6db74>&#34;mappings&#34;</span> : <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;properties&#34;</span> : <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;about&#34;</span> : <span style=color:#f92672>{</span> <span style=color:#75715e># field</span>
+          <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;text&#34;</span>,
+          <span style=color:#e6db74>&#34;fields&#34;</span> : <span style=color:#f92672>{</span>
+            <span style=color:#e6db74>&#34;keyword&#34;</span> : <span style=color:#f92672>{</span>
+              <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;keyword&#34;</span>,
+              <span style=color:#e6db74>&#34;ignore_above&#34;</span> : <span style=color:#ae81ff>256</span>
+            <span style=color:#f92672>}</span>
+          <span style=color:#f92672>}</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#e6db74>&#34;age&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;text&#34;</span>,
+          <span style=color:#e6db74>&#34;fields&#34;</span> : <span style=color:#f92672>{</span>
+            <span style=color:#e6db74>&#34;keyword&#34;</span> : <span style=color:#f92672>{</span>
+              <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;keyword&#34;</span>,
+              <span style=color:#e6db74>&#34;ignore_above&#34;</span> : <span style=color:#ae81ff>256</span>
+            <span style=color:#f92672>}</span>
+          <span style=color:#f92672>}</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#e6db74>&#34;interests&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;text&#34;</span>,
+          <span style=color:#e6db74>&#34;fields&#34;</span> : <span style=color:#f92672>{</span> <span style=color:#75715e># 子字段</span>
+            <span style=color:#e6db74>&#34;keyword&#34;</span> : <span style=color:#f92672>{</span>
+              <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;keyword&#34;</span>,
+              <span style=color:#e6db74>&#34;ignore_above&#34;</span> : <span style=color:#ae81ff>256</span>
+            <span style=color:#f92672>}</span>
+          <span style=color:#f92672>}</span>,
+          <span style=color:#e6db74>&#34;fielddata&#34;</span> : true <span style=color:#75715e># 可做聚合操作</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;text&#34;</span>,
+          <span style=color:#e6db74>&#34;fields&#34;</span> : <span style=color:#f92672>{</span>
+            <span style=color:#e6db74>&#34;keyword&#34;</span> : <span style=color:#f92672>{</span>
+              <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;keyword&#34;</span>,
+              <span style=color:#e6db74>&#34;ignore_above&#34;</span> : <span style=color:#ae81ff>256</span>
+            <span style=color:#f92672>}</span>
+          <span style=color:#f92672>}</span>
+        <span style=color:#f92672>}</span>,
+        <span style=color:#e6db74>&#34;sex&#34;</span> : <span style=color:#f92672>{</span>
+          <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;text&#34;</span>,
+          <span style=color:#e6db74>&#34;fields&#34;</span> : <span style=color:#f92672>{</span>
+            <span style=color:#e6db74>&#34;keyword&#34;</span> : <span style=color:#f92672>{</span>
+              <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;keyword&#34;</span>,
+              <span style=color:#e6db74>&#34;ignore_above&#34;</span> : <span style=color:#ae81ff>256</span>
+            <span style=color:#f92672>}</span>
+          <span style=color:#f92672>}</span>
+        <span style=color:#f92672>}</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><p><a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html>keyword</a></p><p><a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/fielddata.html#fielddata>fielddata</a></p><h5 id=自定義-mapping>自定義 mapping</h5><p><a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html>custom mapping</a></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X PUT <span style=color:#e6db74>&#34;localhost:9200/custom-index?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;
+</span><span style=color:#e6db74>&gt; {
+</span><span style=color:#e6db74>&gt;   &#34;mappings&#34;: {
+</span><span style=color:#e6db74>&gt;     &#34;properties&#34;: {
+</span><span style=color:#e6db74>&gt;       &#34;title&#34;:    { &#34;type&#34;: &#34;text&#34; },
+</span><span style=color:#e6db74>&gt;       &#34;name&#34;:  { &#34;type&#34;: &#34;keyword&#34;  },
+</span><span style=color:#e6db74>&gt;       &#34;age&#34;:   { &#34;type&#34;: &#34;integer&#34;  }
+</span><span style=color:#e6db74>&gt;     }
+</span><span style=color:#e6db74>&gt;   }
+</span><span style=color:#e6db74>&gt; }
+</span><span style=color:#e6db74>&gt; &#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;acknowledged&#34;</span> : true,
+  <span style=color:#e6db74>&#34;shards_acknowledged&#34;</span> : true,
+  <span style=color:#e6db74>&#34;index&#34;</span> : <span style=color:#e6db74>&#34;custom-index&#34;</span>
+<span style=color:#f92672>}</span>
+
+$ curl -X POST  <span style=color:#e6db74>&#34;localhost:9200/custom-index/_doc?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;age&#34;: 22, &#34;name&#34;: &#34;naruto&#34;, &#34;title&#34;: &#34;Itachi&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;custom-index&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;_doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;N8LTonMBzMtUWLBQRrNR&#34;</span>,
+  <span style=color:#e6db74>&#34;_version&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;result&#34;</span> : <span style=color:#e6db74>&#34;created&#34;</span>,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 2,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 2,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 0,
+  <span style=color:#e6db74>&#34;_primary_term&#34;</span> : <span style=color:#ae81ff>1</span>
+<span style=color:#f92672>}</span>
+<span style=color:#75715e># 下面多 sex field，它會透過 dynamic Mapping 自動識別</span>
+$ curl -X POST  <span style=color:#e6db74>&#34;localhost:9200/custom-index/_doc?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;sex&#34;: &#34;boy&#34;, &#34;age&#34;: 22, &#34;name&#34;: &#34;naruto&#34;, &#34;title&#34;: &#34;Itachi&#34;}&#39;</span>
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;_index&#34;</span> : <span style=color:#e6db74>&#34;custom-index&#34;</span>,
+  <span style=color:#e6db74>&#34;_type&#34;</span> : <span style=color:#e6db74>&#34;_doc&#34;</span>,
+  <span style=color:#e6db74>&#34;_id&#34;</span> : <span style=color:#e6db74>&#34;OMLUonMBzMtUWLBQD7PN&#34;</span>,
+  <span style=color:#e6db74>&#34;_version&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;result&#34;</span> : <span style=color:#e6db74>&#34;created&#34;</span>,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 2,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 2,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;_seq_no&#34;</span> : 1,
+  <span style=color:#e6db74>&#34;_primary_term&#34;</span> : <span style=color:#ae81ff>1</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><p>mapping 只可新增，無法修改。</p><p><a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html>_doc 相關資訊</a></p><h5 id=dynamic-mapping>Dynamic Mapping</h5><p>ES 依靠 json document中 field 來實現自動識別字段
+<a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/dynamic-field-mapping.html>dynamic-field-mapping</a></p><ul><li>dynamic 設置<ul><li>true<ul><li>允許自動新增字段</li></ul></li><li>false<ul><li>不允許自動新增字段，但 document 能夠正常寫入，無法對字段進行查詢操作</li></ul></li><li>static<ul><li>document 不能寫入</li></ul></li></ul></li></ul><h2 id=search-apiuri>Search API(URI)</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>GET /_search <span style=color:#75715e># 查詢所有 document</span>
+GET /index/_search <span style=color:#75715e># 查詢指定索引 document</span>
+GET /index, index2/_search <span style=color:#75715e># 查詢多索引 document</span>
+GET /index_*/_search <span style=color:#75715e># 正規表示過濾索引並查詢</span>
+</code></pre></div><h5 id=查詢-q>查詢 q</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_doc/_search?qlayers.ip.ip_ip_ttl:51&amp;pretty&#34;</span>
+</code></pre></div><h5 id=完整查詢>完整查詢</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?q6158&amp;dflayers.udp.udp_udp_dstport&amp;from0&amp;size3&amp;pretty&#34;</span> 
+<span style=color:#75715e># 從 udp_udp_dstport 字段找 6158，其中顯示分頁 0 前 3 個資訊</span>
+</code></pre></div><ul><li><p>q</p><ul><li>查詢語句</li></ul></li><li><p>df</p><ul><li>預設查詢的 field，若不指定則會對所有的 field 進行查詢</li></ul></li><li><p>sort</p><ul><li>排序，asc 升序，desc 降序</li></ul></li><li><p>timeout</p><ul><li>指定超時時間，默認不超時</li></ul></li><li><p>from, size</p><ul><li>分頁用</li></ul></li><li><p>term 和 phrase</p><ul><li>term 單詞查詢</li><li>phrase 詞語查詢<ul><li>要求先後順序</li></ul></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?q6158 
+</span><span style=color:#e6db74># q 為詞語，term
+</span><span style=color:#e6db74># 當 qlove you，則會做分詞查詢，phrase
+</span></code></pre></div><h5 id=泛查詢>泛查詢</h5><ul><li>對所有的 term 進行查詢</li><li>全文檢索</li></ul><h5 id=指定字段>指定字段</h5><ul><li><code>qfield:value</code></li></ul><h5 id=group>Group</h5><ul><li>分組設定</li><li>表達式</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?qjob:(JAVA and K8s)
+</span></code></pre></div><h5 id=profile>profile</h5><ul><li>查詢過程</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?q6158&amp;dflayers.udp.udp_udp_dstport&amp;from0&amp;size1&amp;pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;profile&#34;: true}&#39;</span>
+...
+<span style=color:#e6db74>&#34;profile&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;shards&#34;</span> : <span style=color:#f92672>[</span>
+      <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;id&#34;</span> : <span style=color:#e6db74>&#34;[z2HVKUcpTzed_-VfHGlLSA][packets][0]&#34;</span>,
+        <span style=color:#e6db74>&#34;searches&#34;</span> : <span style=color:#f92672>[</span>
+          <span style=color:#f92672>{</span>
+            <span style=color:#e6db74>&#34;query&#34;</span> : <span style=color:#f92672>[</span>
+              <span style=color:#f92672>{</span>
+                <span style=color:#e6db74>&#34;type&#34;</span> : <span style=color:#e6db74>&#34;TermQuery&#34;</span>,
+                <span style=color:#e6db74>&#34;description&#34;</span> : <span style=color:#e6db74>&#34;layers.udp.udp_udp_dstport:6158&#34;</span>,
+                <span style=color:#e6db74>&#34;time_in_nanos&#34;</span> : 1239816,
+                <span style=color:#e6db74>&#34;breakdown&#34;</span> : <span style=color:#f92672>{</span>
+                  <span style=color:#e6db74>&#34;set_min_competitive_score_count&#34;</span> : 8,
+                  <span style=color:#e6db74>&#34;match_count&#34;</span> : 0,
+                  <span style=color:#e6db74>&#34;shallow_advance_count&#34;</span> : 0,
+                  <span style=color:#e6db74>&#34;set_min_competitive_score&#34;</span> : 5643,
+                  <span style=color:#e6db74>&#34;next_doc&#34;</span> : 17092,
+                  <span style=color:#e6db74>&#34;match&#34;</span> : 0,
+                  <span style=color:#e6db74>&#34;next_doc_count&#34;</span> : 10,
+                  <span style=color:#e6db74>&#34;score_count&#34;</span> : 10,
+                  <span style=color:#e6db74>&#34;compute_max_score_count&#34;</span> : 0,
+                  <span style=color:#e6db74>&#34;compute_max_score&#34;</span> : 0,
+                  <span style=color:#e6db74>&#34;advance&#34;</span> : 14305,
+                  <span style=color:#e6db74>&#34;advance_count&#34;</span> : 4,
+                  <span style=color:#e6db74>&#34;score&#34;</span> : 43095,
+                  <span style=color:#e6db74>&#34;build_scorer_count&#34;</span> : 17,
+                  <span style=color:#e6db74>&#34;create_weight&#34;</span> : 276371,
+                  <span style=color:#e6db74>&#34;shallow_advance&#34;</span> : 0,
+                  <span style=color:#e6db74>&#34;create_weight_count&#34;</span> : 1,
+                  <span style=color:#e6db74>&#34;build_scorer&#34;</span> : <span style=color:#ae81ff>883260</span>
+                <span style=color:#f92672>}</span>
+              <span style=color:#f92672>}</span>
+            <span style=color:#f92672>]</span>,
+            <span style=color:#e6db74>&#34;rewrite_time&#34;</span> : 4903,
+            <span style=color:#e6db74>&#34;collector&#34;</span> : <span style=color:#f92672>[</span>
+              <span style=color:#f92672>{</span>
+                <span style=color:#e6db74>&#34;name&#34;</span> : <span style=color:#e6db74>&#34;SimpleTopScoreDocCollector&#34;</span>,
+                <span style=color:#e6db74>&#34;reason&#34;</span> : <span style=color:#e6db74>&#34;search_top_hits&#34;</span>,
+                <span style=color:#e6db74>&#34;time_in_nanos&#34;</span> : <span style=color:#ae81ff>83802</span>
+              <span style=color:#f92672>}</span>
+            <span style=color:#f92672>]</span>
+          <span style=color:#f92672>}</span>
+        <span style=color:#f92672>]</span>,
+        <span style=color:#e6db74>&#34;aggregations&#34;</span> : <span style=color:#f92672>[</span> <span style=color:#f92672>]</span>
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>]</span>
+...
+</code></pre></div><h5 id=boolean-操作>boolean 操作</h5><ul><li>AND(&&)</li><li>OR(||)</li><li>NOT(!)</li><li>+ must<ul><li>需編碼</li><li><code>%2B</code></li></ul></li><li>- must_not<ul><li>需編碼</li></ul></li></ul><h5 id=範圍查詢>範圍查詢</h5><ul><li>支援數值與日期</li><li>區間<ul><li>閉區間 []</li><li>開區間 {}</li></ul></li></ul><pre><code>age:[1 TO 10] # 1&lt; age &lt; 10
+age:[1 TO 10} # 1&lt; age &lt; 10
+age:[1 TO ] # 1&lt; age 
+age:[* TO 10] # age &lt; 10
+</code></pre><ul><li>算術符號</li></ul><pre><code>age:&gt;1
+age:(&gt;1 &amp;&amp; &lt;10)
+</code></pre><h5 id=萬用字元表示查詢>萬用字元表示查詢</h5><ul><li><code>?:1</code> 多個字符</li><li><code>*:0</code> 0 或多個字符</li><li>執行效率低</li></ul><h5 id=正規表達式>正規表達式</h5><pre><code>field:/[mb]oat/
+</code></pre><h5 id=模糊匹配>模糊匹配</h5><pre><code>field:roam~1 # 匹配與 roam 差一個字元的詞，foam, roams ...
+</code></pre><h5 id=近似度查詢>近似度查詢</h5><ul><li>以 term 為單位進行差異比較</li></ul><pre><code>&quot;fpx quick&quot;~5
+</code></pre><h2 id=search-apirequest-body-search>search API(Request Body Search)</h2><h5 id=match-query>Match Query</h5><p>對字段做全文搜索，但不支持多字段查詢。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;query&#34;:{&#34;match&#34;:{&#34;layers.eth.eth_eth_addr_oui_resolved&#34;: &#34;Cisco Systems, Inc&#34;}}}&#39;</span> <span style=color:#75715e># term 方式</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{
+</span><span style=color:#e6db74>    &#34;query&#34;:{
+</span><span style=color:#e6db74>        &#34;match&#34;:{
+</span><span style=color:#e6db74>            &#34;layers.eth.eth_eth_addr_oui_resolved&#34;: 
+</span><span style=color:#e6db74>                &#34;query&#34;: &#34;Cisco Systems, Inc&#34;,
+</span><span style=color:#e6db74>                &#34;operator&#34;: &#34;and&#34;
+</span><span style=color:#e6db74>        }
+</span><span style=color:#e6db74>    }
+</span><span style=color:#e6db74>}&#39;</span> 
+</code></pre></div><h5 id=match-phrase>Match phrase</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;query&#34;:{&#34;match_phrase&#34;:{&#34;layers.eth.eth_eth_addr_oui_resolved&#34;:&#34;Cisco Systems, Inc&#34;}}}&#39;</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{
+</span><span style=color:#e6db74>    &#34;query&#34;:{
+</span><span style=color:#e6db74>        &#34;match_phrase&#34;:{
+</span><span style=color:#e6db74>            &#34;layers.eth.eth_eth_addr_oui_resolved&#34;: 
+</span><span style=color:#e6db74>                &#34;query&#34;: &#34;Cisco Systems, Inc&#34;,
+</span><span style=color:#e6db74>                &#34;slop&#34;: 1 # 允許有幾個詞的差異
+</span><span style=color:#e6db74>        }
+</span><span style=color:#e6db74>    }
+</span><span style=color:#e6db74>}&#39;</span> 
+</code></pre></div><h5 id=字符查詢>字符查詢</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;query&#34;:{&#34;query_string&#34;:{&#34;fields&#34; :[&#34;layers.eth.eth_eth_addr_oui_resolved&#34;], &#34;query&#34;: &#34;(Cisco OR Dell)&#34;}}}&#39;</span> 
+
+<span style=color:#75715e># fields 可以多字段</span>
+</code></pre></div><h5 id=不分詞查詢>不分詞查詢</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>curl -X GET <span style=color:#e6db74>&#34;localhost:9200/packets/_search?pretty&#34;</span> -H <span style=color:#e6db74>&#39;Content-Type: application/json&#39;</span> -d<span style=color:#e6db74>&#39;{&#34;query&#34;:{&#34;term&#34;:{&#34;layers.eth.eth_eth_addr_oui_resolved&#34;:{&#34;value&#34;: &#34;Cisco Systems, Inc&#34;}}}}&#39;</span> <span style=color:#75715e># 不分詞</span>
+
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;took&#34;</span> : 2,
+  <span style=color:#e6db74>&#34;timed_out&#34;</span> : false,
+  <span style=color:#e6db74>&#34;_shards&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;successful&#34;</span> : 1,
+    <span style=color:#e6db74>&#34;skipped&#34;</span> : 0,
+    <span style=color:#e6db74>&#34;failed&#34;</span> : <span style=color:#ae81ff>0</span>
+  <span style=color:#f92672>}</span>,
+  <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;total&#34;</span> : <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;value&#34;</span> : 0,
+      <span style=color:#e6db74>&#34;relation&#34;</span> : <span style=color:#e6db74>&#34;eq&#34;</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#e6db74>&#34;max_score&#34;</span> : null,
+    <span style=color:#e6db74>&#34;hits&#34;</span> : <span style=color:#f92672>[</span> <span style=color:#f92672>]</span>
+  <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+</code></pre></div><p>使用 <code>Cisco Systems, Inc</code> 匹配該字段值，然而因為分詞導致無法匹配成功。</p><p>預設情況下該字段值為 <code>Cisco Systems, Inc</code> 將被分成
+Cisco
+Systems
+Inc
+因為這樣，導致每個分詞不等於 <code>Cisco Systems, Inc</code></p><p><a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-terms-query.html>terms查詢</a></p><h5 id=range-查詢>Range 查詢</h5><p><a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-range-query.html>Range 查詢</a></p><h5 id=bool-查詢>Bool 查詢</h5><table><thead><tr><th>欄位</th><th>描述</th></tr></thead><tbody><tr><td>filter</td><td>只過濾符合條件的 document，不計算相關性得分</td></tr><tr><td>must</td><td>document 必須符合 must 中的所有條件，會影響相關性得分</td></tr><tr><td>must_not</td><td>document 必須不符合 must_not 中所有條件</td></tr><tr><td>should</td><td>document 可以符合 should 中的條件，會影響相關性得分</td></tr></tbody></table><p><a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-bool-query.html>Bool 查詢</a></p><h2 id=相關性算分>相關性算分</h2><p>指 document 查詢據間的相關度，透過到排索引可以獲取與查詢語句相匹配的 document 列表。</p><p>影響參數</p><ol><li>TF：詞頻，即單詞在 document 中出現的次數，詞頻越高相關度越高</li><li>DF：document 詞頻，即單詞出現的 document 數</li><li>IDF：與 document 詞頻相反，即 <code>1/DF</code>。即單詞出現的 document數越少，相關度越高（如果一個單詞在 document集出現越少，算為越重要單詞）</li><li>Firld-length Norm：document 越短，相關度越高</li></ol><h5 id=tf-ide>TF-IDE</h5><h5 id=bm25>BM25</h5><h2 id=es-集群>ES 集群</h2><h3 id=集群分片>集群分片</h3><ul><li>index 只是一個用來指向一個或多個分片的羅集命名空間</li><li>分片是一個最小級別工作單元<ul><li>保存索引中所有數據的一部分，是一個 Lucene 實例</li><li>本身是一個完整的搜索引擎</li><li>document 儲存在分片中，並在分片中被索引</li><li>直接與索引通訊</li></ul></li><li>分片是 ES 在集群中分發數據的關鍵</li><li>分片分配到集群中的節點上</li><li>當作水平擴展時，ES 會自動在節點間遷移分片，同時保持平衡</li></ul><ol><li>Index</li></ol><ul><li>相當於 MySQL 中的 Insert 或 Database</li></ul><ol start=2><li>Type</li></ol><ul><li>在 Index 中，可以定義一個或多個類型</li><li>類似于 MySQL 中的 Table，每一種類型的數據放在一起</li></ul><ol start=3><li>Document</li></ol><ul><li>保存在某個 index 下，某種 Type 的一個數據</li><li>以 json 格式呈現</li><li>相似于 Table 中的內容</li><li>分片包含<ul><li>indices<ul><li>主分片<ul><li>負載</li></ul></li><li>索引中每個文檔屬於一個單獨的主分片，所以主分片的數量決定了索引最多能儲存多少數據</li></ul></li><li>replicate<ul><li>副分片<ul><li>高可用</li></ul></li><li>主分片的一個副本，可防止硬體故導致數據的丟失，同時也可提供請求</li></ul></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e># 預設</span>
+PUT /index
+<span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;settings&#34;</span>:<span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;number_of_shards&#34;</span>: 3,
+        <span style=color:#e6db74>&#34;number_of_replicas&#34;</span>: <span style=color:#ae81ff>1</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+<span style=color:#75715e># 修改方式</span>
+PUT /index/_settings
+<span style=color:#f92672>{</span>
+    <span style=color:#e6db74>&#34;settings&#34;</span>:<span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;number_of_replicas&#34;</span>: <span style=color:#ae81ff>3</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h3 id=路由>路由</h3><p>ES 如何知道文檔屬於哪個分片的呢?創建時又是如何知道儲存在哪個分片上 ?透過以下算法決定</p><pre><code>shard  hash(routing)%number_of_primary_shard
+# routing 值適任一字串，默認 _id 但也可以自定義
+</code></pre><p>如果主分片的數量在未來改變了，所有先前路由的值就失效，文檔也就永遠找不到了，因此該數量無法在定義後修改</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2020-05-18-ann-skips-bail-wireshark/ title="wireshark analysis Ann Skips Bail"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2020-08-02-ann-appletv/ title="wireshark analysis Ann AppleTV"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

@@ -1,0 +1,149 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes</h1><p class=mb-1>September 20, 2019</p><p>&mdash;</p></div><div class=content><h1 id=introduction>Introduction</h1><p>k8s 是一個用來編排容器的工具，這近幾年非常火紅。有著高可靠的架構、應用程序部署、自動部署、擴展等功能。</p><p>本篇文章已安裝為目的。</p><h2 id=kubernetes-cluster-components>Kubernetes Cluster Components</h2><ul><li>Node<ul><li>被 Master 管理的節點可以是實體機或虛擬機</li><li>每個 Node 上執行 Pod 服務，並進行管理和啟動透過 <code>kubelet</code></li></ul></li><li>Pod<ul><li>kubernetes 中運行的最小單位，可以是一個或多個容器</li><li>透過 Node 新增、刪除、啟動</li><li>生命週期存在 4 種狀態（Pending、Running、Succeeded、Failed）</li><li>具有共享 <code>volumn</code>，提供對 Pod 中所有容器的存取</li></ul></li><li>Selector<ul><li>透過比對物件針對任何標籤進行的查詢</li></ul></li><li>Replication Controller<ul><li>定義 Pod 數量</li><li>在 master 上，<code>Controller Manager</code> 透過 RC 的定義完成 Pod 建立、監控、啟動、停止等操作</li><li>任何 Pod 發生故障，它會讓群集狀態恢復正常</li></ul></li><li>Label<ul><li>定義物件的可辨識屬性，用它們進行管理和選擇<ul><li>key-value 定義</li></ul></li></ul></li><li>Service<ul><li>用來提供 Pod 對外存取的介面<ul><li>NodePort</li><li>LoadBlance</li><li>Ingress</li></ul></li></ul></li></ul><p><img src=https://yeasy.gitbooks.io/docker_practice/kubernetes/_images/k8s_architecture.png alt="by yeasy.gitbooks.io" title=架構設計>
+by yeasy.gitbooks.io</p><h2 id=environment>Environment</h2><ul><li>CPU<ul><li>2 vCPU</li></ul></li><li>memory<ul><li>2 GB</li></ul></li></ul><pre><code>192.168.137.144 | k8smaster
+192.168.137.145 | k8snode1
+192.168.137.146 | k8snode2
+</code></pre><h2 id=configure-hostname>Configure Hostname</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo hostnamectl set-hostname k8smaster
+$ sudo hostnamectl set-hostname k8snode1
+$ sudo hostnamectl set-hostname k8snode2
+</code></pre></div><p>設定完之後，會出現 DNS 問題。此問題會讓本機無法解析，如下解決</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vim /etc/hosts
+192.168.137.144 k8smaster
+192.168.137.145 k8snode1
+192.168.137.146 k8snode2
+</code></pre></div><h2 id=disable-swap>Disable Swap</h2><p>所有機器應該要固定 <code>CPU/memory</code>，不應該使用 swap 會導致效能降低。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo swapoff -a
+$ sudo swapon -s
+</code></pre></div><p>要保持永久效果至 <code>fstab</code> 將 swap 項目註解</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vim /etc/fstab
+...
+<span style=color:#75715e>#/dev/mapper/ubuntu--vg-swap_1 none            swap    sw              0       0</span>
+</code></pre></div><h2 id=prerequisites-for-kubernetes>Prerequisites for Kubernetes</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo apt-get update
+$ sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
+</code></pre></div><p>還需要安裝 <a href=https://docs.docker.com/install/>Docker</a> 這邊不說明。可至官方查看</p><h2 id=installing-kubernetes>Installing Kubernetes</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo su -c <span style=color:#e6db74>&#34;curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -&#34;</span>
+</code></pre></div><p>創建 <code>Kubernetes</code> 儲存庫檔案</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vim /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+</code></pre></div><p>更新 cache</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo apt update   
+$ sudo apt-get install -y kubelet kubeadm kubectl
+</code></pre></div><ul><li>kubelet</li><li>kubeadm</li><li>kubectl</li></ul><h2 id=initialize-the-kubernetes-cluster>Initialize the Kubernetes Cluster</h2><p>在 master 主機執行以下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo kubeadm init --pod-network-cidr<span style=color:#f92672>=</span>10.244.0.0/16 --apiserver-advertise-address<span style=color:#f92672>=</span>192.168.137.144 --kubernetes-version v1.16.0
+<span style=color:#75715e># --apiserver-advertise-address: Api server 服務 IP</span>
+<span style=color:#75715e># --apiserver-bind-port: Api server 服務 port，預設 6443</span>
+<span style=color:#75715e># --pod-network-cidr: 分配 Pod IP 範圍 (CIDR)</span>
+<span style=color:#75715e># --kubernetes-version: 指定 Kubernetes 版本</span>
+...
+<span style=color:#f92672>[</span>mark-control-plane<span style=color:#f92672>]</span> Marking the node k8smaster as control-plane by adding the taints <span style=color:#f92672>[</span>node-role.kubernetes.io/master:NoSchedule<span style=color:#f92672>]</span>
+<span style=color:#f92672>[</span>bootstrap-token<span style=color:#f92672>]</span> Using token: 7zd2c5.w9825shkwsa7vjat
+<span style=color:#f92672>[</span>bootstrap-token<span style=color:#f92672>]</span> Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
+<span style=color:#f92672>[</span>bootstrap-token<span style=color:#f92672>]</span> configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order <span style=color:#66d9ef>for</span> nodes to get long term certificate credentials
+<span style=color:#f92672>[</span>bootstrap-token<span style=color:#f92672>]</span> configured RBAC rules to allow the csrapprover controller automatically approve CSRs from a Node Bootstrap Token
+<span style=color:#f92672>[</span>bootstrap-token<span style=color:#f92672>]</span> configured RBAC rules to allow certificate rotation <span style=color:#66d9ef>for</span> all node client certificates in the cluster
+<span style=color:#f92672>[</span>bootstrap-token<span style=color:#f92672>]</span> Creating the <span style=color:#e6db74>&#34;cluster-info&#34;</span> ConfigMap in the <span style=color:#e6db74>&#34;kube-public&#34;</span> namespace
+<span style=color:#f92672>[</span>addons<span style=color:#f92672>]</span> Applied essential addon: CoreDNS
+<span style=color:#f92672>[</span>addons<span style=color:#f92672>]</span> Applied essential addon: kube-proxy
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown <span style=color:#66d9ef>$(</span>id -u<span style=color:#66d9ef>)</span>:<span style=color:#66d9ef>$(</span>id -g<span style=color:#66d9ef>)</span> $HOME/.kube/config
+
+You should now deploy a pod network to the cluster.
+Run <span style=color:#e6db74>&#34;kubectl apply -f [podnetwork].yaml&#34;</span> with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 192.168.137.144:6443 --token nh519e.dwtglafz2gquwl7u <span style=color:#ae81ff>\
+</span><span style=color:#ae81ff></span>    --discovery-token-ca-cert-hash sha256:8a8dd1183dc570532f1ed4dd2f9f63b3a32d5753e78e37882f3f90ab63d344d7
+</code></pre></div><p>以一般用戶身份運行以下。讓 kubectl 可連到 Kubernetes，將設定複製到 <code>$HOME/.kube/config</code> 底下，kubectl 執行時會到該目錄下取得 <code>Api server</code> 等相關資訊。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown <span style=color:#66d9ef>$(</span>id -u<span style=color:#66d9ef>)</span>:<span style=color:#66d9ef>$(</span>id -g<span style=color:#66d9ef>)</span> $HOME/.kube/config
+</code></pre></div><p>如果給的加入 k8s Node Token 遺失，可透過以下來獲取</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubeadm token list
+TOKEN                     TTL       EXPIRES                     USAGES                   DESCRIPTION                                                EXTRA GROUPS
+nh519e.dwtglafz2gquwl7u   23h       2019-09-25T12:46:34+08:00   authentication,signing   The default bootstrap token generated by <span style=color:#e6db74>&#39;kubeadm init&#39;</span>.   system:bootstrappers:kubeadm:default-node-token
+</code></pre></div><p>上述如果要重置可用 <code>kubeadm reset</code> 來完成，會移除相關資訊。
+TLS 錯誤參考 <a href=https://k8smeetup.github.io/docs/setup/independent/troubleshooting-kubeadm/>troubleshooting-kubeadm</a></p><h2 id=deploy-network-for-pod>Deploy Network for Pod</h2><p><code>/proc/sys/net/bridge/bridge-nf-call-iptables</code> 需設置為 1</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vi /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span> <span style=color:#75715e>#  bridge 層級也會去呼叫 iptables 處理</span>
+net.bridge.bridge-nf-call-iptables <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+net.ipv4.ip_forward <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
+$ sudo sysctl --system
+</code></pre></div><p>先前已經定義了一個 pod 網路，但是，應該為網路創建一個 namespace。可依照環境選擇適當的 Kubernetes 的 CNI plugin。這邊使用 <code>Flannel</code>，<code>Flannel</code> 將為 Kubernetes（k8s）提供<code>overlay network</code>。若想要自定義的 <code>CIDR</code>，需更改 flannel 中的 <code>net-conf.json</code> 的 <code>Network</code> 並用新的 <code>CIDR init</code>。</p><p>藉由 Flannel YAML 創建 Pod 網路。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ wget https://raw.githubusercontent.com/coreos/flannel/32a765fd19ba45b387fdc5e3812c41fff47cfd55/Documentation/kube-flannel.yml
+$ sudo vim kube-flannel.yml <span style=color:#75715e># cni-conf.json 加入 &#34;cniVersion&#34;: &#34;0.3.0&#34;</span>
+<span style=color:#e6db74>&#34;name&#34;</span>: <span style=color:#e6db74>&#34;cbr0&#34;</span>,
+<span style=color:#e6db74>&#34;cniVersion&#34;</span>: <span style=color:#e6db74>&#34;0.3.0&#34;</span>,
+<span style=color:#e6db74>&#34;plugins&#34;</span>: <span style=color:#f92672>[</span>
+  ...
+$ kubectl apply -f kube-flannel.yml
+podsecuritypolicy.policy/psp.flannel.unprivileged created
+clusterrole.rbac.authorization.k8s.io/flannel configured
+clusterrolebinding.rbac.authorization.k8s.io/flannel unchanged
+serviceaccount/flannel unchanged
+configmap/kube-flannel-cfg unchanged
+daemonset.apps/kube-flannel-ds-amd64 created
+daemonset.apps/kube-flannel-ds-arm64 created
+daemonset.apps/kube-flannel-ds-arm created
+daemonset.apps/kube-flannel-ds-ppc64le created
+daemonset.apps/kube-flannel-ds-s390x created
+</code></pre></div><p>完成後 <code>kubeadm</code> 在 <code>/etc/cni/net.d/10-flannel.conflist</code> 下有網路配置文件。
+官網說明了 <code>Kubelet</code> 從<code> --cni-conf-dir</code>（默認 <code>/etc/cni/net.d</code>）讀取檔案，並使用該檔案中的 CNI 配置來設置每個 Pod 的網路。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ cat /etc/cni/net.d/10-flannel.conflist
+<span style=color:#f92672>{</span>
+  <span style=color:#e6db74>&#34;name&#34;</span>: <span style=color:#e6db74>&#34;cbr0&#34;</span>,
+  <span style=color:#e6db74>&#34;cniVersion&#34;</span>: <span style=color:#e6db74>&#34;0.3.0&#34;</span>,
+  <span style=color:#e6db74>&#34;plugins&#34;</span>: <span style=color:#f92672>[</span>
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;type&#34;</span>: <span style=color:#e6db74>&#34;flannel&#34;</span>,
+      <span style=color:#e6db74>&#34;delegate&#34;</span>: <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;hairpinMode&#34;</span>: true,
+        <span style=color:#e6db74>&#34;isDefaultGateway&#34;</span>: true
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>,
+    <span style=color:#f92672>{</span>
+      <span style=color:#e6db74>&#34;type&#34;</span>: <span style=color:#e6db74>&#34;portmap&#34;</span>,
+      <span style=color:#e6db74>&#34;capabilities&#34;</span>: <span style=color:#f92672>{</span>
+        <span style=color:#e6db74>&#34;portMappings&#34;</span>: true
+      <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+  <span style=color:#f92672>]</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><p>關於此問題，已有人發出 issue 了。</p><blockquote><p>一個叢集只能用一種 Pod 網路（除非用 multus-cni）</p></blockquote><h2 id=verify-the-nodes>Verify the Nodes</h2><p>檢查 nodes 狀態</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get nodes
+NAME        STATUS   ROLES    AGE     VERSION
+k8smaster   Ready    master   5m58s   v1.16.0
+$ kubectl get nodes -o wide
+NAME        STATUS   ROLES    AGE     VERSION   INTERNAL-IP       EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+k8smaster   Ready    master   6m15s   v1.16.0   192.168.137.144   &lt;none&gt;        Ubuntu 16.04.4 LTS   4.4.0-116-generic   docker://19.3.2
+</code></pre></div><p>要知道當前的 namespace。在建立 Kubernetes 集群時，預設下創建以下所有 namespace。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods --all-namespaces
+NAMESPACE     NAME                                READY   STATUS    RESTARTS   AGE
+kube-system   coredns-5644d7b6d9-dzrvb            1/1     Running   <span style=color:#ae81ff>0</span>          6m13s
+kube-system   coredns-5644d7b6d9-lmvgx            1/1     Running   <span style=color:#ae81ff>0</span>          6m13s
+kube-system   etcd-k8smaster                      1/1     Running   <span style=color:#ae81ff>0</span>          5m11s
+kube-system   kube-apiserver-k8smaster            1/1     Running   <span style=color:#ae81ff>0</span>          5m26s
+kube-system   kube-controller-manager-k8smaster   1/1     Running   <span style=color:#ae81ff>0</span>          5m23s
+kube-system   kube-flannel-ds-amd64-w4zqk         1/1     Running   <span style=color:#ae81ff>0</span>          5m6s
+kube-system   kube-proxy-dmz84                    1/1     Running   <span style=color:#ae81ff>0</span>          6m13s
+kube-system   kube-scheduler-k8smaster            1/1     Running   <span style=color:#ae81ff>0</span>          5m29s
+</code></pre></div><h2 id=join-workers-with-k8s-master>Join Workers with K8s Master</h2><p>在前面初始化時，最後給了 Token。透過 Token，將 worker 與 master 連接起來。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo kubeadm join 192.168.137.144:6443 --token nh519e.dwtglafz2gquwl7u <span style=color:#ae81ff>\
+</span><span style=color:#ae81ff></span>    --discovery-token-ca-cert-hash sha256:8a8dd1183dc570532f1ed4dd2f9f63b3a32d5753e78e37882f3f90ab63d344d7
+...
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run <span style=color:#e6db74>&#39;kubectl get nodes&#39;</span> on the control-plane to see this node join the cluster.
+
+</code></pre></div><p>再加入節點時輸出錯誤嘗試執行以下，重新嘗試</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo kubeadm reset
+</code></pre></div><h2 id=verify-the-nodes-1>Verify the Nodes</h2><p>狀態已 Ready 顯示表示成功</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get nodes
+NAME        STATUS   ROLES    AGE     VERSION
+k8smaster   Ready    master   7m51s   v1.16.0
+k8snode1    Ready    &lt;none&gt;   25s     v1.16.0
+k8snode2    Ready    &lt;none&gt;   18s     v1.16.0
+</code></pre></div><h2 id=solve-the-error>Solve the error</h2><p>以下問題是因為 flannel，所配置的 CNI 檔案有問題，新增 <code>cniVersion</code> 即可。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Sep <span style=color:#ae81ff>22</span> 22:50:41 k8smaster kubelet<span style=color:#f92672>[</span>50085<span style=color:#f92672>]</span>: E0922 22:50:41.918617   <span style=color:#ae81ff>50085</span> kubelet.go:2187<span style=color:#f92672>]</span> Container runtime network not ready: NetworkReady<span style=color:#f92672>=</span>false rea
+Sep <span style=color:#ae81ff>22</span> 22:50:46 k8smaster kubelet<span style=color:#f92672>[</span>50085<span style=color:#f92672>]</span>: W0922 22:50:46.475206   <span style=color:#ae81ff>50085</span> cni.go:202<span style=color:#f92672>]</span> Error validating CNI config &amp;<span style=color:#f92672>{</span>cbr0  false <span style=color:#f92672>[</span>0xc000b0fac0 0xc000b0
+Sep <span style=color:#ae81ff>22</span> 22:50:46 k8smaster kubelet<span style=color:#f92672>[</span>50085<span style=color:#f92672>]</span>: W0922 22:50:46.475266   <span style=color:#ae81ff>50085</span> cni.go:237<span style=color:#f92672>]</span> Unable to update cni config: no valid networks found in /etc/cni
+Sep <span style=color:#ae81ff>22</span> 22:50:46 k8smaster kubelet<span style=color:#f92672>[</span>50085<span style=color:#f92672>]</span>: E0922 22:50:46.919835   <span style=color:#ae81ff>50085</span> kubelet.go:2187<span style=color:#f92672>]</span> Container runtime network not ready: NetworkReady<span style=color:#f92672>=</span>false rea
+Sep <span style=color:#ae81ff>22</span> 22:50:51 k8smaster kubelet<span style=color:#f92672>[</span>50085<span style=color:#f92672>]</span>: W0922 22:50:51.478988   <span style=color:#ae81ff>50085</span> cni.go:202<span style=color:#f92672>]</span> Error validating CNI config &amp;<span style=color:#f92672>{</span>cbr0  false <span style=color:#f92672>[</span>0xc000308580 0xc00030
+Sep <span style=color:#ae81ff>22</span> 22:50:51 k8smaster kubelet<span style=color:#f92672>[</span>50085<span style=color:#f92672>]</span>: W0922 22:50:51.479048   <span style=color:#ae81ff>50085</span> cni.go:237<span style=color:#f92672>]</span> Unable to update cni config: no valid networks found in /etc/cni
+Sep <span style=color:#ae81ff>22</span> 22:50:51 k8smaster kubelet<span style=color:#f92672>[</span>50085<span style=color:#f92672>]</span>: E0922 22:50:51.922779   <span style=color:#ae81ff>50085</span> kubelet.go:2187<span style=color:#f92672>]</span> Container runtime network not ready: NetworkReady<span style=color:#f92672>=</span>false rea
+</code></pre></div><h2 id=additional-information>Additional information</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vim /etc/systemd/system/kubelet.service.d/10-kubeadm.conf  <span style=color:#75715e># 是透過 kubeadm 去架設 kubernetes cluster，所以設定檔可以置這邊修改。可參考下面&#34;kubeadm 與 kubelet 溝通&#34;</span>
+</code></pre></div><h2 id=ref>Ref</h2><p><a href=https://kubernetes.io/docs/concepts/cluster-administration/addons/>kubernetes 官網</a></p><p><a href=https://github.com/coreos/flannel/blob/master/Documentation/kubernetes.md>flannel</a></p><p><a href=https://github.com/kubernetes/kubernetes/issues/44665>issues 44665</a></p><p><a href=https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/>create-cluster-kubeadm</a></p><p><a href=https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/>troubleshooting-kubeadm</a></p><p><a href=https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#installation>network-plugins</a></p><p><a href=https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/#the-kubelet-drop-in-file-for-systemd>kubeadm 與 kubelet 溝通</a></p><p><a href=https://stackoverflow.com/questions/58037620/how-to-fix-flannel-cni-plugin-error-plugin-flannel-does-not-support-config-ve>CNI 問題解決</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><i class="nav-menu-disabled fas fa-chevron-circle-left"></i></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-08-19-kubernetes-overview/ title=K8s-day01><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

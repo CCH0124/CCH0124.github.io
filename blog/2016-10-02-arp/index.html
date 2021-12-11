@@ -1,0 +1,67 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>ARP Protocol</h1><p class=mb-1>May 12, 2016</p><p>&mdash;</p></div><div class=content><h1 id=arp>ARP</h1><p>從本地端電腦傳送封包到你瀏覽的網頁，他會利用 IP Address 把封包傳送至目的地。但，這之間會學習到目的地 Host 的 MAC Address（Media Access Control Address），這樣才能達到準確溝通。在 Ethernet（乙太網路）環境下，Ethernet進行了連線、傳遞訊號等。要用 IP Address 找出 MAC 得要用 ARP（Address Resolution Protocol） ，ARP 屬於 OSI Model 網路層。</p><h2 id=arp-學習>ARP 學習</h2><p><img src=https://i.imgur.com/Bw8y8mL.png alt=圖一></p><p>當 R1 想找 PC1，但 R1 什麼都不知道，只認識自己。R1 發送 <code>broadcast</code> 發出一個 <code>ARP Request</code>，<code>ARP Request</code> 包含了PC1 的 IP Address 等，到了 Switch1 進行 <code>flooding</code> 使每個目的端 Host 都接收（因為是 <code>broadcast</code>）。接著，目的端都接收，會進行 <code>ARP reply</code> 的動作，只有符合 R1 要找的 IP 才會進行回覆以 <code>unicast</code> 方式，其餘的 Host 會把此 frame Drop 掉，之後 R1 會把找到的 Host <code>MAC</code> 給記錄到 <code>ARP</code> 表格。</p><p>ARP 表格過一段時間會自動清除，清除後它又不認的對方是誰了，就會再進行一次 <code>ARP Request</code>。</p><h2 id=實作>實作</h2><p>利用（圖一）拓樸</p><p>設定好 R1 IP Address 和 VPC1、2、3 IP Address 和 gateway。</p><h5 id=step-1>Step 1</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show arp
+
+Protocol  Address          Age <span style=color:#f92672>(</span>min<span style=color:#f92672>)</span>  Hardware Addr   Type   Interface
+
+Internet  192.168.10.1            -   ca01.07ae.0000  ARPA   FastEthernet0/0
+</code></pre></div><p>只有認得自己。</p><h5 id=step-2>Step 2</h5><p>使用 Wireshark 監聽 R1 f0/0 介面。</p><h5 id=step-3>Step 3</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#ping 192.168.10.10
+
+Type escape sequence to abort.
+
+Sending 5, 100-byte ICMP Echos to 192.168.10.10, timeout is <span style=color:#ae81ff>2</span> seconds:
+
+.!!!!
+
+Success rate is <span style=color:#ae81ff>80</span> percent <span style=color:#f92672>(</span>4/5<span style=color:#f92672>)</span>, round-trip min/avg/max <span style=color:#f92672>=</span> 4/7/12 ms
+
+</code></pre></div><p>R1 ping PC1</p><h5 id=step-4>Step 4</h5><p>查看 Wireshark 介面</p><p>其中第 9、10 就是 ARP 封包</p><p><img src=https://i.imgur.com/8SN9w3L.png alt></p><h5 id=step-5>Step 5</h5><p>查看第 9 個 Frame</p><p><img src=https://i.imgur.com/DR29rww.png alt></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Ethernet
+
+        Destination：ff:ff:ff:ff:ff:ff <span style=color:#f92672>(</span>broadcast<span style=color:#f92672>)</span> <span style=color:#66d9ef>for</span> ARP request
+
+        Source：ARP requester
+
+        Type：
+
+                ARP request/reply: 0x0806
+
+RARP request/reply: 0x8035
+
+IP datagram: 0x0800
+
+Address Resolution Protocol （request）
+
+        Hardware type: <span style=color:#ae81ff>1</span> <span style=color:#66d9ef>for</span> ethernet
+
+Protocol type: 0x0800 <span style=color:#66d9ef>for</span> IP <span style=color:#f92672>(</span>0000.1000.0000.0000<span style=color:#f92672>)</span>
+
+　　同樣的Ethernet標頭攜帶 IP datagram!
+
+Hardware len <span style=color:#f92672>=</span> length in bytes of hardware addresses <span style=color:#f92672>(</span><span style=color:#ae81ff>6</span> bytes <span style=color:#66d9ef>for</span> ethernet<span style=color:#f92672>)</span> Protocol len <span style=color:#f92672>=</span> length in bytes of logical addresses <span style=color:#f92672>(</span><span style=color:#ae81ff>4</span> bytes <span style=color:#66d9ef>for</span> IP<span style=color:#f92672>)</span>
+
+ARP operation（Opcode）:
+
+    1<span style=color:#f92672>=</span>request
+
+　　2<span style=color:#f92672>=</span>reply
+
+RARP
+
+    3<span style=color:#f92672>=</span>request
+
+    4<span style=color:#f92672>=</span>reply
+</code></pre></div><p>第 10 個 Frame，<code>ARP reply</code></p><p><img src=https://i.imgur.com/0aqiTbO.png alt></p><h5 id=step-6>Step 6</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show arp
+
+Protocol  Address          Age <span style=color:#f92672>(</span>min<span style=color:#f92672>)</span>  Hardware Addr   Type   Interface
+
+Internet  192.168.10.1            -   ca01.07ae.0000  ARPA   FastEthernet0/0
+
+Internet  192.168.10.10           <span style=color:#ae81ff>0</span>   0050.7966.6800  ARPA   FastEthernet0/0
+
+</code></pre></div><p>R1 已經學習到 PC1 的 <code>MAC</code>。</p><h5 id=step-7>Step 7</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>VPCS&gt; show ip/all
+NAME   IP/MASK              GATEWAY           MAC                DNS
+
+VPCS1  192.168.10.10/24     192.168.10.1      00:50:79:66:68:00
+</code></pre></div><p>查看MAC有無一樣。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2016-05-12-ln/ title="ln 指令"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2017-01-16-ping/ title="ping 指令"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

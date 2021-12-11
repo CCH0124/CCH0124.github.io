@@ -1,0 +1,99 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>input csv to elasticsearch</h1><p class=mb-1>November 15, 2019</p><p>&mdash;</p></div><div class=content><h2 id=想法>想法</h2><p>實驗透過 <code>logstash</code> 傳遞 <code>CSV</code> 檔至 <code>Elasticsearch</code>。這邊 CSV 檔是來自於<a href=https://www.unb.ca/cic/datasets/ddos-2019.html>這邊的數據集</a>，因為很懶得用 <code>python</code> 來分析資料，且該數據集太肥大，所以想藉由 <code>ELK</code> 了力量 XD。</p><p>目錄架構</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ tree 
+.
+├── docker-compose.yml
+├── elasticsearch
+│   ├── config
+│   │   ├── elasticsearch-node2.yml
+│   │   ├── elasticsearch-node3.yml
+│   │   └── elasticsearch.yml
+│   └── Dockerfile
+├── kibana
+│   ├── config
+│   │   ├── kibana.crt
+│   │   ├── kibana.key
+│   │   └── kibana.yml
+│   └── Dockerfile
+├── logstash
+│   ├── config
+│   │   ├── logstash.yml
+│   │   └── pipelines.yml
+│   ├── DataSet
+│   │    └── DDoS
+│   │       ├── 01-12
+│   │       │   ├── DrDoS_DNS.csv
+│   │       │   ├── DrDoS_LDAP.csv
+│   │       │   ├── DrDoS_MSSQL.csv
+│   │       │   ├── DrDoS_NetBIOS.csv
+│   │       │   ├── DrDoS_NTP.csv
+│   │       │   ├── DrDoS_SNMP.csv
+│   │       │   ├── DrDoS_SSDP.csv
+│   │       │   ├── DrDoS_UDP.csv
+│   │       │   ├── Syn.csv
+│   │       │   ├── TFTP.csv
+│   │       │   └── UDPLag.csv
+│   │       └── 03-11
+│   │           ├── LDAP.csv
+│   │           ├── MSSQL.csv
+│   │           ├── NetBIOS.csv
+│   │           ├── Portmap.csv
+│   │           ├── Syn.csv
+│   │           ├── UDP.csv
+│   │           └── UDPLag.csv
+│   ├── Dockerfile
+│   └── pipeline
+│       ├── ddos.conf
+│       ├── ddos_csv.conf
+│       ├── filebeat.conf
+│       └── logstash.conf
+├── nginx
+│   ├── auth
+│   ├── cert
+│   │   ├── nginx.crt
+│   │   └── nginx.key
+│   ├── conf.d
+│   │   ├── elasticsearch.conf
+│   │   └── kibana.conf
+│   ├── nginx.conf
+│   └── security_header.conf
+└── README.md
+</code></pre></div><h2 id=logstash-配置>logstash 配置</h2><h5 id=pipeline-配置>pipeline 配置</h5><p>在對於多個不同資料源，無此配置的話在使用 logstash 傳遞至 elasticsearch 時，不同的來源會相互影響到，可利用此方式來進行這些不同資料源的隔離。</p><pre><code class="language-shell=" data-lang="shell=">~/Desktop/docker-elk/logstash/config$ vi pipelines.yml
+- pipeline.id: ddos
+  queue.type: persisted
+  path.config: &quot;/usr/share/logstash/pipeline/ddos_csv.conf&quot;
+  pipeline.workers: 1
+</code></pre><h5 id=定義傳遞至-elasticsearch-配置>定義傳遞至 Elasticsearch 配置</h5><pre><code class="language-shell=" data-lang="shell=">~/Desktop/docker-elk/logstash$ vi pipeline/ddos_csv.conf
+input {
+  file {
+    path =&gt; &quot;/usr/share/logstash/DataSet/DDoS/**/*.csv&quot;
+    start_position =&gt; &quot;beginning&quot;
+  }
+}
+
+filter {
+        csv {
+                separator =&gt; &quot;,&quot;
+                autodetect_column_names =&gt; true
+                autogenerate_column_names =&gt; false
+                skip_empty_columns =&gt; true
+                skip_empty_rows =&gt; true
+                skip_header =&gt; true
+                id =&gt; &quot;ddos&quot;
+        }
+
+}
+
+output {
+  elasticsearch {
+    hosts =&gt; &quot;elasticsearch:9200&quot;
+    index =&gt; &quot;packets-ddos-%{+YYYY-MM-dd}&quot;
+    document_type =&gt; &quot;csv&quot;
+    manage_template =&gt; false
+  }
+}
+
+</code></pre><h2 id=kiban-視覺化>kiban 視覺化</h2><p><img src=https://i.imgur.com/hqrLIrA.png alt></p><p>自行新增圖表，這邊使用 <code>Terms</code> 聚合方式，<code>Field</code> 使用 <code>Label</code>。單純從圖表查看說數據集裡 <code>Label</code> 的分部有哪些。
+<img src=https://i.imgur.com/0QUnXFG.png alt></p><h2 id=遇到問題>遇到問題</h2><p>在 CSV 檔 <code>header</code> 地方不能有空白，例如 &ldquo;Apple Type&rdquo; <code>Elasticsearch</code> 會有 <code>mapping</code> 錯誤，要變成 &ldquo;Apple_Type&rdquo; 之類的，其中 <code>.</code> 符號也不能夠出現。因此利用 <code>sed -i '1 s/./_/g' *.csv</code> 方式去變更 CSV 檔的 header。</p><h2 id=結論>結論</h2><p>效果感覺很可以畢竟記憶體有擴充到 23 GB，但是硬碟有點小可再擴充。會這樣做也是筆電跑這些數據集也是出現記憶體的問題&mldr;。未來如果能夠配上 <code>spark</code> 來處理資料或許是一個更好的辦法。</p><h2 id=ref>Ref</h2><ul><li><a href=https://www.elastic.co/guide/en/logstash/current/multiple-pipelines.html#multiple-pipelines>pipelines</a></li><li><a href=https://www.elastic.co/guide/en/logstash/current/plugins-filters-csv.html>csv filters</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/project/2019-07-28-rsync/ title="rsync 應用"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/project/2020-04-27-nfs/ title=NFS><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

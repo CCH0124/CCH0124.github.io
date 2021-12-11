@@ -1,0 +1,144 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>CDP</h1><p class=mb-1>January 1, 0001</p><p>&mdash;</p></div><div class=content><h1 id=cdp>CDP</h1><p>在規劃一個網路架構時，如果不小心失去網路架構的資訊，應該會造成管理上的混亂，如果該環境設備都是 <code>Cisco</code> 設備，則可透過 <code>CDP</code> 協定探索收集到全部 <code>Cisco</code> 網路設備的軟硬體資訊，立即重建網路拓樸資訊。</p><h2 id=利用-cdp-協定交換資訊>利用 CDP 協定交換資訊</h2><p><code>Cisco</code> 網路設備會定期與周遭的 <code>Cisco</code> 網路設備進行資訊交換的動作，要達到這樣定期的資料交換動作，就必須透過 <code>CDP</code> 協定才行。<code>CDP</code>（Cisco Discovery Protocol）是 <code>Cisco</code> 的專利，運行於 <code>OSI</code> 七層協定之中第二層 <code>Data Link Layer</code> 的協定。可以透過它來讓設備相互收集設備的資訊，如：ISO 版本、IP 位址等。</p><h3 id=cdp-協定所提供的資訊>CDP 協定所提供的資訊</h3><ul><li>設備ID<ul><li>設備的名稱</li></ul></li><li>第三層的IP位址清單<ul><li><code>來源端</code>和<code>目的端</code>埠名稱，例如：ethernet0</li></ul></li><li>埠的ID</li><li>所支援的功能列表</li><li>硬體平台<ul><li>硬體型號</li></ul></li></ul><h3 id=關閉或開啟-cdp-協定的指令>關閉或開啟 CDP 協定的指令</h3><p>以下範例拓樸圖</p><p><img src=https://i.imgur.com/m9FvIID.png alt></p><h4 id=開啟或關閉-cdp>開啟或關閉 CDP</h4><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#no cdp run</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#cdp run</span>
+</code></pre></div><h4 id=關閉或重啟某介面的-cdp>關閉或重啟某介面的 CDP</h4><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no cdp enable</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#cdp enable</span>
+</code></pre></div><h3 id=cdp-協定的設定方式>CDP 協定的設定方式</h3><h4 id=顯示cdp協定資訊的指令>顯示CDP協定資訊的指令</h4><p>Cisco 路由器上的 CDP 協定可以開啟或關閉，預設為開啟。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#show cdp 
+Global CDP information:
+    Sending CDP packets every <span style=color:#ae81ff>60</span> seconds
+    Sending a holdtime value of <span style=color:#ae81ff>180</span> seconds
+    Sending CDPv2 advertisements is enabled
+</code></pre></div><h4 id=cdp-指令>CDP 指令</h4><p>環境是以 Packet tracer</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#show cdp ?
+  entry      Information <span style=color:#66d9ef>for</span> specific neighbor entry
+  interface  CDP interface status and configuration
+  neighbors  CDP neighbor entries
+  traffic    CDP statistics
+
+</code></pre></div><h4 id=cdp-neighbor-entries>CDP neighbor entries</h4><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#show cdp neighbors
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+R2               Ser 3/0            <span style=color:#ae81ff>166</span>           R       7206VXR   Ser 3/0
+ESW2             Fas 0/0            <span style=color:#ae81ff>166</span>          S I      <span style=color:#ae81ff>3745</span>      Fas 0/0
+
+</code></pre></div><ul><li>Device ID<ul><li>鄰近設備的 ID</li></ul></li><li>Local Intrfce<ul><li>本地端的介面</li></ul></li><li>Holdtme<ul><li>設備持有目前資訊長達多久的時間</li><li>單位是秒</li></ul></li><li>Capability<ul><li>鄰近設備的種類代碼</li></ul></li><li>Platform<ul><li>鄰近設備的硬體平台</li></ul></li><li>Port ID<ul><li>鄰近設備的遠端埠ID</li></ul></li></ul><h4 id=鄰近設備的種類代碼>鄰近設備的種類代碼</h4><table><thead><tr><th><strong>設備代碼</strong></th><th><strong>意義</strong></th></tr></thead><tbody><tr><td>R</td><td>Router</td></tr><tr><td>T</td><td>Trans Bridge(Ethernet 架構)</td></tr><tr><td>B</td><td>Source Route Bridge(Token Ring 架構)</td></tr><tr><td>S</td><td>Switch</td></tr><tr><td>H</td><td>Host</td></tr><tr><td>I</td><td>IGMP</td></tr><tr><td>r</td><td>Repeater</td></tr><tr><td>P</td><td>Phone</td></tr></tbody></table><h4 id=取得更詳細的資訊>取得更詳細的資訊</h4><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#show cdp neighbors detail
+-------------------------
+Device ID: R2
+Entry address<span style=color:#f92672>(</span>es<span style=color:#f92672>)</span>:
+  IP address: 192.168.1.254
+Platform: Cisco 7206VXR,  Capabilities: Router
+Interface: Serial3/0,  Port ID <span style=color:#f92672>(</span>outgoing port<span style=color:#f92672>)</span>: Serial3/0
+Holdtime : <span style=color:#ae81ff>126</span> sec
+
+Version :
+Cisco IOS Software, <span style=color:#ae81ff>7200</span> Software <span style=color:#f92672>(</span>C7200-ADVENTERPRISEK9-M<span style=color:#f92672>)</span>, Version 12.4<span style=color:#f92672>(</span>24<span style=color:#f92672>)</span>T5, RELEASE SOFTWARE <span style=color:#f92672>(</span>fc3<span style=color:#f92672>)</span>
+Technical Support: http://www.cisco.com/techsupport
+Copyright <span style=color:#f92672>(</span>c<span style=color:#f92672>)</span> 1986-2011 by Cisco Systems, Inc.
+Compiled Fri 04-Mar-11 06:49 by prod_rel_team
+
+advertisement version: <span style=color:#ae81ff>2</span>
+
+-------------------------
+Device ID: ESW2
+Entry address<span style=color:#f92672>(</span>es<span style=color:#f92672>)</span>:
+  IP address: 192.168.100.10
+Platform: Cisco 3745,  Capabilities: Switch IGMP
+Interface: FastEthernet0/0,  Port ID <span style=color:#f92672>(</span>outgoing port<span style=color:#f92672>)</span>: FastEthernet0/0
+Holdtime : <span style=color:#ae81ff>126</span> sec
+
+Version :
+Cisco IOS Software, <span style=color:#ae81ff>3700</span> Software <span style=color:#f92672>(</span>C3745-ADVIPSERVICESK9-M<span style=color:#f92672>)</span>, Version 12.4<span style=color:#f92672>(</span>25d<span style=color:#f92672>)</span>, RELEASE SOFTWARE <span style=color:#f92672>(</span>fc1<span style=color:#f92672>)</span>
+Technical Support: http://www.cisco.com/techsupport
+Copyright <span style=color:#f92672>(</span>c<span style=color:#f92672>)</span> 1986-2010 by Cisco Systems, Inc.
+Compiled Wed 18-Aug-10 08:18 by prod_rel_team
+
+advertisement version: <span style=color:#ae81ff>2</span>
+VTP Management Domain: <span style=color:#e6db74>&#39;&#39;</span>
+Duplex: half
+
+
+</code></pre></div><h4 id=特定鄰近設備的相關資訊>特定鄰近設備的相關資訊</h4><p><strong>參數</strong></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>Router#show cdp entry ?
+  *     all CDP neighbor entries
+  WORD  Name of CDP neighbor entry
+</code></pre></div><p><strong>指定某台設備</strong></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#show cdp entry R2
+-------------------------
+Device ID: R2
+Entry address<span style=color:#f92672>(</span>es<span style=color:#f92672>)</span>:
+  IP address: 192.168.1.254
+Platform: Cisco 7206VXR,  Capabilities: Router
+Interface: Serial3/0,  Port ID <span style=color:#f92672>(</span>outgoing port<span style=color:#f92672>)</span>: Serial3/0
+Holdtime : <span style=color:#ae81ff>138</span> sec
+
+Version :
+Cisco IOS Software, <span style=color:#ae81ff>7200</span> Software <span style=color:#f92672>(</span>C7200-ADVENTERPRISEK9-M<span style=color:#f92672>)</span>, Version 12.4<span style=color:#f92672>(</span>24<span style=color:#f92672>)</span>T5, RELEASE SOFTWARE <span style=color:#f92672>(</span>fc3<span style=color:#f92672>)</span>
+Technical Support: http://www.cisco.com/techsupport
+Copyright <span style=color:#f92672>(</span>c<span style=color:#f92672>)</span> 1986-2011 by Cisco Systems, Inc.
+Compiled Fri 04-Mar-11 06:49 by prod_rel_team
+
+advertisement version: <span style=color:#ae81ff>2</span>
+
+</code></pre></div><p><strong>顯示的資訊</strong></p><ul><li>鄰近設備的Device ID<ul><li>R2</li></ul></li><li>網路第三層協定的資訊<ul><li>192.168.1.254</li></ul></li><li>鄰近設備的硬體平台<ul><li>Cisco 7206VXR</li></ul></li><li>鄰近設備的種類<ul><li>Router</li></ul></li><li>本地端介面種類和outgoing遠端的埠ID<ul><li>Serial3/0, Serial3/0</li></ul></li><li>Hold-time值，單位是秒<ul><li>138</li></ul></li><li>Cisco IOS軟體種類和版本資訊<ul><li>Cisco IOS Software, 7200 Software (C7200-ADVENTERPRISEK9-M), Version 12.4(24)T5, RELEASE SOFTWARE (fc3)&mldr;</li></ul></li></ul><blockquote><p>鄰近設備的種類可以顯示出這設備是 Route、Switch 或是其它種類的設備。</p></blockquote><h4 id=顯示目前傳送cdp的介面狀況>顯示目前傳送CDP的介面狀況</h4><p><strong>指定 Serial 介面</strong></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#show cdp interface s3/0
+Serial3/0 is up, line protocol is up
+  Encapsulation HDLC
+  Sending CDP packets every <span style=color:#ae81ff>60</span> seconds
+  Holdtime is <span style=color:#ae81ff>180</span> seconds
+
+</code></pre></div><p><strong>可得到的資訊</strong></p><ul><li>介面是否運作中<ul><li>FastEthernet0/0 is up</li></ul></li><li>每隔多久送出CDP封包（預設是每隔60秒）<ul><li>Sending CDP packets every 60 seconds</li></ul></li><li>Hold-time<ul><li>180 seconds(預設)</li></ul></li><li>封裝種類<ul><li>HDLC</li></ul></li></ul><h4 id=顯示與介面的流量相關的資訊>顯示與介面的流量相關的資訊</h4><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#show cdp traffic
+CDP counters :
+        Total packets output: 36, Input: <span style=color:#ae81ff>35</span>
+        Hdr syntax: 0, Chksum error: 0, Encaps failed: <span style=color:#ae81ff>0</span>
+        No memory: 0, Invalid packet: 0, Fragmented: <span style=color:#ae81ff>0</span>
+        CDP version <span style=color:#ae81ff>1</span> advertisements output: 0, Input: <span style=color:#ae81ff>0</span>
+        CDP version <span style=color:#ae81ff>2</span> advertisements output: 36, Input: <span style=color:#ae81ff>35</span>
+
+</code></pre></div><p><strong>顯示資訊</strong></p><ul><li>資料錯誤</li><li>Checksum錯誤</li><li>封裝失敗</li><li>記憶體用盡（Out of memory）</li><li>無效的封包</li><li>已分割的封包</li><li>已經送出和已經接收到的 CDPv1 封包</li><li>已經送出和已經接收到的 CDPv2 封包</li></ul><h4 id=清除-cdp-traffic-相關資訊>清除 CDP traffic 相關資訊</h4><p>用來把 CDP 的 traffic counters 歸零</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#clear cdp counters
+R1#show cdp traffic <span style=color:#75715e># 驗證</span>
+CDP counters :
+        Total packets output: 1, Input: <span style=color:#ae81ff>0</span>
+        Hdr syntax: 0, Chksum error: 0, Encaps failed: <span style=color:#ae81ff>0</span>
+        No memory: 0, Invalid packet: 0, Fragmented: <span style=color:#ae81ff>0</span>
+        CDP version <span style=color:#ae81ff>1</span> advertisements output: 0, Input: <span style=color:#ae81ff>0</span>
+        CDP version <span style=color:#ae81ff>2</span> advertisements output: 1, Input: <span style=color:#ae81ff>0</span>
+
+</code></pre></div><h4 id=清除-cdp-neighbors-相關資訊>清除 CDP neighbors 相關資訊</h4><p>將 show cdp neighbors 資訊清除</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1#clear cdp table
+R1#show cdp neighbors
+Capability Codes: R - Router, T - Trans Bridge, B - Source Route Bridge
+                  S - Switch, H - Host, I - IGMP, r - Repeater
+
+Device ID        Local Intrfce     Holdtme    Capability  Platform  Port ID
+
+</code></pre></div><h3 id=設定-cdp-timer-和-hold-time-值>設定 CDP Timer 和 hold-time 值</h3><p><code>CDP</code> 資訊的交換頻率預設為 60 秒交換一次</p><p><strong>改變 CDP Timer</strong>
+將交換 <code>CDP</code> 的頻率改為每隔 65 秒交換</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#cdp timer ?</span>
+  &lt;5-254&gt;  Rate at which CDP packets are sent <span style=color:#f92672>(</span>in  sec<span style=color:#f92672>)</span>
+
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#cdp timer 65</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do show cdp</span>
+Global CDP information:
+        Sending CDP packets every <span style=color:#ae81ff>65</span> seconds
+        Sending a holdtime value of <span style=color:#ae81ff>180</span> seconds
+        Sending CDPv2 advertisements is  enabled
+</code></pre></div><p>變為預設 60 秒</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#no cdp timer</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do show cdp</span>
+Global CDP information:
+        Sending CDP packets every <span style=color:#ae81ff>60</span> seconds
+        Sending a holdtime value of <span style=color:#ae81ff>180</span> seconds
+        Sending CDPv2 advertisements is  enabled
+</code></pre></div><blockquote><p>通常要更改 CDP 的發送頻率都是因為頻寬的考量，因此可以根據所使用的環境來設定適合的發送頻率。</p></blockquote><p><strong>改變 hold-time</strong></p><p>改為保存 200 秒 <code>CDP</code> 設備資訊</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#cdp holdtime 200</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do sh cdp</span>
+Global CDP information:
+        Sending CDP packets every <span style=color:#ae81ff>60</span> seconds
+        Sending a holdtime value of <span style=color:#ae81ff>200</span> seconds
+        Sending CDPv2 advertisements is  enabled
+
+</code></pre></div><p>還原預設</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#no cdp holdtime 200</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do sh cdp</span>
+Global CDP information:
+        Sending CDP packets every <span style=color:#ae81ff>60</span> seconds
+        Sending a holdtime value of <span style=color:#ae81ff>180</span> seconds
+        Sending CDPv2 advertisements is  enabled
+
+</code></pre></div><blockquote><p>hold-time 表示 Cisco 設備要在本地端保留其他設備的 CDP 資訊長達多久的時間，預設值為 180 秒。</p></blockquote><h2 id=vlan-與-cdp>VLAN 與 CDP</h2><p>通常預設的 <code>VLAN</code> 都是 <code>VLAN 1</code>，因此，<code>CDP</code> 和 <code>VTP</code> 協定的封包通常都會送到 <code>VLAN 1</code> 之中。</p><h2 id=參考資料>參考資料</h2><p><a href=https://www.jannet.hk/zh-Hant/post/cisco-discovery-protocol-cdp/>Jan Ho</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-10-12-nat-dynamic/ title=NAT><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2015-08-11-account-management/ title="使用者操作 - Ubuntu"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

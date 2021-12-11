@@ -1,0 +1,198 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day13</h1><p class=mb-1>September 3, 2020</p><p>&mdash;</p></div><div class=content><p><code>ReplicaSet</code> 縮寫為 <code>RS</code>，是一種 <code>POD</code> 控制器。用來確保所管控的 <code>POD</code> 副本數在任一時間都能保證用戶所期望的需求。下圖演示了 <code>RS</code> 操作，<code>RS</code> 觸發後會去找匹配 <code>selector</code> 的 <code>POD</code>，當前啟動的數量與期望的數量不符合時，會進行一些操作，像是多的數量則刪除，少的話透過 <code>POD</code> 模板建立。當期數量符合用戶定義時則不斷的循環。</p><p><img src=https://i.imgur.com/NUCNZ4d.png alt> from Kubernetes in action</p><p><code>RS</code> 的建立通常以三個字段定義，<code>selector</code>、<code>replicas</code> 和 <code>template</code>，如下圖所示。當中 <code>selector</code>、<code>replicas</code> 或 <code>template</code> 隨時可按照需求做更改。<code>replicas</code> 的定義數量為其直接影響；<code>selector</code> 可能讓當前的標籤不再匹配，讓 <code>RS</code> 不再對當前的 <code>POD</code> 進行控制；<code>template</code> 的修改是對後續創建新 <code>POD</code> 才產生影響。</p><p><img src=https://i.imgur.com/oPB7ffr.png alt> from Kubernetes in action</p><p>對於一般手動建立 <code>POD</code>，<code>RS</code> 帶來的好處有以下</p><ul><li>確保 <code>POD</code> 數量符合定義數量</li><li>當節點發生故障時，自動請求自其它節點創建缺失的 <code>POD</code></li><li><code>POD</code> 的水平縮放</li></ul><blockquote><p>必要時可透 HPA(HroizontalPodAutoscaler) 控制器針對資源來自動縮放</p></blockquote><h2 id=建立-rs>建立 RS</h2><p>再前面描述有說明 <code>RS</code> 重要的資源創建字段有哪些。這邊再說明一個字段 <code>minReadySecond</code> 預設值為 0 秒，在建立新 <code>POD</code> 時，啟動後有多長時間無出現異常就可被視為<em>READY</em> 狀態。以下為建立一個 <code>RS</code> 的範例。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#75715e># rs-demo.yaml</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>ReplicaSet</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>2</span> <span style=color:#75715e># 期望數量</span>
+  <span style=color:#f92672>selector</span>: <span style=color:#75715e># 標籤選擇器</span>
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+      <span style=color:#f92672>release</span>: <span style=color:#ae81ff>canary</span>
+  <span style=color:#f92672>template</span>: <span style=color:#75715e># POD 模板定義</span>
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp-pod</span>
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+        <span style=color:#f92672>release</span>: <span style=color:#ae81ff>canary</span>
+        <span style=color:#f92672>env</span>: <span style=color:#ae81ff>qa</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp-container</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.10</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>http</span>
+          <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+</code></pre></div><p>使用 <code>apply</code> 部署 <code>yaml</code> 定義的資源</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -f rs-demo.yaml
+</code></pre></div><p>查看 <code>POD</code> 清單，有趣的是在 <code>NAME</code> 欄位，只要 <code>POD</code> 被 <code>myapp</code> 這個 <code>RS</code> 控制，該 <code>POD</code> 名稱前綴會有該 <code>RS</code> 名稱。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o wide
+NAME          READY   STATUS    RESTARTS   AGE   IP          NODE                                       NOMINATED NODE   READINESS GATES
+myapp-9xkht   1/1     Running   <span style=color:#ae81ff>0</span>          98s   10.4.0.13   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          98s   10.4.2.12   gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;
+</code></pre></div><p>查看 <code>RS</code> 清單，當前按照想要的副本數建立了 2 個 <code>POD</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get rs -o wide
+NAME    DESIRED   CURRENT   READY   AGE   CONTAINERS        IMAGES       SELECTOR
+myapp   <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>       63s   myapp-container   nginx:1.10   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+</code></pre></div><ul><li>DESIRED<ul><li>期望要有幾個 <code>Ready</code> 的 <code>POD</code></li></ul></li><li>CURRENT<ul><li>當前運行幾個 <code>POD</code></li></ul></li><li>READY<ul><li><code>READY</code> 的 <code>POD</code> 有幾個</li></ul></li></ul><h2 id=rs-控管-pod>RS 控管 POD</h2><p>這邊會用幾個場景來說明 <code>RS</code> 的能力。</p><h3 id=缺少-pod>缺少 POD</h3><p>可能某些原因導致 <code>RS</code> 控管的 <code>POD</code> 少了幾個，然而 <code>RS</code> 自動的將其補齊。</p><p>這邊實作的話要用 <code>tmux</code> 或多開終端機來觀察。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete pod myapp-9xkht <span style=color:#75715e># 嘗試刪除 RS 中一個 POD</span>
+pod <span style=color:#e6db74>&#34;myapp-9xkht&#34;</span> deleted
+$ kubectl get rs
+NAME    DESIRED   CURRENT   READY   AGE
+myapp   <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>       12m
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+NAME          READY   STATUS    RESTARTS   AGE
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          2m53s <span style=color:#75715e># 自動新增了</span>
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          14m 
+</code></pre></div><p>利用 <code>-w</code> 持續監控，這邊是監控 <code>RS</code> 所控制的 <code>POD</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o wide -w
+NAME          READY   STATUS    RESTARTS   AGE   IP          NODE                                       NOMINATED NODE   READINESS GATES
+myapp-9xkht   1/1     Running   <span style=color:#ae81ff>0</span>          11m   10.4.0.13   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          11m   10.4.2.12   gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;
+myapp-9xkht   1/1     Terminating   <span style=color:#ae81ff>0</span>          12m   10.4.0.13   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-flv45   0/1     Pending       <span style=color:#ae81ff>0</span>          0s    &lt;none&gt;      &lt;none&gt;                                     &lt;none&gt;           &lt;none&gt;
+myapp-flv45   0/1     Pending       <span style=color:#ae81ff>0</span>          0s    &lt;none&gt;      gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-flv45   0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          0s    &lt;none&gt;      gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-9xkht   0/1     Terminating         <span style=color:#ae81ff>0</span>          12m   10.4.0.13   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-9xkht   0/1     Terminating         <span style=color:#ae81ff>0</span>          12m   10.4.0.13   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-flv45   1/1     Running             <span style=color:#ae81ff>0</span>          2s    10.4.0.14   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-9xkht   0/1     Terminating         <span style=color:#ae81ff>0</span>          12m   10.4.0.13   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-9xkht   0/1     Terminating         <span style=color:#ae81ff>0</span>          12m   10.4.0.13   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+</code></pre></div><figure><img src=/images/k8s/K8s-RS-delete-pod.jpg width=auto height=auto></figure><p>假設我們嘗試將 <code>RS</code> 下的 <code>POD</code> 強制移除標籤。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl label pods myapp-flv45 app<span style=color:#f92672>=</span> --overwrite <span style=color:#75715e># --overwrite 表示當前要修改的標籤存在，需用此選項選擇覆蓋</span>
+pod/myapp-flv45 labeled
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+NAME          READY   STATUS    RESTARTS   AGE
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          20m
+myapp-xt9wr   1/1     Running   <span style=color:#ae81ff>0</span>          14s
+$ kubectl get pods <span style=color:#75715e># myapp-flv45 雖然不被 RS 控管，但它還是回存在</span>
+NAME                READY   STATUS    RESTARTS   AGE
+myapp-flv45         1/1     Running   <span style=color:#ae81ff>0</span>          12m
+myapp-mvkjk         1/1     Running   <span style=color:#ae81ff>0</span>          24m
+myapp-xt9wr         1/1     Running   <span style=color:#ae81ff>0</span>          3m45s
+pod-nodename-demo   1/1     Running   <span style=color:#ae81ff>0</span>          4d4h
+</code></pre></div><p>從結果來看，<code>myapp-flv45</code> 這個 <code>POD</code> 的 <code>app</code> 標籤被移除，這不符合 <code>RS</code> 所定義要控管的 <code>POD</code> 標籤，因此該 <code>POD</code> 不再被 <code>RS</code> 控管，同時間少了一個 <code>POD</code>，所以 <code>RS</code> 又建立了 <code>myapp-xt9wr</code>。從這些結果來看，對於刪除或節點故障都會導致永久性消失。</p><figure><img src=/images/k8s/K8s-RS-remove-label.jpg width=auto height=auto></figure><h3 id=多出-pod>多出 Pod</h3><p>我們嘗試將 <code>myapp-flv45</code> 的標籤打回去，這樣 <code>RS</code> 就會控管 3 份 <code>POD</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl label pods myapp-flv45 app<span style=color:#f92672>=</span>myapp --overwrite
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+NAME          READY   STATUS    RESTARTS   AGE
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          18m
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          30m
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -w
+NAME          READY   STATUS    RESTARTS   AGE
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          28m
+myapp-xt9wr   1/1     Running   <span style=color:#ae81ff>0</span>          7m40s
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          17m
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          17m
+myapp-xt9wr   1/1     Terminating   <span style=color:#ae81ff>0</span>          9m22s
+myapp-xt9wr   0/1     Terminating   <span style=color:#ae81ff>0</span>          9m22s
+myapp-xt9wr   0/1     Terminating   <span style=color:#ae81ff>0</span>          9m23s
+myapp-xt9wr   0/1     Terminating   <span style=color:#ae81ff>0</span>          9m23s
+</code></pre></div><p>上面結果來說，3 份 <code>POD</code> 對於 <code>myapp</code> 來說多了一份，因此這邊看到它終止了 <code>myapp-xt9wr</code>。這說明了自主式的 <code>POD</code> 或屬於其它控制器的 <code>POD</code>，當標籤資源被做了變動一不小心可能就終止了其它 POD 資源。</p><h3 id=查看-rs-資源事件>查看 RS 資源事件</h3><p>這邊使用 <code>describe</code>，去查看 <code>RS</code>。其內容如下面結果所式，有名稱、所屬 <code>namespace</code>、<code>selector</code> 定義等。在 <code>Events</code> 中可以看出過往新增或刪除了什麼 <code>POD</code>。<code>RS</code> 之所以能做出這些的反應，是因為它有向 <code>API Server</code> 註冊 <code>watch</code>，這樣就可以有相關資源變動訊息，<code>API Server</code> 在變動觸發時會通知給相關有註冊 <code>watch</code> 的客戶端。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe rs myapp
+Name:         myapp
+Namespace:    default
+Selector:     app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+Labels:       &lt;none&gt;
+Annotations:  &lt;none&gt;
+Replicas:     <span style=color:#ae81ff>2</span> current / <span style=color:#ae81ff>2</span> desired
+Pods Status:  <span style=color:#ae81ff>2</span> Running / <span style=color:#ae81ff>0</span> Waiting / <span style=color:#ae81ff>0</span> Succeeded / <span style=color:#ae81ff>0</span> Failed
+Pod Template:
+  Labels:  app<span style=color:#f92672>=</span>myapp
+           env<span style=color:#f92672>=</span>qa
+           release<span style=color:#f92672>=</span>canary
+  Containers:
+   myapp-container:
+    Image:        nginx:1.10
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  &lt;none&gt;
+    Mounts:       &lt;none&gt;
+  Volumes:        &lt;none&gt;
+Events:
+  Type    Reason            Age    From                   Message
+  ----    ------            ----   ----                   -------
+  Normal  SuccessfulCreate  37m    replicaset-controller  Created pod: myapp-9xkht
+  Normal  SuccessfulCreate  37m    replicaset-controller  Created pod: myapp-mvkjk
+  Normal  SuccessfulCreate  25m    replicaset-controller  Created pod: myapp-flv45
+  Normal  SuccessfulCreate  16m    replicaset-controller  Created pod: myapp-xt9wr
+  Normal  SuccessfulDelete  7m22s  replicaset-controller  Deleted pod: myapp-xt9wr
+</code></pre></div><h2 id=更新-rs>更新 RS</h2><p>一開始 <code>RS</code> 控管的 <code>POD</code> 使用 <code>nginx:1.10</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get rs -o wide
+NAME    DESIRED   CURRENT   READY   AGE   CONTAINERS        IMAGES       SELECTOR
+myapp   <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>       63s   myapp-container   nginx:1.10   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+</code></pre></div><h3 id=更新-template>更新 Template</h3><h5 id=edit>edit</h5><p>使用 <code>edit</code> 進行修改，將 <code>nginx:1.10</code> 改 <code>nginx:1.18</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl edit rs myapp
+$ kubectl get rs -o wide
+NAME    DESIRED   CURRENT   READY   AGE   CONTAINERS        IMAGES       SELECTOR
+myapp   <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>       54m   myapp-container   nginx:1.18   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o <span style=color:#ae81ff>\
+</span><span style=color:#ae81ff></span>&gt; custom-columns<span style=color:#f92672>=</span>Name:metadata.name,Image:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image
+Name          Image
+myapp-flv45   nginx:1.10
+myapp-mvkjk   nginx:1.10
+</code></pre></div><h5 id=apply>apply</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -f rs-demo.yaml <span style=color:#75715e># 將鏡像改 1.15 版</span>
+replicaset.apps/myapp configured
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o custom-columns<span style=color:#f92672>=</span>Name:metadata.name,Image:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image
+Name          Image
+myapp-flv45   nginx:1.10
+myapp-mvkjk   nginx:1.10
+$ kubectl get rs -o wide
+NAME    DESIRED   CURRENT   READY   AGE   CONTAINERS        IMAGES       SELECTOR
+myapp   <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>       59m   myapp-container   nginx:1.15   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+</code></pre></div><p>最後發現還是 <code>1.10</code> 版，但 <code>RS</code> 資源卻顯示我們要改的版本。這需要將當前的 <code>POD</code> 進行刪除或修改標籤選擇器，才會觸發新模板的建立，過程如下圖</p><figure><img src=/images/k8s/K8s-rs-template.jpg width=auto height=auto></figure><p>如果對於新舊的交替也就是更新會有以下操作可能</p><ul><li>一次刪除所有 <code>POD</code> 或是更新標籤選擇器<ul><li>會有一段時間導致客戶端無法存取</li></ul></li><li>分批刪除 <code>POD</code> 或是更新標籤選擇器<ul><li>更新時會有新舊版本供存</li></ul></li></ul><p>雖然這樣可以達到以手動方式更新，但 <code>K8s</code> 提供了一個 <code>Deployment</code> 控制器(下一篇會說明)，其能夠更完善的實現滾動更新和回滾，同時也可讓客戶端定義更新策略。</p><h3 id=pod-伸縮>POD 伸縮</h3><p>只要更改 <code>replicas</code> 的數量即可達到 <code>POD</code> 的水平擴充。可用 <code>scale</code> 做更改，也可使用 <code>edit</code> 等方式。</p><p>使用 <code>scale</code> 擴展成 5 個 <code>POD</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl scale rs myapp --replicas<span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>
+$ kubectl get rs myapp
+NAME    DESIRED   CURRENT   READY   AGE
+myapp   <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>       7h34m
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+NAME          READY   STATUS    RESTARTS   AGE
+myapp-fh6cp   1/1     Running   <span style=color:#ae81ff>0</span>          31s
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          7h22m
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          7h34m
+myapp-ts7zd   1/1     Running   <span style=color:#ae81ff>0</span>          31s
+myapp-vbtnn   1/1     Running   <span style=color:#ae81ff>0</span>          31s
+</code></pre></div><p>使用 <code>edit</code> 減少至 3 個 <code>POD</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl edit rs myapp <span style=color:#75715e># 找到 rcplicas 字段，進行數量修改</span>
+$ kubectl get rs myapp
+NAME    DESIRED   CURRENT   READY   AGE
+myapp   <span style=color:#ae81ff>3</span>         <span style=color:#ae81ff>3</span>         <span style=color:#ae81ff>3</span>       7h37m
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+NAME          READY   STATUS    RESTARTS   AGE
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          7h25m
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          7h37m
+myapp-ts7zd   1/1     Running   <span style=color:#ae81ff>0</span>          3m56s
+</code></pre></div><h2 id=刪除-rs-資源>刪除 RS 資源</h2><p>可以使用 <code>delete</code> 方式進行 <code>RS</code> 資源刪除。一般使用 <code>delete</code> 時 <code>RS</code> 會將其控管的 <code>POD</code> 也一併刪除，當中有 <code>--cascade=false</code> 可選，可將 <code>RS</code> 控管的 <code>POD</code>，變成自主式的 <code>POD</code>，同時也少了 <code>RS</code> 控管的優點。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete -f rs-demo.yaml <span style=color:#75715e># 刪除 RS 資源</span>
+$ kubectl delete rs myapp <span style=color:#75715e># 刪除 RS 資源</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete rs myapp --cascade<span style=color:#f92672>=</span>false
+replicaset.extensions <span style=color:#e6db74>&#34;myapp&#34;</span> deleted
+$ kubectl get rs <span style=color:#75715e># RS 資源被刪除</span>
+No resources found in default namespace.
+$ kubectl get pods <span style=color:#75715e># 設置了 --cascade=false，讓 POD 變成自主式</span>
+NAME                READY   STATUS    RESTARTS   AGE
+myapp-flv45         1/1     Running   <span style=color:#ae81ff>0</span>          7h32m
+myapp-mvkjk         1/1     Running   <span style=color:#ae81ff>0</span>          7h44m
+myapp-ts7zd         1/1     Running   <span style=color:#ae81ff>0</span>          10m
+</code></pre></div><h2 id=other>Other</h2><p>因為實驗環境使用 <code>GKE</code> 這邊實驗將一個節點關閉，觀察 <code>RS</code> 的處裡，這邊先將 <code>replicas</code> 更改為 5 個並重新部署。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o wide
+NAME          READY   STATUS    RESTARTS   AGE     IP          NODE                                       NOMINATED NODE   READINESS GATES
+myapp-5t5qf   1/1     Running   <span style=color:#ae81ff>0</span>          3m56s   10.4.0.17   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-dnbf6   1/1     Running   <span style=color:#ae81ff>0</span>          3m56s   10.4.1.11   gke-cluster-1-default-pool-7dc8b11b-cxs1   &lt;none&gt;           &lt;none&gt;
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          7h38m   10.4.0.14   gke-cluster-1-default-pool-7dc8b11b-z2gx   &lt;none&gt;           &lt;none&gt;
+myapp-mvkjk   1/1     Running   <span style=color:#ae81ff>0</span>          7h50m   10.4.2.12   gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;
+myapp-tmft2   1/1     Running   <span style=color:#ae81ff>0</span>          3m56s   10.4.2.14   gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;
+</code></pre></div><p>這邊將 <code>gke-cluster-1-default-pool-7dc8b11b-r7rg</code> 節點進行網卡關閉，最後結果也是一樣，兩個狀態變為 <code>Unknown</code> 而 <code>RS</code> 又新增兩個，該節點網路如果又恢復，想必又終止 2 個 <code>POD</code>，這過程完全不用人為干預。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud compute ssh gke-cluster-1-default-pool-7dc8b11b-r7rg --zone<span style=color:#f92672>=</span>us-central1-c
+$ sudo ifconfig eth0 down
+$ kubectl get node
+NAME                                       STATUS     ROLES    AGE   VERSION
+gke-cluster-1-default-pool-7dc8b11b-cxs1   Ready      &lt;none&gt;   11d   v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-r7rg   NotReady   &lt;none&gt;   11d   v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-z2gx   Ready      &lt;none&gt;   11d   v1.15.12-gke.2
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+NAME          READY   STATUS    RESTARTS   AGE
+myapp-5t5qf   1/1     Running   <span style=color:#ae81ff>0</span>          14m
+myapp-dnbf6   1/1     Running   <span style=color:#ae81ff>0</span>          14m
+myapp-flv45   1/1     Running   <span style=color:#ae81ff>0</span>          7h49m
+myapp-gjpp6   1/1     Running   <span style=color:#ae81ff>0</span>          3m8s <span style=color:#75715e># 新增</span>
+myapp-mvkjk   1/1     Unknown   <span style=color:#ae81ff>0</span>          8h <span style=color:#75715e># this</span>
+myapp-t82p4   1/1     Running   <span style=color:#ae81ff>0</span>          3m8s <span style=color:#75715e># 新增</span>
+myapp-tmft2   1/1     Unknown   <span style=color:#ae81ff>0</span>          14m <span style=color:#75715e># this</span>
+</code></pre></div><p>將網路恢復</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud compute instances reset gke-cluster-1-default-pool-7dc8b11b-r7rg --zone<span style=color:#f92672>=</span>us-central1-c
+Updated <span style=color:#f92672>[</span>https://www.googleapis.com/compute/v1/projects/sunny-catwalk-286908/zones/us-central1-c/instances/gke-cluster-1-default-pool-7dc8b11b-r7rg<span style=color:#f92672>]</span>.
+$ kubectl get node
+NAME                                       STATUS   ROLES    AGE   VERSION
+gke-cluster-1-default-pool-7dc8b11b-cxs1   Ready    &lt;none&gt;   11d   v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-r7rg   Ready    &lt;none&gt;   8h    v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-z2gx   Ready    &lt;none&gt;   11d   v1.15.12-gke.2
+</code></pre></div><p>當節點網路恢復時，其狀態回到 <code>Ready</code>，並且狀態為 <code>Unknown</code> 的 <code>POD</code> 將被刪除。</p><h2 id=結論>結論</h2><p>透過本篇文章，詳細的知道 <code>ReplicaSet</code> 的原理以及操作。也比較說與自主式 <code>POD</code> 的差異。而 <code>Replica</code> 能夠實現出對於相同的 <code>POD</code> 的負載均衡和保持 <code>POD</code> 想要維持的數量。但要注意的是 <code>ReplicaSet</code> 只是負責 <code>POD</code> 數量有無符合期望值，並不會知道 <code>POD</code> 的容器是掛掉的還是怎樣。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-02-pod-controller/ title="kubernetes - day12"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-04-deployment/ title="kubernetes - day14"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

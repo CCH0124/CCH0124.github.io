@@ -1,0 +1,42 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>ML-3-meanshift</h1><p class=mb-1>January 3, 2020</p><p>&mdash;</p></div><div class=content><h2 id=what-is-meanshift>What is meanshift</h2><p>資料集的密度為一個隨核密度分佈，能夠在此資料集中找到局部極值，即為一個 <code>kernel density estimation</code>（它不需要預先知道樣本數據的概率密度分佈函數，完全能夠對樣本點的計算），因此將資料分群。</p><h2 id=example>Example</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> numpy <span style=color:#f92672>as</span> np
+<span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#f92672>as</span> plt
+<span style=color:#f92672>import</span> pandas <span style=color:#f92672>as</span> pd
+<span style=color:#f92672>from</span> sklearn.cluster <span style=color:#f92672>import</span> MeanShift, estimate_bandwidth
+<span style=color:#f92672>from</span> sklearn <span style=color:#f92672>import</span> datasets
+<span style=color:#f92672>from</span> sklearn <span style=color:#f92672>import</span> preprocessing
+<span style=color:#75715e>#create datasets</span>
+<span style=color:#75715e># iris = datasets.load_iris() </span>
+<span style=color:#75715e># X = iris.data[:, :4]</span>
+url <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv&#34;</span>
+data <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(url)
+le <span style=color:#f92672>=</span> preprocessing<span style=color:#f92672>.</span>LabelEncoder()
+data[<span style=color:#e6db74>&#39;species&#39;</span>] <span style=color:#f92672>=</span> le<span style=color:#f92672>.</span>fit_transform(data<span style=color:#f92672>.</span>iloc[:,<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>])
+
+X <span style=color:#f92672>=</span> data<span style=color:#f92672>.</span>iloc[:, <span style=color:#ae81ff>0</span>:<span style=color:#ae81ff>4</span>]<span style=color:#f92672>.</span>to_numpy()
+y <span style=color:#f92672>=</span> data<span style=color:#f92672>.</span>iloc[:,<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>to_numpy()
+
+plt<span style=color:#f92672>.</span>scatter(X[:, <span style=color:#ae81ff>0</span>], X[:, <span style=color:#ae81ff>1</span>], c<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;yellow&#34;</span>, marker<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;o&#39;</span>, label<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;see&#39;</span>)  
+plt<span style=color:#f92672>.</span>show()
+
+<span style=color:#75715e># estimate bandwidth</span>
+bandwidth <span style=color:#f92672>=</span> estimate_bandwidth(X, quantile<span style=color:#f92672>=</span><span style=color:#ae81ff>0.3</span>)
+<span style=color:#75715e># Mean Shift method</span>
+model <span style=color:#f92672>=</span> MeanShift(bandwidth <span style=color:#f92672>=</span> bandwidth, bin_seeding <span style=color:#f92672>=</span> True, max_iter<span style=color:#f92672>=</span><span style=color:#ae81ff>500</span>)
+model<span style=color:#f92672>.</span>fit(X)
+labels <span style=color:#f92672>=</span> model<span style=color:#f92672>.</span>fit_predict(X)
+centers <span style=color:#f92672>=</span> model<span style=color:#f92672>.</span>cluster_centers_
+
+colormap <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array([<span style=color:#e6db74>&#39;Red&#39;</span>,<span style=color:#e6db74>&#39;green&#39;</span>,<span style=color:#e6db74>&#39;blue&#39;</span>])
+
+plt<span style=color:#f92672>.</span>scatter(data<span style=color:#f92672>.</span>petal_length, data<span style=color:#f92672>.</span>petal_width, c<span style=color:#f92672>=</span>colormap[y], s<span style=color:#f92672>=</span><span style=color:#ae81ff>50</span>)
+plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>&#39;Classification Actually&#39;</span>)
+plt<span style=color:#f92672>.</span>show()
+
+plt<span style=color:#f92672>.</span>scatter(data<span style=color:#f92672>.</span>petal_length, data<span style=color:#f92672>.</span>petal_width, c<span style=color:#f92672>=</span>colormap[model<span style=color:#f92672>.</span>labels_], s<span style=color:#f92672>=</span><span style=color:#ae81ff>50</span>)
+plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>&#39;Classification Prediction&#39;</span>)
+plt<span style=color:#f92672>.</span>show()
+</code></pre></div><p>其中 <code>estimate bandwidth</code> 會影響 <code>Mean Shift</code>。當 <code>bandwidth</code> 越大，則峰就越平滑，越小則相反，這會導致集群分類的結果。</p><h2 id=ref>Ref</h2><ul><li><a href=https://medium.com/ai-academy-taiwan/clustering-method-2-cd9bb883a0cb>ai-academy-taiwan</a></li><li><a href=https://spin.atomicobject.com/2015/05/26/mean-shift-clustering/>mean-shift-clustering</a></li><li><a href=https://blog.csdn.net/google19890102/article/details/51030884>CSDN</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2020-01-02-dbscan/ title=ML-2-DBSCAN><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2020-01-05-router-on-a-stick/ title=router-on-a-stick><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

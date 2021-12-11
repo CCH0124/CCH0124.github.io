@@ -1,0 +1,469 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day18</h1><p class=mb-1>September 8, 2020</p><p>&mdash;</p></div><div class=content><h2 id=預設的-service>預設的 Service</h2><p>這預設是讓節點能夠跟 <code>API Server</code> 等資源做通訊。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get svc
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>   AGE
+kubernetes   ClusterIP   10.8.0.1     &lt;none&gt;        443/TCP   15d
+$ kubectl describe svc kubernetes
+Name:              kubernetes
+Namespace:         default
+Labels:            component<span style=color:#f92672>=</span>apiserver
+                   provider<span style=color:#f92672>=</span>kubernetes
+Annotations:       &lt;none&gt;
+Selector:          &lt;none&gt;
+Type:              ClusterIP
+IP:                10.8.0.1
+Port:              https  443/TCP
+TargetPort:        443/TCP
+Endpoints:         34.66.217.13:443
+Session Affinity:  None
+Events:            &lt;none&gt;
+</code></pre></div><h2 id=clusterip-類型的-service>clusterIP 類型的 Service</h2><p>同樣的使用 <code>nginx</code> 做為範例。下面是實驗的 <code>yaml</code>。在前面文章有提到過，使用 <code>expose</code> 也可以達到創建 <code>Service</code> 資源。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>my-nginx</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>5</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>run</span>: <span style=color:#ae81ff>my-nginx</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>run</span>: <span style=color:#ae81ff>my-nginx</span>
+        <span style=color:#f92672>role</span>: <span style=color:#ae81ff>backend</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>my-nginx</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.12</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+--- <span style=color:#75715e># 區分資源，透過此方式可在一個檔案中定義不同多個資源</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Service</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>run</span>: <span style=color:#ae81ff>my-nginx</span> <span style=color:#75715e># 關聯 POD 標籤</span>
+  <span style=color:#f92672>type </span>: <span style=color:#ae81ff>ClusterIP</span>
+  <span style=color:#f92672>ports</span>:
+  - <span style=color:#f92672>port</span>: <span style=color:#ae81ff>8080</span> <span style=color:#75715e># 暴露端口</span>
+    <span style=color:#f92672>targetPort</span>: <span style=color:#ae81ff>80</span> <span style=color:#75715e># 目標 POD 上的 Port</span>
+</code></pre></div><p>使用 <code>apply</code> 部署</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -f nginx-service-demo.yaml
+deployment.apps/my-nginx created
+service/nginx created
+</code></pre></div><p>使用 <code>get</code> 查看我們部署的 <code>service</code> 資源。<code>TYPE</code> 選擇是 <code>ClusterIP</code> 此值也是預設值；<code>CLUSTER-IP</code> 為自動分配，也可以透過 <code>spec</code> 中 <code>clusterIP</code> 屬性定義；<code>PORT</code> 是由 <code>port</code> 定義，協定預設為 <code>TCP</code>，可以在 <code>ports</code> 屬性下用 <code>protocol</code> 定義。<code>describe</code> 顯示詳細訊息，<code>Endpoints</code> 自動幫我們關聯，並維護相關的 <code>POD</code> 資源，可以對應下面 <code>get pods</code> 的結果。我們定義的 <code>Service</code> 類型只可以透過此 <code>IP</code> 接受從集群内的客户端 <code>POD</code> 中的請求。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get svc nginx <span style=color:#75715e># svc 為 service 縮寫</span>
+NAME    TYPE        CLUSTER-IP   EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>    AGE
+nginx   ClusterIP   10.8.5.220   &lt;none&gt;        8080/TCP   27s
+$ kubectl describe svc nginx
+Name:              nginx
+Namespace:         default
+Labels:            &lt;none&gt;
+Annotations:       &lt;none&gt;
+Selector:          run<span style=color:#f92672>=</span>my-nginx
+Type:              ClusterIP
+IP:                10.8.5.220
+Port:              &lt;unset&gt;  8080/TCP
+TargetPort:        80/TCP
+Endpoints:         10.4.1.28:80,10.4.2.33:80,10.4.2.34:80 + <span style=color:#ae81ff>2</span> more...
+Session Affinity:  None
+Events:            &lt;none&gt; 
+$ kubectl get endpoints <span style=color:#75715e># 取得 endpoints</span>
+NAME         ENDPOINTS                                            AGE
+kubernetes   34.66.217.13:443                                     15d
+nginx        10.4.1.28:80,10.4.2.33:80,10.4.2.34:80 + <span style=color:#ae81ff>2</span> more...   35m
+$ kubectl get pods -l run<span style=color:#f92672>=</span>my-nginx -o custom-columns<span style=color:#f92672>=</span>NAME:.metadata.name,hostIP:.status.hostIP,podIP:.status.podIP
+NAME                        hostIP        podIP
+my-nginx-74585d7fc6-jv2tz   10.128.0.21   10.4.1.28
+my-nginx-74585d7fc6-mjnbs   10.128.0.23   10.4.2.34
+my-nginx-74585d7fc6-rhhtb   10.128.0.24   10.4.3.95
+my-nginx-74585d7fc6-vsbxt   10.128.0.23   10.4.2.35
+my-nginx-74585d7fc6-zq6nm   10.128.0.23   10.4.2.33
+</code></pre></div><p>整個請求會是 <code>Pod &lt;---> Endpoint(tcp:80) &lt;---> Service(tcp:8080, with VIP)</code>。而 <code>Service</code> 在選擇 <code>POD</code> 時是透過 <code>Iptables</code> 的設定隨機選擇。</p><h2 id=向-service-請求服務>向 Service 請求服務</h2><h3 id=pod-存取>POD 存取</h3><p>使用以下 <code>yaml</code> 模擬一個客戶端請求</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp-pod</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>test</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>hwchiu/netutils</span>
+</code></pre></div><p>建立好客戶端的 <code>POD</code> 後，我們使用 <code>curl</code> 去請求。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec -it myapp-pod -- bash
+root@myapp-pod:/# curl 10.8.5.220:8080 
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Welcome to nginx!&lt;/title&gt;
+&lt;style&gt;
+    body <span style=color:#f92672>{</span>
+        width: 35em;
+        margin: <span style=color:#ae81ff>0</span> auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    <span style=color:#f92672>}</span>
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to nginx!&lt;/h1&gt;
+&lt;p&gt;If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.&lt;/p&gt;
+
+&lt;p&gt;For online documentation and support please refer to
+&lt;a href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;http://nginx.org/&#34;</span>&gt;nginx.org&lt;/a&gt;.&lt;br/&gt;
+Commercial support is available at
+&lt;a href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;http://nginx.com/&#34;</span>&gt;nginx.com&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Thank you <span style=color:#66d9ef>for</span> using nginx.&lt;/em&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div><h3 id=節點存取>節點存取</h3><p>在 <code>GKE</code> 上節點是由 <code>VM</code> 組成，因此我們使用 <code>ssh</code> 遠端到節點。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get node
+NAME                                       STATUS   ROLES    AGE     VERSION
+gke-cluster-1-default-pool-7dc8b11b-8kvr   Ready    &lt;none&gt;   30h     v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-cxs1   Ready    &lt;none&gt;   15d     v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-r7rg   Ready    &lt;none&gt;   3d17h   v1.15.12-gke.2
+$ gcloud compute ssh --project  sunny-catwalk-286908  --zone us-central1-c  gke-cluster-1-default-pool-7dc8b11b-cxs1
+</code></pre></div><p>請求</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>...@gke-cluster-1-default-pool-7dc8b11b-cxs1 ~ $ curl 10.8.5.220:8080
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Welcome to nginx!&lt;/title&gt;
+&lt;style&gt;
+    body <span style=color:#f92672>{</span>
+        width: 35em;
+        margin: <span style=color:#ae81ff>0</span> auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    <span style=color:#f92672>}</span>
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1&gt;Welcome to nginx!&lt;/h1&gt;
+&lt;p&gt;If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.&lt;/p&gt;
+
+&lt;p&gt;For online documentation and support please refer to
+&lt;a href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;http://nginx.org/&#34;</span>&gt;nginx.org&lt;/a&gt;.&lt;br/&gt;
+Commercial support is available at
+&lt;a href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;http://nginx.com/&#34;</span>&gt;nginx.com&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Thank you <span style=color:#66d9ef>for</span> using nginx.&lt;/em&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div><p>最後透過下面這張圖我們來理解上述的實驗</p><figure><img src=/images/k8s/K8s-service-cluster.jpg width=auto height=auto></figure><p>當中紅色虛線表示無法存取，原因有兩種</p><ol><li><code>CLUSTER-IP</code> 無法知道如何送到集群中，從以下的路由表來看並沒有記錄這 <code>CLUSTER-IP</code> 的去向</li></ol><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         172.17.0.1      0.0.0.0         UG    <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> eth0
+172.17.0.0      0.0.0.0         255.255.0.0     U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> eth0
+172.18.0.0      0.0.0.0         255.255.0.0     U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> docker0
+</code></pre></div><ol start=2><li>假設設定路由表，可以送到 <code>CLUSTER-IP</code>，當中會被 <code>kube-proxy</code> 阻擋</li></ol><p>這邊補充，<code>Service</code> 中 <code>Session affinity</code>，可以將來自同一客戶端的請求轉發至同一個後端的 POD，但這會影響負載均衡的調度。透過 <code>explain</code> 查詢其內容如下，<code>ClientIP</code> 會基於客户端 <code>IP</code> 識別客户端，把同一個來源 <code>IP</code> 請求都都調度到同一個 <code>POD</code>，也可配合 <code>clientIP</code> 下的 <code>timeoutSeconds</code> 屬性設定效果的時間。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl explain svc.spec.sessionAffinityConfig
+KIND:     Service
+VERSION:  v1
+
+RESOURCE: sessionAffinityConfig &lt;Object&gt;
+
+DESCRIPTION:
+     sessionAffinityConfig contains the configurations of session affinity.
+
+     SessionAffinityConfig represents the configurations of session affinity.
+
+FIELDS:
+   clientIP     &lt;Object&gt;
+     clientIP contains the configurations of Client IP based session affinity.
+
+$ kubectl explain svc.spec.sessionAffinity
+KIND:     Service
+VERSION:  v1
+
+FIELD:    sessionAffinity &lt;string&gt;
+
+DESCRIPTION:
+     Supports <span style=color:#e6db74>&#34;ClientIP&#34;</span> and <span style=color:#e6db74>&#34;None&#34;</span>. Used to maintain session affinity. Enable
+     client IP based session affinity. Must be ClientIP or None. Defaults to
+     None. More info:
+     https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+</code></pre></div><h2 id=nodeport-類型的-service>NodePort 類型的 Service</h2><p>簡單來說就是外部可藉由每個節點的 IP 來存取內部應用程式。我們定義以下實驗的 <code>yaml</code>。<code>type</code> 類型需要指定，<code>nodePort</code> 屬性可設定，不設定預設會是從 30000 至 32767 隨機選取。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Service</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nodeport-demo</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>type</span>: <span style=color:#ae81ff>NodePort </span>
+  <span style=color:#f92672>ports</span>:
+  - <span style=color:#f92672>port</span>: <span style=color:#ae81ff>80</span>
+    <span style=color:#f92672>targetPort: 8080 # Service Port 80 -&gt; POD</span>: <span style=color:#ae81ff>8080</span>
+    <span style=color:#f92672>nodePort: 30080 # Node Port 30080  -&gt; POD</span>: <span style=color:#ae81ff>8080</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>3</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>paulbouwer/hello-kubernetes:1.7</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>8080</span>
+---
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-client</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>client</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>client</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>hwchiu/netutils</span>
+</code></pre></div><p>使用 <code>apply</code> 部屬，因為上面的 <code>yaml</code> 檔放置同一個目錄下，這時可使用 <code>-R</code> 進行遞規。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -R -f nodePort/
+deployment.apps/hello-kubernetes created
+deployment.apps/client created
+service/nodeport-demo created
+</code></pre></div><p>使用 <code>get</code> 查看 <code>nodePort</code> 資源</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get svc nodeport-demo -o wide
+NAME            TYPE       CLUSTER-IP   EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>        AGE   SELECTOR
+nodeport-demo   NodePort   10.8.0.16    &lt;none&gt;        80:30080/TCP   12s   app<span style=color:#f92672>=</span>hello-kubernetes<span style=color:#e6db74>```</span>
+
+<span style=color:#e6db74>```</span>shell
+$ kubectl describe svc nodeport-demo
+Name:                     nodeport-demo
+Namespace:                default
+Labels:                   &lt;none&gt;
+Annotations:              &lt;none&gt;
+Selector:                 app<span style=color:#f92672>=</span>hello-kubernetes
+Type:                     NodePort
+IP:                       10.8.0.16
+Port:                     &lt;unset&gt;  80/TCP
+TargetPort:               8080/TCP
+NodePort:                 &lt;unset&gt;  30080/TCP
+Endpoints:                10.4.1.31:8080,10.4.2.40:8080,10.4.3.99:8080
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   &lt;none&gt;
+</code></pre></div><h3 id=pod-存取-1>POD 存取</h3><p>因為 <code>NodePort</code> 繼承 <code>ClusterIP</code> 的功能，多實現了節點上的存取。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>client -o wide <span style=color:#75715e># 查看 POD</span>
+NAME                     READY   STATUS    RESTARTS   AGE     IP           NODE                                       NOMINATED NODE   READINESS GATES
+client-99cbcdc74-qz99k   1/1     Running   <span style=color:#ae81ff>0</span>          19m     10.4.3.97    gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+pod-client               1/1     Running   <span style=color:#ae81ff>0</span>          2m25s   10.4.3.100   gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+</code></pre></div><p>驗證</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec -it pod-client curl nodeport-demo <span style=color:#75715e># 利用 DNS 解析</span>
+kubectl exec <span style=color:#f92672>[</span>POD<span style=color:#f92672>]</span> <span style=color:#f92672>[</span>COMMAND<span style=color:#f92672>]</span> is DEPRECATED and will be removed in a future version. Use kubectl exec <span style=color:#f92672>[</span>POD<span style=color:#f92672>]</span> -- <span style=color:#f92672>[</span>COMMAND<span style=color:#f92672>]</span> instead.
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Hello Kubernetes!&lt;/title&gt;
+    &lt;link rel<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;stylesheet&#34;</span> type<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;text/css&#34;</span> href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;/css/main.css&#34;</span>&gt;
+    &lt;link rel<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;stylesheet&#34;</span> href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;https://fonts.googleapis.com/css?family=Ubuntu:300&#34;</span> &gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;div class<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;main&#34;</span>&gt;
+    &lt;img src<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;/images/kubernetes.png&#34;</span>/&gt;
+    &lt;div class<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;content&#34;</span>&gt;
+      &lt;div id<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;message&#34;</span>&gt;
+  Hello world!
+&lt;/div&gt;
+&lt;div id<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;info&#34;</span>&gt;
+  &lt;table&gt;
+    &lt;tr&gt;
+      &lt;th&gt;pod:&lt;/th&gt;
+      &lt;td&gt;hello-kubernetes-5b89dbbc4b-9hbgv&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;node:&lt;/th&gt;
+      &lt;td&gt;Linux <span style=color:#f92672>(</span>4.19.112+<span style=color:#f92672>)</span>&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+
+&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+&lt;/body&gt;
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec -it pod-client curl 10.8.0.16 <span style=color:#75715e># 透過 ClusterIP</span>
+kubectl exec <span style=color:#f92672>[</span>POD<span style=color:#f92672>]</span> <span style=color:#f92672>[</span>COMMAND<span style=color:#f92672>]</span> is DEPRECATED and will be removed in a future version. Use kubectl exec <span style=color:#f92672>[</span>POD<span style=color:#f92672>]</span> -- <span style=color:#f92672>[</span>COMMAND<span style=color:#f92672>]</span> instead.
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Hello Kubernetes!&lt;/title&gt;
+    &lt;link rel<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;stylesheet&#34;</span> type<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;text/css&#34;</span> href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;/css/main.css&#34;</span>&gt;
+    &lt;link rel<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;stylesheet&#34;</span> href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;https://fonts.googleapis.com/css?family=Ubuntu:300&#34;</span> &gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;div class<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;main&#34;</span>&gt;
+    &lt;img src<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;/images/kubernetes.png&#34;</span>/&gt;
+    &lt;div class<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;content&#34;</span>&gt;
+      &lt;div id<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;message&#34;</span>&gt;
+  Hello world!
+&lt;/div&gt;
+&lt;div id<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;info&#34;</span>&gt;
+  &lt;table&gt;
+    &lt;tr&gt;
+      &lt;th&gt;pod:&lt;/th&gt;
+      &lt;td&gt;hello-kubernetes-5b89dbbc4b-9hbgv&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;node:&lt;/th&gt;
+      &lt;td&gt;Linux <span style=color:#f92672>(</span>4.19.112+<span style=color:#f92672>)</span>&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+
+&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+&lt;/body&gt;
+</code></pre></div><h3 id=節點存取-1>節點存取</h3><p>從 <code>gcloud</code> 獲取對外 <code>IP</code>，當然也可以用 <code>get node</code> 方式。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud compute instances list
+NAME                                      ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP     STATUS
+gke-cluster-1-default-pool-7dc8b11b-8kvr  us-central1-c  e2-medium                  10.128.0.24  35.238.113.123  RUNNING
+gke-cluster-1-default-pool-7dc8b11b-cxs1  us-central1-c  e2-medium                  10.128.0.21  34.67.164.169   RUNNING
+gke-cluster-1-default-pool-7dc8b11b-r7rg  us-central1-c  e2-medium                  10.128.0.23  34.72.35.109    RUNNING
+$ kubectl get node -o custom-columns<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;NAME:.metadata.name,EXTERNAL-IP:.status.addresses[?(@.type==&#34;ExternalIP&#34;)].address,INTERNAL-IP:.status.addresses[?(@.type==&#34;InternalIP&#34;)].address,POD-CIDR:.spec.podCIDR&#39;</span>
+NAME                                       EXTERNAL-IP      INTERNAL-IP   POD-CIDR
+gke-cluster-1-default-pool-7dc8b11b-8kvr   35.238.113.123   10.128.0.24   10.4.3.0/24
+gke-cluster-1-default-pool-7dc8b11b-cxs1   34.67.164.169    10.128.0.21   10.4.1.0/24
+gke-cluster-1-default-pool-7dc8b11b-r7rg   34.72.35.109     10.128.0.23   10.4.2.0/24
+</code></pre></div><p>先遠端至一個 <code>VM</code> 節點上，並使用 <code>curl</code> 驗證</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl 10.128.0.24:30080
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Hello Kubernetes!&lt;/title&gt;
+    &lt;link rel<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;stylesheet&#34;</span> type<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;text/css&#34;</span> href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;/css/main.css&#34;</span>&gt;
+    &lt;link rel<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;stylesheet&#34;</span> href<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;https://fonts.googleapis.com/css?family=Ubuntu:300&#34;</span> &gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;div class<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;main&#34;</span>&gt;
+    &lt;img src<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;/images/kubernetes.png&#34;</span>/&gt;
+    &lt;div class<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;content&#34;</span>&gt;
+      &lt;div id<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;message&#34;</span>&gt;
+  Hello world!
+&lt;/div&gt;
+&lt;div id<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;info&#34;</span>&gt;
+  &lt;table&gt;
+    &lt;tr&gt;
+      &lt;th&gt;pod:&lt;/th&gt;
+      &lt;td&gt;hello-kubernetes-5b89dbbc4b-9hbgv&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;node:&lt;/th&gt;
+      &lt;td&gt;Linux <span style=color:#f92672>(</span>4.19.112+<span style=color:#f92672>)</span>&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+
+&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+&lt;/body&gt;
+</code></pre></div><p>簡單來說上面實驗可以說是 <code>client &lt;---> NodeIP:NodePort &lt;---> ClusterIP:ServicePort &lt;---> PodIP:containePort</code>。</p><p>這邊補充在 <code>GKE</code> 下每個 <code>VM</code> 都會有 <code>EXTERNAL_IP</code>，但是要讓它可以作用至 <code>NodePort</code> 需要設置以下防火牆，設置完之後透過瀏覽器輸入 <code>EXTERNAL_IP:NodePort</code> 即可存取相關 <code>POD</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud compute firewall-rules create nodeport-svc-rule --allow<span style=color:#f92672>=</span>tcp:<span style=color:#f92672>{</span>NodePort<span style=color:#f92672>}</span>
+</code></pre></div><h2 id=headless-類型的-service>Headless 類型的 Service</h2><p>在這架構下，<code>loadbalancing</code> 由自己決定，但它會取得所有 <code>endopints</code> 資訊也就是直接調度 <code>POD</code> 資訊。設定方面是將 <code>clusterIP</code> 設為 <code>None</code>，並非 <code>type</code>。而 <code>kube-proxy</code> 不會處裡此 <code>service</code> 相關的資訊像是負載均衡。只要在前端有<em>服務發現</em>功能時，可以省去 <code>clusterIP</code> 需求，同樣的此類型也是透過<em>標籤選擇器</em>，去決定 <code>endopints</code>，最重要的是集群中 <code>DNS</code> 服務 <code>A</code> 紀錄會解析到後端 <code>POD</code> 的 <code>IP</code>。假設無設置標籤選擇器時，則不會配置 <code>endopints</code>，<code>DNS</code> 服務會查找和配置。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Service</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>headless-demo</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>clusterIP</span>: <span style=color:#ae81ff>None</span> <span style=color:#75715e># headless 須為 None</span>
+  <span style=color:#f92672>ports</span>:
+  - <span style=color:#f92672>port</span>: <span style=color:#ae81ff>80</span>
+    <span style=color:#f92672>targetPort</span>: <span style=color:#ae81ff>8080</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>hello-kubernetes-headless</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>3</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>paulbouwer/hello-kubernetes:1.7</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>8080</span>
+---
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-client-headless</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>client</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>client</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>hwchiu/netutils</span>
+</code></pre></div><p>部署</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -R -f .
+</code></pre></div><p>查看 <code>service</code> 資源，<code>CLUSTER-IP</code> 為 <code>None</code>，同時用 <code>describe</code> 和 <code>get pods</code> 觀察標籤選擇器的結果並對應 <code>Endpoints</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get svc headless-demo
+NAME            TYPE        CLUSTER-IP   EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>   AGE
+headless-demo   ClusterIP   None         &lt;none&gt;        80/TCP    3m
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe svc headless-demo
+Name:              headless-demo
+Namespace:         default
+Labels:            &lt;none&gt;
+Annotations:       &lt;none&gt;
+Selector:          app<span style=color:#f92672>=</span>hello-kubernetes
+Type:              ClusterIP
+IP:                None
+Port:              &lt;unset&gt;  80/TCP
+TargetPort:        8080/TCP
+Endpoints:         10.4.1.32:8080,10.4.2.41:8080,10.4.3.101:8080
+Session Affinity:  None
+Events:            &lt;none&gt;
+$ kubectl get pods -l app<span style=color:#f92672>=</span>hello-kubernetes -o wide -L app <span style=color:#75715e># 可對照 Endpoints</span>
+NAME                                         READY   STATUS    RESTARTS   AGE     IP           NODE                                       NOMINATED NODE   READINESS GATES   APP
+hello-kubernetes-headless-5b89dbbc4b-2gbs2   1/1     Running   <span style=color:#ae81ff>0</span>          6m37s   10.4.1.32    gke-cluster-1-default-pool-7dc8b11b-cxs1   &lt;none&gt;           &lt;none&gt;            hello-kubernetes
+hello-kubernetes-headless-5b89dbbc4b-7hqnz   1/1     Running   <span style=color:#ae81ff>0</span>          6m37s   10.4.2.41    gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;            hello-kubernetes
+hello-kubernetes-headless-5b89dbbc4b-vb2zq   1/1     Running   <span style=color:#ae81ff>0</span>          6m37s   10.4.3.101   gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;            hello-kubernetes
+</code></pre></div><h3 id=pod-資源發現>POD 資源發現</h3><p>前面提到過說可用 <code>DNS</code> 去解析相關 <code>POD</code> 的 <code>IP</code> 位置，因此這建立的 <code>service</code> 資源是直接發現 <code>POD</code>。藉由 <code>pod-client-headless</code> 我們嘗試使用 <code>nslookup</code> 解析，結果正是標籤選擇器(selector) 所選擇的 <code>POD</code> 的 <code>IP</code>，因此它是直接對 <code>POD</code>，不必有轉發動作。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>client
+NAME                  READY   STATUS    RESTARTS   AGE
+pod-client-headless   1/1     Running   <span style=color:#ae81ff>0</span>          8m46s
+$ kubectl exec -it pod-client-headless -- bash
+root@pod-client-headless:/# nslookup headless-demo
+Server:         10.8.0.10
+Address:        10.8.0.10#53
+
+Name:   headless-demo.default.svc.cluster.local
+Address: 10.4.1.32
+Name:   headless-demo.default.svc.cluster.local
+Address: 10.4.2.41
+Name:   headless-demo.default.svc.cluster.local
+Address: 10.4.3.101   
+</code></pre></div><p>這邊為了顯示出此 <code>service</code> 透過域名方式可綁定 <code>POD</code>，就算該 <code>POD</code> 被重新調度。這邊將 <code>Deployment</code> 的部署改用 <code>StatefulSet</code> 方式呈現較為直觀，可以將它想像成是一個有序的服務，<code>StatefulSet</code> 在後面文章後會提到，這邊不知道不影響對 <code>headless</code> 理解。</p><p>觀察部署的 <code>POD</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods
+NAME                     READY   STATUS    RESTARTS   AGE
+client-99cbcdc74-h2x7x   1/1     Running   <span style=color:#ae81ff>0</span>          10s
+hello-kubernetes-0       1/1     Running   <span style=color:#ae81ff>0</span>          10s
+hello-kubernetes-1       1/1     Running   <span style=color:#ae81ff>0</span>          8s
+hello-kubernetes-2       1/1     Running   <span style=color:#ae81ff>0</span>          7s
+</code></pre></div><p>我們用 <code>nslookup</code> 去解析 <code>hello-kubernetes-0</code> 服務，得到 <code>10.4.2.44</code> 的 <code>POD</code> 地址。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec -it client-99cbcdc74-h2x7x -- bash
+root@client-99cbcdc74-h2x7x:/# nslookup hello-kubernetes-0.headless-demo
+Server:         10.8.0.10
+Address:        10.8.0.10#53
+
+Name:   hello-kubernetes-0.headless-demo.default.svc.cluster.local
+Address: 10.4.2.44
+
+root@client-99cbcdc74-h2x7x:/#
+</code></pre></div><p>嘗試將 <code>hello-kubernetes-0</code> 刪除，並用 <code>nslookup</code> 觀察，此結果可以說 <code>POD</code> 被重新調度後，透過 <code>DNS</code> 發現方式還是可以將請求丟到同一個 <code>POD</code> 上。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete pods hello-kubernetes-0
+pod <span style=color:#e6db74>&#34;hello-kubernetes-0&#34;</span> deleted
+<span style=color:#75715e># 在解析一次</span>
+root@client-99cbcdc74-h2x7x:/# nslookup hello-kubernetes-0.headless-demo
+Server:         10.8.0.10
+Address:        10.8.0.10#53
+
+Name:   hello-kubernetes-0.headless-demo.default.svc.cluster.local
+Address: 10.4.2.45
+</code></pre></div><h2 id=externalname-類型的-service>ExternalName 類型的 Service</h2><p>這也算是 <code>headless</code> 的一種，在資源定義上，<code>type</code> 是 <code>ExternalName</code>，<code>externalName</code> 要指定集群外部的服務，需要是一個 <code>CNAME</code>，這樣 <code>POD</code> 才能去存取。此資源不必要定義標籤選擇器(selector)和 <code>clusterIP</code>，因此很像 <code>headless</code>。這邊較為簡易就不演示了。</p><h2 id=參考資源>參考資源</h2><ul><li><a href=https://kubernetes.io/zh/docs/concepts/services-networking/service/>官方 service</a></li><li>Kubernetes in action</li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-07-service-ingress/ title="kubernetes - day17"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-09-service-ingress-part3/ title="kubernetes - day19"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

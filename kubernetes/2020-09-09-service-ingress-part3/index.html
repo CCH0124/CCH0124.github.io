@@ -1,0 +1,284 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day19</h1><p class=mb-1>September 9, 2020</p><p>&mdash;</p></div><div class=content><h2 id=loadbalance-類型的-service>Loadbalance 類型的 Service</h2><p>上一章節實作了 <code>nodePort</code> 類型的資源，它可讓集群外部存取，但 <code>nodePort</code> 資源有著一個缺點，要存取時須知道集群中至少一個節點 <code>IP</code>，該結點如果故障得要取得其它節點的 <code>IP</code>。這問題可藉由在集群外部部署一個負載均衡器，可以經由它存取外部客户端請求同時調度到集群中相應的 <code>nodePort</code>，這類型的資源是 <code>LoadBalancer</code>。我們透過 <code>GKE</code> 環境實作。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Service</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>loadbalance-service</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>type</span>: <span style=color:#ae81ff>LoadBalancer</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+  <span style=color:#f92672>ports</span>:
+    - <span style=color:#f92672>protocol</span>: <span style=color:#ae81ff>TCP</span>
+      <span style=color:#f92672>port</span>: <span style=color:#ae81ff>8080</span>
+      <span style=color:#f92672>targetPort</span>: <span style=color:#ae81ff>9376</span>
+      <span style=color:#f92672>nodePort</span>: <span style=color:#ae81ff>32223</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>hello-kubernetes-loadbalance</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>3</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>hello-kubernetes</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>paulbouwer/hello-kubernetes:1.7</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>8080</span>
+---
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-client</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>client</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>client</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>hwchiu/netutils</span>
+</code></pre></div><p>查看建立的 <code>LoadBalancer</code> 資源，此資源會分配一個對外存取的 <code>IP</code>(EXTERNAL-IP)。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get svc -w
+NAME                  TYPE           CLUSTER-IP    EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>          AGE
+headless-demo         ClusterIP      None          &lt;none&gt;        80/TCP           12h
+kubernetes            ClusterIP      10.8.0.1      &lt;none&gt;        443/TCP          16d
+loadbalance-service   LoadBalancer   10.8.13.147   &lt;pending&gt;     8080:30862/TCP   7s
+loadbalance-service   LoadBalancer   10.8.13.147   34.70.146.27   8080:30862/TCP   35s
+</code></pre></div><p>用 <code>describe</code> 查看建立的資源，其資訊和 <code>nodePort</code> 等都大同小異</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe svc loadbalance-service
+Name:                     loadbalance-service
+Namespace:                default
+Labels:                   &lt;none&gt;
+Annotations:              &lt;none&gt;
+Selector:                 app<span style=color:#f92672>=</span>hello-kubernetes
+Type:                     LoadBalancer
+IP:                       10.8.13.147
+LoadBalancer Ingress:     34.70.146.27
+Port:                     &lt;unset&gt;  9376/TCP
+TargetPort:               8080/TCP
+NodePort:                 &lt;unset&gt;  32223/TCP
+Endpoints:                10.4.1.37:8080,10.4.2.47:8080,10.4.3.111:8080
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:
+  Type    Reason                Age                  From                Message
+  ----    ------                ----                 ----                -------
+  Normal  EnsuredLoadBalancer   5m39s <span style=color:#f92672>(</span>x2 over 10m<span style=color:#f92672>)</span>  service-controller  Ensured load balancer
+  Normal  EnsuringLoadBalancer  17s <span style=color:#f92672>(</span>x3 over 11m<span style=color:#f92672>)</span>    service-controller  Ensuring load balancer
+</code></pre></div><p>實際上 <code>LoadBalancer</code> 也繼承了 <code>nodePort</code> 透過以下驗證，<code>NodePort</code> 沒有指定 <code>Port</code> 時系統會自動分配一個。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud compute instances list
+NAME                                      ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP     STATUS
+gke-cluster-1-default-pool-7dc8b11b-8kvr  us-central1-c  e2-medium                  10.128.0.24  35.238.113.123  RUNNING
+gke-cluster-1-default-pool-7dc8b11b-cxs1  us-central1-c  e2-medium                  10.128.0.21  34.67.164.169   RUNNING
+gke-cluster-1-default-pool-7dc8b11b-r7rg  us-central1-c  e2-medium                  10.128.0.23  34.72.35.109    RUNNING
+$ kubectl exec -it client-99cbcdc74-4srn9 bash
+kubectl exec <span style=color:#f92672>[</span>POD<span style=color:#f92672>]</span> <span style=color:#f92672>[</span>COMMAND<span style=color:#f92672>]</span> is DEPRECATED and will be removed in a future version. Use kubectl exec <span style=color:#f92672>[</span>POD<span style=color:#f92672>]</span> -- <span style=color:#f92672>[</span>COMMAND<span style=color:#f92672>]</span> instead.
+root@client-99cbcdc74-4srn9:/# curl 10.128.0.24:32223
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Hello Kubernetes!&lt;/title&gt;
+...
+      &lt;th&gt;pod:&lt;/th&gt;
+      &lt;td&gt;hello-kubernetes-loadbalance-5b89dbbc4b-qccrq&lt;/td&gt;
+...
+</code></pre></div><p>接著我們從本機的瀏覽器輸入 <code>34.70.146.27:9376</code>，結果如下，可以不斷的做請求會看到均衡負載效果。</p><figure><img src=/images/k8s/K8s-loadbalancer.jpg width=auto height=auto></figure><blockquote><p>有一個字段 <code>loadBalancerSourceRanges</code> 它可限制負載均衡器可存取的客戶端 IP 範圍</p></blockquote><h2 id=ingress-資源>Ingress 資源</h2><p>在 <code>K8s</code> 提供了兩種內建的負載均衡機制，分別針對的是<em>傳輸層</em>和<em>應用層</em>，應用層相較於傳輸層可以做到 <code>URL</code> 的映射或 <code>SSL</code> 的卸載等功能。我們介紹的 <code>nodePort</code>、<code>LoadBalancer</code> 等都是屬於傳輸層的負載均衡，這邊要說的 <code>Ingress</code> 是一個使用 <code>DNS</code> 或 <code>URL</code> 方式將請求轉發至指定的 <code>Service</code> 資源上。但，<code>Ingress</code> 是<em>規則</em>，無法對流量進行處理，為了能達到請求流量等功能，會配合著 <code>Ingress Controller</code> 這個資源。<code>Ingress Controller</code> 可以由有反向代理功能的應用程式實現，如 <code>Nginx</code>、<code>HAProxy</code> 等，在 <code>K8s</code> 中它也是一個 <code>POD</code>，會與被代理的 <code>POD</code> 在相同的網路中。如果 <code>Ingress</code> 進行流量分發時，<code>Ingress Controller</code> 可以將 <code>Ingress</code> 定義的規則直接轉發至 <code>POD</code> 上，這當中繞過了 <code>Service</code> 資源因此減少了 <code>kube-proxy</code> 轉發開銷。以下整理了 <code>Ingress</code> 主要資源</p><ul><li>Ingress Resource<ul><li>由 <code>Kubernetes</code>，就是一個資源清單</li></ul></li><li>Ingress Controller<ul><li><code>Kubernetes</code> 本身沒有此資源，需仰賴第三方資源</li><li>觀察 <code>Ingress Resource</code>，有資源清單有無更新，當有變動時會送給 <code>Ingress Server</code></li></ul></li><li>Ingress Server<ul><li><code>Kubernetes</code> 本身沒有此資源，需仰賴第三方資源</li><li>接收請求並轉發至後端服務</li></ul></li></ul><h3 id=創建-ingress-資源並與-nginx-ingress-控制器共舞>創建 Ingress 資源並與 Nginx Ingress 控制器共舞</h3><p><code>Ingress</code> 是基於 <code>virtual hosting</code> 或 URL 的轉發規則。以下面的 <code>Ingress</code> 資源 <code>yaml</code> 為例，會把符合 <code>test.com/v1/</code> 的規則送至 <code>hellok8s</code> 的 <code>Service</code> 資源，以此類推。這邊大致上說明一下字段的含意。從 <code>spec</code> 來看最為重要的是 <code>rule</code> 和 <code>backend</code>。<code>rule</code> 就是拿來定義規則，只要規則沒有符合則會將其送至預設定義的 <code>backend</code> 屬性，<code>backend</code> 字段有 <code>serviceName</code> 和 <code>servicePort</code> 分別是對應 <code>Service</code> 資源名稱和 <code>Port</code>。</p><p><code>Ingress</code> 的類型還有分以下</p><ul><li>基於 <code>URL</code></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>rules</span>:
+- <span style=color:#f92672>host</span>: <span style=color:#ae81ff>test.com</span>
+    <span style=color:#f92672>http</span>:
+      <span style=color:#f92672>paths</span>:
+      - <span style=color:#f92672>path</span>: <span style=color:#ae81ff>/v1/</span>
+        <span style=color:#f92672>backend</span>:
+          <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>hellok8s</span>
+          <span style=color:#f92672>servicePort</span>: <span style=color:#ae81ff>80</span>
+</code></pre></div><ul><li>基於 <code>virtual hosting</code></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>rules</span>:
+- <span style=color:#f92672>host</span>: <span style=color:#ae81ff>api.ik8s.io</span>
+    <span style=color:#f92672>http</span>:
+      <span style=color:#f92672>paths</span>:
+      - <span style=color:#f92672>backend</span>:
+          <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>api</span>
+          <span style=color:#f92672>servicePort</span>: <span style=color:#ae81ff>80</span>
+
+</code></pre></div><ul><li>基於 <code>TLS</code></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>tls</span>:
+- <span style=color:#f92672>hosts</span>:
+  - <span style=color:#ae81ff>tomcat.lab</span>
+  <span style=color:#f92672>secretName</span>: <span style=color:#ae81ff>tomcat-secret</span>
+<span style=color:#f92672>rules</span>:
+- <span style=color:#f92672>host</span>: <span style=color:#ae81ff>tomcat.lab</span>
+  <span style=color:#f92672>http</span>:
+    <span style=color:#f92672>paths</span>:
+    - <span style=color:#f92672>path</span>: <span style=color:#ae81ff>/</span>
+      <span style=color:#f92672>backend</span>:
+        <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>tomcat-svc</span>
+        <span style=color:#f92672>servicePort</span>: <span style=color:#ae81ff>80</span>
+</code></pre></div><p>以下<a href=https://github.com/hwchiu/hiskio-course/tree/master/introduction/ingress>範例</a>是來自 hwchiu 大大的，<code>README.md</code> 檔案內容也需要執行，它是 <code>Nginx Ingress</code> 控制器。這邊拿 Ingress 的資源講解，其它的都在前面文章都有提到。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>networking.k8s.io/v1beta1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Ingress</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>ingress-http</span>
+  <span style=color:#f92672>annotations</span>:
+    <span style=color:#f92672>nginx.ingress.kubernetes.io/rewrite-target</span>: <span style=color:#ae81ff>/</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>rules</span>:
+  - <span style=color:#f92672>host</span>: <span style=color:#ae81ff>test.com</span>
+    <span style=color:#f92672>http</span>:
+      <span style=color:#f92672>paths</span>:
+      - <span style=color:#f92672>path</span>: <span style=color:#ae81ff>/v1/</span>
+        <span style=color:#f92672>backend</span>:
+          <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>hellok8s</span>
+          <span style=color:#f92672>servicePort</span>: <span style=color:#ae81ff>80</span>
+      - <span style=color:#f92672>path</span>: <span style=color:#ae81ff>/v2/</span>
+        <span style=color:#f92672>backend</span>:
+          <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>httpd</span>
+          <span style=color:#f92672>servicePort</span>: <span style=color:#ae81ff>80</span>
+  - <span style=color:#f92672>host</span>: <span style=color:#ae81ff>hello.com</span>
+    <span style=color:#f92672>http</span>:
+      <span style=color:#f92672>paths</span>:
+      - <span style=color:#f92672>backend</span>:
+          <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>hellok8s</span>
+          <span style=color:#f92672>servicePort</span>: <span style=color:#ae81ff>80</span>
+  - <span style=color:#f92672>host</span>: <span style=color:#ae81ff>httpd.com</span>
+    <span style=color:#f92672>http</span>:
+      <span style=color:#f92672>paths</span>:
+      - <span style=color:#f92672>backend</span>:
+          <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>httpd</span>
+          <span style=color:#f92672>servicePort</span>: <span style=color:#ae81ff>80</span>
+</code></pre></div><p>我們簡易的把整個架構用下圖表示</p><figure><img src=/images/k8s/K8s-ingress-01.jpg width=auto height=auto></figure><p>同樣的上述的檔案使用 <code>apply</code> 進行部署。這邊比較重要的是 <code>Service</code> 因此這邊會以 <code>Service</code> 資源做觀察。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get svc <span style=color:#75715e># 有部署兩個應用程式，也分別為兩個應用程式建立 service 資源</span>
+NAME         TYPE        CLUSTER-IP    EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>   AGE
+hellok8s     ClusterIP   10.8.2.77     &lt;none&gt;        80/TCP    22s
+httpd        ClusterIP   10.8.10.193   &lt;none&gt;        80/TCP    22s
+$ kubectl get endpoints
+NAME         ENDPOINTS                                       AGE
+hellok8s     10.4.1.40:8080,10.4.2.53:8080,10.4.3.116:8080   58s <span style=color:#75715e># 對應的 POD 資訊</span>
+httpd        10.4.1.41:80,10.4.2.54:80,10.4.3.117:80         58s <span style=color:#75715e># 對應的 POD 資訊</span>
+</code></pre></div><h3 id=nodeport>NodePort</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl -n ingress-nginx get svc
+NAME            TYPE       CLUSTER-IP   EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>                      AGE
+ingress-nginx   NodePort   10.8.7.41    &lt;none&gt;        80:32739/TCP,443:31198/TCP   117s
+</code></pre></div><p>部署的 <code>ingress</code> 資源，其 <code>ADDRESS</code> 對應的是 <code>ingress-nginx</code> 控制器的 <code>NodePort</code>，此兩個是相互關連的，且可以透過 <code>NodePort</code> 給外界存取。因此這邊實驗是 <code>client &lt;--> NodePort &lt;--> Ingress &lt;--> Service</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get ingress <span style=color:#75715e># 取得 Ingress 資訊</span>
+NAME           HOSTS                          ADDRESS     PORTS   AGE
+ingress-http   test.com,hello.com,httpd.com   10.8.7.41   <span style=color:#ae81ff>80</span>      2m51s
+$  kubectl describe ingress ingress-http <span style=color:#75715e># 詳細訊息</span>
+Name:             ingress-http
+Namespace:        default
+Address:          10.8.7.41
+Default backend:  default-http-backend:80 <span style=color:#f92672>(</span>10.4.1.4:8080<span style=color:#f92672>)</span>
+Rules:
+  Host        Path  Backends
+  ----        ----  --------
+  test.com
+              /v1/   hellok8s:80 <span style=color:#f92672>(</span>10.4.1.40:8080,10.4.2.53:8080,10.4.3.116:8080<span style=color:#f92672>)</span>
+              /v2/   httpd:80 <span style=color:#f92672>(</span>10.4.1.41:80,10.4.2.54:80,10.4.3.117:80<span style=color:#f92672>)</span>
+  hello.com
+                 hellok8s:80 <span style=color:#f92672>(</span>10.4.1.40:8080,10.4.2.53:8080,10.4.3.116:8080<span style=color:#f92672>)</span>
+  httpd.com
+                 httpd:80 <span style=color:#f92672>(</span>10.4.1.41:80,10.4.2.54:80,10.4.3.117:80<span style=color:#f92672>)</span>
+Annotations:  nginx.ingress.kubernetes.io/rewrite-target: /
+Events:
+  Type     Reason     Age                    From                      Message
+  ----     ------     ----                   ----                      -------
+  Normal   UPDATE     11m <span style=color:#f92672>(</span>x4 over 106m<span style=color:#f92672>)</span>     nginx-ingress-controller  Ingress default/ingress-http
+  Warning  Translate  2m21s <span style=color:#f92672>(</span>x23 over 106m<span style=color:#f92672>)</span>  loadbalancer-controller   error <span style=color:#66d9ef>while</span> evaluating the ingress spec: service <span style=color:#e6db74>&#34;default/hellok8s&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>; service <span style=color:#e6db74>&#34;default/httpd&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>; service <span style=color:#e6db74>&#34;default/hellok8s&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>; service <span style=color:#e6db74>&#34;default/httpd&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>
+</code></pre></div><p>這邊從 <code>Cloud Shell</code> 遠端至一台節點並設定 <code>/etc/hosts</code>，它為一個靜態對找表，預設是往這邊搜尋，我們當下打 <code>test.com</code> 它會導到 <code>10.8.7.41</code>，當沒結果才往外部 <code>DNS</code> 做搜尋。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>@gke-cluster-1-default-pool-7dc8b11b-8kvr$ sudo vi /etc/hosts
+10.8.7.41 test.com
+10.8.7.41 hello.com
+10.8.7.41 httpd.com
+</code></pre></div><p>驗證</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>@gke-cluster-1-default-pool-7dc8b11b-8kvr$ curl test.com/v1/
+...
+    &lt;tr&gt;
+      &lt;th&gt;pod:&lt;/th&gt;
+      &lt;td&gt;hello-kubernetes-5b89dbbc4b-t7bvr&lt;/td&gt;
+    &lt;/tr&gt;
+...
+@gke-cluster-1-default-pool-7dc8b11b-8kvr$ curl test.com/v2/
+&lt;html&gt;&lt;body&gt;&lt;h1&gt;It works!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;
+</code></pre></div><h3 id=loadbalance>Loadbalance</h3><p><code>service</code> 檔案資源清單定義的 <code>Ingress</code> 是 <code>NodePort</code> 這邊嘗試用 <code>LoadBalancer</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl -n ingress-nginx get svc
+NAME            TYPE           CLUSTER-IP   EXTERNAL-IP    PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>                      AGE
+ingress-nginx   LoadBalancer   10.8.7.41    34.70.146.27   80:32739/TCP,443:31198/TCP   26m
+$ kubectl get ingress
+NAME           HOSTS                          ADDRESS        PORTS   AGE
+ingress-http   test.com,hello.com,httpd.com   34.70.146.27   <span style=color:#ae81ff>80</span>      26m
+$ kubectl describe ingress ingress-http <span style=color:#75715e># 詳細資訊</span>
+Name:             ingress-http
+Namespace:        default
+Address:          34.70.146.27
+Default backend:  default-http-backend:80 <span style=color:#f92672>(</span>10.4.1.4:8080<span style=color:#f92672>)</span>
+Rules:
+  Host        Path  Backends
+  ----        ----  --------
+  test.com
+              /v1/   hellok8s:80 <span style=color:#f92672>(</span>10.4.1.40:8080,10.4.2.53:8080,10.4.3.116:8080<span style=color:#f92672>)</span>
+              /v2/   httpd:80 <span style=color:#f92672>(</span>10.4.1.41:80,10.4.2.54:80,10.4.3.117:80<span style=color:#f92672>)</span>
+  hello.com
+                 hellok8s:80 <span style=color:#f92672>(</span>10.4.1.40:8080,10.4.2.53:8080,10.4.3.116:8080<span style=color:#f92672>)</span>
+  httpd.com
+                 httpd:80 <span style=color:#f92672>(</span>10.4.1.41:80,10.4.2.54:80,10.4.3.117:80<span style=color:#f92672>)</span>
+Annotations:  nginx.ingress.kubernetes.io/rewrite-target: /
+Events:
+  Type     Reason     Age                  From                     Message
+  ----     ------     ----                 ----                     -------
+  Warning  Translate  5m6s <span style=color:#f92672>(</span>x19 over 89m<span style=color:#f92672>)</span>  loadbalancer-controller  error <span style=color:#66d9ef>while</span> evaluating the ingress spec: service <span style=color:#e6db74>&#34;default/hellok8s&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>; service <span style=color:#e6db74>&#34;default/httpd&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>; service <span style=color:#e6db74>&#34;default/hellok8s&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>; service <span style=color:#e6db74>&#34;default/httpd&#34;</span> is type <span style=color:#e6db74>&#34;ClusterIP&#34;</span>, expected <span style=color:#e6db74>&#34;NodePort&#34;</span> or <span style=color:#e6db74>&#34;LoadBalancer&#34;</span>
+</code></pre></div><p>這邊從 <code>Cloud Shell</code> 設定 <code>/etc/hosts</code>，它為一個靜態對找表，預設是往這邊搜尋，我們當下打 <code>test.com</code> 它會導到 <code>34.70.146.27</code>，當沒結果才往外部 <code>DNS</code> 做搜尋。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>echo <span style=color:#e6db74>&#34;34.70.146.27 test.com&#34;</span> | sudo tee -a /etc/hosts
+echo <span style=color:#e6db74>&#34;34.70.146.27 hello.com&#34;</span> | sudo tee -a /etc/hosts
+echo <span style=color:#e6db74>&#34;34.70.146.27 httpd.com&#34;</span> | sudo tee -a /etc/hosts
+</code></pre></div><p>使用 <code>curl</code> 驗證</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ curl test.com/v1/ <span style=color:#75715e># 只要 URL 符合 test.com/v1/ 都會打到 test.com/v1/ 規則的 Service</span>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+...
+  &lt;table&gt;
+    &lt;tr&gt;
+      &lt;th&gt;pod:&lt;/th&gt;
+      &lt;td&gt;hello-kubernetes-5b89dbbc4b-t7bvr&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th&gt;node:&lt;/th&gt;
+      &lt;td&gt;Linux <span style=color:#f92672>(</span>4.19.112+<span style=color:#f92672>)</span>&lt;/td&gt;
+...
+$ curl test.com/v2/
+&lt;html&gt;&lt;body&gt;&lt;h1&gt;It works!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;
+$ curl test.com/v1 <span style=color:#75715e># 預設的 backend</span>
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;404 Not Found&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+&lt;center&gt;&lt;h1&gt;404 Not Found&lt;/h1&gt;&lt;/center&gt;
+&lt;hr&gt;&lt;center&gt;nginx/1.17.8&lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div><p>我們將上面請求過程用下面這張圖示意</p><figure><img src=/images/k8s/K8s-ingress-example.jpg width=auto height=auto></figure><p>觀察 <code>Nginx</code> 控制器有做了什麼。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -n ingress-nginx
+NAME                                        READY   STATUS    RESTARTS   AGE
+nginx-ingress-controller-7fcf8df75d-p5s5b   1/1     Running   <span style=color:#ae81ff>0</span>          53m
+$ kubectl exec -it -n ingress-nginx nginx-ingress-controller-7fcf8df75d-p5s5b bash
+bash-5.0$ vi /etc/nginx/nginx.conf <span style=color:#75715e># 控制器幫我們設定好 nginx 設定檔了!!</span>
+...
+ <span style=color:#75715e>## start server test.com                                    </span>
+        server <span style=color:#f92672>{</span>                                                    
+                server_name test.com ;                              
+                                                                    
+                listen <span style=color:#ae81ff>80</span>  ;          
+                listen <span style=color:#ae81ff>443</span>  ssl http2 ;
+                                       
+                set $proxy_upstream_name <span style=color:#e6db74>&#34;-&#34;</span>;
+                                             
+                ssl_certificate_by_lua_block <span style=color:#f92672>{</span>
+                        certificate.call<span style=color:#f92672>()</span>    
+                <span style=color:#f92672>}</span>                             
+                                              
+                location ~* <span style=color:#e6db74>&#34;^/v2/&#34;</span> <span style=color:#f92672>{</span>             
+                                              
+                        set $namespace      <span style=color:#e6db74>&#34;default&#34;</span>;
+                        set $ingress_name   <span style=color:#e6db74>&#34;ingress-http&#34;</span>;
+                        set $service_name   <span style=color:#e6db74>&#34;httpd&#34;</span>;       
+                        set $service_port   <span style=color:#e6db74>&#34;80&#34;</span>;          
+                        set $location_path  <span style=color:#e6db74>&#34;/v2/&#34;</span>;        
+                                                           
+                        rewrite_by_lua_block <span style=color:#f92672>{</span>             
+                                lua_ingress.rewrite<span style=color:#f92672>({</span>      
+                                        force_ssl_redirect <span style=color:#f92672>=</span> false,
+                                        ssl_redirect <span style=color:#f92672>=</span> true,       
+                                        force_no_ssl_redirect <span style=color:#f92672>=</span> false,
+                                        use_port_in_redirects <span style=color:#f92672>=</span> false,
+                                <span style=color:#f92672>})</span>                                    
+...
+</code></pre></div><p>這邊有 google 的 <a href=https://github.com/CCH0124/qwiklab/blob/master/Kubernetes%20Solutions/02_NGINX%20Ingress%20Controller%20on%20Google%20Kubernetes%20Engine.md>qwiklab</a> 文章，也是針對 Nginx <code>Ingress</code> 去實作。</p><h2 id=參考資源>參考資源</h2><ul><li><a href=https://kubernetes.io/zh/docs/tasks/access-application-cluster/create-external-load-balancer/>官方 - 建立外部均衡負載</a></li><li><a href=https://kubernetes.io/zh/docs/concepts/services-networking/ingress/>官方 - Ingress</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-08-service-ingress-part2/ title="kubernetes - day18"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-10-service-discovery/ title="kubernetes - day20"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

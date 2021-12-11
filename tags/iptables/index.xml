@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>iptables on</title><link>https://cch0124.github.io/tags/iptables/</link><description>Recent content in iptables on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Mon, 14 Aug 2017 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/iptables/index.xml" rel="self" type="application/rss+xml"/><item><title>Iptables</title><link>https://cch0124.github.io/blog/2017-08-14-iptables/</link><pubDate>Mon, 14 Aug 2017 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/blog/2017-08-14-iptables/</guid><description>Iptables on ubuntu 查看 iptables 是否安裝
+$ whereis iptables iptables: /sbin/iptables /usr/share/iptables /usr/share/man/man8/iptables.8.gz How Linux Firewall Works Iptables firewall 可用於 Linux 內核中用於過濾 packet
+Firewall Types Stateless firewall 封包有設定才放行，沒設定就不放行，所以管理者必須要很清楚所有封包往返的流量，他不會紀錄已出去的封包狀態 只能逐一檢視每個封包，但不能進一步分析封包之間的關聯性 Stateful firewall 可以紀錄封包內的資料（例如 SYN 與 ACK 序號），以便分析不同封包之間的關聯性，因此能夠分辨出不同的 session，做出更精確的防範 Netfilter 包含 tables；這些 tables 包含 chains；chains 包含單獨的 rules。
+如果傳遞的 packet 與任何 rules 匹配，則將對該 packet 應用規則 action。
+action 包含，accept、reject、ignore、pass 將數據包傳遞給其它規則以進行更多處理。
+Netfilter 可以使用 IP address 和 port number 處理傳入或傳出流量。</description></item></channel></rss>

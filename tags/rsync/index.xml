@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>rsync on</title><link>https://cch0124.github.io/tags/rsync/</link><description>Recent content in rsync on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 28 Jul 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/rsync/index.xml" rel="self" type="application/rss+xml"/><item><title>rsync 應用</title><link>https://cch0124.github.io/project/2019-07-28-rsync/</link><pubDate>Sun, 28 Jul 2019 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/project/2019-07-28-rsync/</guid><description>Description 我是用 NAS 存放備份檔。方式有 2 種
+rsync 來建立鏡像資料夾。您需先用 CIFS 或 NFS 來將 Synology NAS 上的資料夾掛載至 Linux 伺服器。 Linux 執行指令，無需掛載資料夾。 其中第 2 種方式是我實做出來的方式。
+rsync rsync 是一種異地備份軟體，與一般備份軟體不同的是，rsync 採用增量備份的方式，此類備份方式在每次備份前會先比較兩邊資料的差異，然後僅將差異的資料備份過去，而非備份全部的資料。
+rsync 用於遠程複製和同步文件和目錄，以及在 Linux/Unix 系統中本地複製和同步。借助 rsync 命令，您可以跨目錄，跨硬碟和網路遠端和本地複製和同步數據，在兩台 Linux 計算機之間執行數據備份和鏡像。
+rsync 的運作方式分為以下兩種：
+伺服器（Server）模式
+以常駐（Daemon）的方式運作，亦即以伺服器模式來服務（預設通訊埠為873），通常會在目的端運作，接收其他主機的備份資訊。 客戶端（Client）模式
+以一般程式方式運作，可視為使用者端（Client）程式，通常用在來源端主機上，將資料備份到備份主機上運作。 rsync 優點和功能 它有效的將文件複製到遠端系統或從遠端系統同步文件。 支持複製 links、devices、owners、groups 和 permissions。 它比 scp（Secure Copy）更快，因為 rsync 使用遠端更新協議，它允許僅傳輸兩組文件之間的差異。第一次，它將文件或目錄的全部內容從源複製到目標，但是從下次起，它僅將更改的塊和字節複製到目標。 Rsync 消耗較少的 bandwidth，因為它使用壓縮和解壓縮方法，同時發送和接收數據兩端。 rsynv 參數 -v</description></item></channel></rss>

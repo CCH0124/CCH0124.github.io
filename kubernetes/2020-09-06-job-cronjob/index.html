@@ -1,0 +1,199 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day16</h1><p class=mb-1>September 6, 2020</p><p>&mdash;</p></div><div class=content><p><code>Job</code> 控制器是一次性任務的 <code>POD</code> 控制器，期會創建一至多個 <code>POD</code>，只要容器運行過程正常的運行即不會有重啟的動作，否則需要依照重啟策略去運行，如果遇到節點故障未完成任務的 <code>POD</code> 則會被重新的調度。<code>Job</code> 完成任務的定義是 <code>Job</code> 控制器會記錄 <code>POD</code> 成功執行完任務的個數，並達到成功次數的值。運行 <code>Job</code> 方式可以是是否要以平行的方式去運行多個 <code>POD</code>。<code>CronJob</code> 可以想成是 <code>crontab</code>，用來管理 <code>Job</code> 控制器要運行的時間，也就是在未來的某一個時間上運行或是固定某一時段運行。前面文章所提到的控制器會比較希望應用程式是以一個 <code>Daemon</code> 來運行，而 <code>Job</code> 類型則是會以 <code>Task</code> 為主的應用程式。</p><ul><li>非平行化<ul><li>一次性</li><li>一次執行一個 <code>POD</code> 作業，直到達到定義成功的次數</li></ul></li><li>平行化<ul><li>平行處理</li><li>會設置工作列隊的數量，該數量可讓多個 <code>POD</code> 同時作業</li></ul></li></ul><h2 id=建立-job>建立 Job</h2><p><code>Job</code> 需要定義必要的 <code>template</code>，可透過 <code>kubectl explain job.spec</code> 去查看，至於<em>標籤選擇器</em>則會自動藉由 <code>template</code> 去創建。以下我們拿官網的範例實驗</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>batch/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Job</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>perl</span>
+        <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;perl&#34;</span>,  <span style=color:#e6db74>&#34;-Mbignum=bpi&#34;</span>, <span style=color:#e6db74>&#34;-wle&#34;</span>, <span style=color:#e6db74>&#34;print bpi(2000)&#34;</span>]
+      <span style=color:#f92672>restartPolicy</span>: <span style=color:#ae81ff>Never</span>
+<span style=color:#75715e>#   backoffLimit: 4</span>
+</code></pre></div><blockquote><p><code>Job</code> 建立 <code>POD</code> 無法使用 <code>restartPolicy</code> 的默認值(always)，因為 <code>Job</code> 並非要無限期運作。需要設置 <code>Never</code> 或 <code>OnFailure</code> 防止容器完成任務後重新啟動</p></blockquote><p>同樣的使用 <code>apply</code> 進行部署。用 <code>get</code> 取得 <code>Job</code> 的資源，因為還在運行所以 <code>COMPLETIONS</code> 還是 0。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get jobs pi
+NAME   COMPLETIONS   DURATION   AGE
+pi     0/1           25s        25s
+</code></pre></div><p>列出 <code>Job</code> 定義的 <code>POD</code>，其 <code>STATUS</code> 表示完成了任務。<code>NAME</code> 是以 <code>Job</code> 控制器名稱開頭，與前面介紹的控制器相同。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l job-name<span style=color:#f92672>=</span>pi
+NAME       READY   STATUS      RESTARTS   AGE
+pi-r29jg   0/1     Completed   <span style=color:#ae81ff>0</span>          75s
+</code></pre></div><p>使用 <code>describe</code> 詳細查看該 <code>Job</code> 資源，觀察到 <code>Selector</code> 和 <code>Labels</code> 有值，其值是自動生成的，這邊不深入探討。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe jobs pi
+Name:           pi
+Namespace:      default
+Selector:       controller-uid<span style=color:#f92672>=</span>3a72f47b-8d1b-4771-aab6-12dd97b286dc
+Labels:         controller-uid<span style=color:#f92672>=</span>3a72f47b-8d1b-4771-aab6-12dd97b286dc
+                job-name<span style=color:#f92672>=</span>pi
+Annotations:    &lt;none&gt;
+Parallelism:    <span style=color:#ae81ff>1</span>
+Completions:    <span style=color:#ae81ff>1</span>
+Start Time:     Sat, <span style=color:#ae81ff>12</span> Sep <span style=color:#ae81ff>2020</span> 08:22:15 +0000
+Completed At:   Sat, <span style=color:#ae81ff>12</span> Sep <span style=color:#ae81ff>2020</span> 08:22:46 +0000
+Duration:       31s
+Pods Statuses:  <span style=color:#ae81ff>0</span> Running / <span style=color:#ae81ff>1</span> Succeeded / <span style=color:#ae81ff>0</span> Failed
+Pod Template:
+  Labels:  controller-uid<span style=color:#f92672>=</span>3a72f47b-8d1b-4771-aab6-12dd97b286dc
+           job-name<span style=color:#f92672>=</span>pi
+  Containers:
+   pi:
+    Image:      perl
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Command:
+      perl
+      -Mbignum<span style=color:#f92672>=</span>bpi
+      -wle
+      print bpi<span style=color:#f92672>(</span>2000<span style=color:#f92672>)</span>
+    Environment:  &lt;none&gt;
+    Mounts:       &lt;none&gt;
+  Volumes:        &lt;none&gt;
+Events:
+  Type    Reason            Age   From            Message
+  ----    ------            ----  ----            -------
+  Normal  SuccessfulCreate  103s  job-controller  Created pod: pi-r29jg
+</code></pre></div><h2 id=非平行式-job>非平行式 Job</h2><p>須將 <code>spec</code> 中 <code>parallelism</code> 字段設置為 1 (預設也是)，同時也設置 <code>completion</code> 表示期望成功的數量。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>batch/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Job</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi-1</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>perl</span>
+        <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;perl&#34;</span>,  <span style=color:#e6db74>&#34;-Mbignum=bpi&#34;</span>, <span style=color:#e6db74>&#34;-wle&#34;</span>, <span style=color:#e6db74>&#34;print bpi(2000)&#34;</span>]
+      <span style=color:#f92672>restartPolicy</span>: <span style=color:#ae81ff>Never</span>
+  <span style=color:#f92672>completions</span>: <span style=color:#ae81ff>5</span>
+</code></pre></div><p>使用 <code>-w</code> 觀察，<code>job-name</code> 會以 <code>Job</code> 資源清單定義的名稱做為值。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l job-name<span style=color:#f92672>=</span>pi-1 -w
+NAME         READY   STATUS    RESTARTS   AGE
+pi-1-dd7dd   1/1     Running   <span style=color:#ae81ff>0</span>          8s
+pi-1-dd7dd   0/1     Completed   <span style=color:#ae81ff>0</span>          8s
+pi-1-krfkf   0/1     Pending     <span style=color:#ae81ff>0</span>          0s
+pi-1-krfkf   0/1     Pending     <span style=color:#ae81ff>0</span>          0s
+pi-1-krfkf   0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          0s
+pi-1-krfkf   1/1     Running             <span style=color:#ae81ff>0</span>          2s
+pi-1-krfkf   0/1     Completed           <span style=color:#ae81ff>0</span>          8s
+pi-1-rw5b7   0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+pi-1-rw5b7   0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+pi-1-rw5b7   0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          0s
+pi-1-rw5b7   1/1     Running             <span style=color:#ae81ff>0</span>          2s
+pi-1-rw5b7   0/1     Completed           <span style=color:#ae81ff>0</span>          8s
+pi-1-9sxpn   0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+pi-1-9sxpn   0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+pi-1-9sxpn   0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          0s
+pi-1-9sxpn   1/1     Running             <span style=color:#ae81ff>0</span>          2s
+pi-1-9sxpn   0/1     Completed           <span style=color:#ae81ff>0</span>          7s
+pi-1-gphql   0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+pi-1-gphql   0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+pi-1-gphql   0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          0s
+pi-1-gphql   1/1     Running             <span style=color:#ae81ff>0</span>          2s
+pi-1-gphql   0/1     Completed           <span style=color:#ae81ff>0</span>          9s
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get jobs pi-1 -o wide <span style=color:#75715e># 完成 5 個任務</span>
+NAME   COMPLETIONS   DURATION   AGE     CONTAINERS   IMAGES   SELECTOR
+pi-1   5/5           40s        4m31s   pi           perl     controller-uid<span style=color:#f92672>=</span>73e23e4f-ae77-404b-b5f0-6ac7306542a8 
+$ kubectl get pods -l job-name<span style=color:#f92672>=</span>pi-1 -o wide
+NAME         READY   STATUS      RESTARTS   AGE     IP          NODE                                       NOMINATED NODE   READINESS GATES
+pi-1-9sxpn   0/1     Completed   <span style=color:#ae81ff>0</span>          6m11s   10.4.3.9    gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+pi-1-dd7dd   0/1     Completed   <span style=color:#ae81ff>0</span>          6m35s   10.4.3.6    gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+pi-1-gphql   0/1     Completed   <span style=color:#ae81ff>0</span>          6m4s    10.4.3.10   gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+pi-1-krfkf   0/1     Completed   <span style=color:#ae81ff>0</span>          6m27s   10.4.3.7    gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+pi-1-rw5b7   0/1     Completed   <span style=color:#ae81ff>0</span>          6m19s   10.4.3.8    gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+</code></pre></div><h2 id=平行式>平行式</h2><p><code>parallelism</code> 字段設置為 1 以上的值即可。如果有順序性的話這種方式可能就不適合了。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>batch/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Job</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi-2</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>perl</span>
+        <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;perl&#34;</span>,  <span style=color:#e6db74>&#34;-Mbignum=bpi&#34;</span>, <span style=color:#e6db74>&#34;-wle&#34;</span>, <span style=color:#e6db74>&#34;print bpi(2000)&#34;</span>]
+      <span style=color:#f92672>restartPolicy</span>: <span style=color:#ae81ff>Never</span>
+  <span style=color:#f92672>completions</span>: <span style=color:#ae81ff>7</span>
+  <span style=color:#f92672>parallelism</span>: <span style=color:#ae81ff>3</span>
+</code></pre></div><p>同樣的可以用以下方式去觀察</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l job-name<span style=color:#f92672>=</span>pi-2 -w
+$ kubectl get pods -l job-name<span style=color:#f92672>=</span>pi-2 -o wide -w
+$ kubectl get jobs pi-2
+NAME   COMPLETIONS   DURATION   AGE
+pi-2   7/7           45s        4m10s
+</code></pre></div><h2 id=job-刪除>Job 刪除</h2><p>只要 <code>Job</code> 完成任務後，其 <code>POD</code> 即可刪除，就算不刪除也不占資源。假設 <code>Job</code> 任務沒順利完成，且不斷的在錯誤中循環，這將是一個麻煩，所幸的是 <code>K8s</code> 有給 <code>Job</code> 一些屬性去防止發生錯誤循環這件事</p><ul><li><code>spec</code> 中 <code>activeDeadlineSeconds</code> 屬性<ul><li>活動的最長時間，超出定義值則終止</li></ul></li><li><code>spec</code> 中 <code>backoffLimit</code><ul><li>重啟次數定義，預設是 <code>6</code></li></ul></li></ul><p>刪除 <code>Job</code> 資源</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete jobs <span style=color:#f92672>[</span>JOB_NAME<span style=color:#f92672>]</span>
+$ kubectl delete -f JOB_RESOURCE.yaml
+</code></pre></div><p><code>Job</code> 這邊最後實驗剛介紹的兩個參數</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>batch/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Job</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>perl</span>
+        <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;perl&#34;</span>,  <span style=color:#e6db74>&#34;-Mbignum=bpi&#34;</span>, <span style=color:#e6db74>&#34;-wle&#34;</span>, <span style=color:#e6db74>&#34;print bpi(2000)&#34;</span>]
+      <span style=color:#f92672>restartPolicy</span>: <span style=color:#ae81ff>Never</span>
+  <span style=color:#f92672>completions</span>: <span style=color:#ae81ff>10</span>
+  <span style=color:#f92672>parallelism</span>: <span style=color:#ae81ff>3</span>
+  <span style=color:#f92672>activeDeadlineSeconds</span>: <span style=color:#ae81ff>5</span>
+  <span style=color:#f92672>backoffLimit</span>: <span style=color:#ae81ff>3</span>
+</code></pre></div><p>透過以下結果發現全部任務失敗，其原因是我們用 <code>activeDeadlineSeconds</code> 和 <code>backoffLimit</code> 去限制運行時的資源。從 <code>describe</code> 的 <code>EVENTS</code> 來看有 <code>Job was active longer than specified deadline</code> 這個訊息。這邊要注意的是是 <code>activeDeadlineSeconds</code> 讓這任務失敗，非 <code>backoffLimit</code> 優先權來說是前者優先。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l job-name<span style=color:#f92672>=</span>pi -w
+NAME       READY   STATUS        RESTARTS   AGE
+pi-2bfdl   0/1     Terminating   <span style=color:#ae81ff>0</span>          18s
+pi-wss7c   1/1     Terminating   <span style=color:#ae81ff>0</span>          18s
+pi-zk7j8   1/1     Terminating   <span style=color:#ae81ff>0</span>          18s
+pi-zk7j8   0/1     Terminating   <span style=color:#ae81ff>0</span>          19s
+pi-wss7c   0/1     Terminating   <span style=color:#ae81ff>0</span>          19s
+pi-wss7c   0/1     Terminating   <span style=color:#ae81ff>0</span>          19s
+pi-2bfdl   0/1     Terminating   <span style=color:#ae81ff>0</span>          22s
+pi-2bfdl   0/1     Terminating   <span style=color:#ae81ff>0</span>          22s
+pi-wss7c   0/1     Terminating   <span style=color:#ae81ff>0</span>          22s
+pi-wss7c   0/1     Terminating   <span style=color:#ae81ff>0</span>          22s
+pi-zk7j8   0/1     Terminating   <span style=color:#ae81ff>0</span>          22s
+pi-zk7j8   0/1     Terminating   <span style=color:#ae81ff>0</span>          22s
+$ kubectl get jobs pi
+NAME   COMPLETIONS   DURATION   AGE
+pi     0/10          4m46s      4m46s
+$ kubectl describe job.batch pi
+Events:
+  Type     Reason            Age    From            Message
+  ----     ------            ----   ----            -------
+  Normal   SuccessfulCreate  7m21s  job-controller  Created pod: pi-zk7j8
+  Normal   SuccessfulCreate  7m21s  job-controller  Created pod: pi-2bfdl
+  Normal   SuccessfulCreate  7m21s  job-controller  Created pod: pi-wss7c
+  Normal   SuccessfulDelete  7m16s  job-controller  Deleted pod: pi-2bfdl
+  Normal   SuccessfulDelete  7m16s  job-controller  Deleted pod: pi-wss7c
+  Normal   SuccessfulDelete  7m16s  job-controller  Deleted pod: pi-zk7j8
+  Warning  DeadlineExceeded  7m16s  job-controller  Job was active longer than specified deadline
+</code></pre></div><h2 id=cronjob-創建>CronJob 創建</h2><p>下面 <code>yaml</code> 執行每一分鐘運行一次運算 <code>pi</code> 的 <code>Job</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>batch/v1beta1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>CronJob</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>schedule</span>: <span style=color:#e6db74>&#34;*/1 * * * *&#34;</span> <span style=color:#75715e># 調度時間</span>
+  <span style=color:#f92672>jobTemplate</span>: <span style=color:#75715e># 生成 Job 模板</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>template</span>:
+        <span style=color:#f92672>spec</span>:
+          <span style=color:#f92672>containers</span>:
+          - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pi</span>
+            <span style=color:#f92672>image</span>: <span style=color:#ae81ff>perl</span>
+            <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;perl&#34;</span>,  <span style=color:#e6db74>&#34;-Mbignum=bpi&#34;</span>, <span style=color:#e6db74>&#34;-wle&#34;</span>, <span style=color:#e6db74>&#34;print bpi(2000)&#34;</span>]
+          <span style=color:#f92672>restartPolicy</span>: <span style=color:#ae81ff>Never</span>
+      <span style=color:#f92672>completions</span>: <span style=color:#ae81ff>10</span>
+      <span style=color:#f92672>backoffLimit</span>: <span style=color:#ae81ff>3</span>
+</code></pre></div><p>其概念像是 <code>Deployment</code> 下面有 <code>ReplicaSet</code> 管理 <code>POD</code>，這邊則是 <code>Job</code> 管理 <code>POD</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get cronjob
+NAME   SCHEDULE      SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+pi     */1 * * * *   False     <span style=color:#ae81ff>0</span>        &lt;none&gt;          13s
+$ kubectl get jobs
+NAME            COMPLETIONS   DURATION   AGE
+pi-1599902940   0/10          4s         4s
+$ kubectl get jobs <span style=color:#75715e># 每過一分鐘就執行</span>
+NAME            COMPLETIONS   DURATION   AGE
+pi-1599902940   10/10         87s        3m26s
+pi-1599903000   10/10         102s       2m26s
+pi-1599903060   7/10          86s        86s
+pi-1599903120   1/10          26s        26s
+$ kubectl delete cronjob pi <span style=color:#75715e># 刪除 cronjob 資源</span>
+</code></pre></div><h2 id=參考資源>參考資源</h2><ul><li><a href=https://kubernetes.io/zh/docs/concepts/workloads/controllers/job/>官方 Job</a></li><li><a href=https://kubernetes.io/zh/docs/concepts/workloads/controllers/cron-jobs/>官方 CronJob</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-05-daemonset/ title="kubernetes - day15"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-07-service-ingress/ title="kubernetes - day17"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

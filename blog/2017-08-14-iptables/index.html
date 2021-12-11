@@ -1,0 +1,128 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Iptables</h1><p class=mb-1>August 14, 2017</p><p>&mdash;</p></div><div class=content><h2 id=iptables-on-ubuntu>Iptables on ubuntu</h2><p>查看 iptables 是否安裝</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ whereis iptables
+iptables: /sbin/iptables /usr/share/iptables /usr/share/man/man8/iptables.8.gz
+</code></pre></div><h2 id=how-linux-firewall-works>How Linux Firewall Works</h2><p>Iptables firewall 可用於 Linux 內核中用於過濾 packet</p><h3 id=firewall-types>Firewall Types</h3><ul><li><strong>Stateless firewall</strong><ul><li>封包有設定才放行，沒設定就不放行，所以管理者必須要很清楚所有封包往返的流量，他不會紀錄已出去的封包狀態</li><li>只能逐一檢視每個封包，但不能進一步分析封包之間的關聯性</li></ul></li><li><strong>Stateful firewall</strong><ul><li>可以紀錄封包內的資料（例如 SYN 與 ACK 序號），以便分析不同封包之間的關聯性，因此能夠分辨出不同的 session，做出更精確的防範</li></ul></li></ul><p>Netfilter 包含 <strong>tables</strong>；這些 tables 包含 <strong>chains</strong>；chains 包含單獨的 <strong>rules</strong>。</p><p>如果傳遞的 packet 與任何 rules 匹配，則將對該 packet 應用規則 <strong>action</strong>。</p><p>action 包含，<strong>accept</strong>、<strong>reject</strong>、<strong>ignore</strong>、<strong>pass</strong> 將數據包傳遞給其它規則以進行更多處理。</p><p>Netfilter 可以使用 IP address 和 port number 處理傳入或傳出流量。</p><p>Netfilter 由 iptables 命令管理和配置。</p><h2 id=iptables-firewall-tables>iptables Firewall Tables</h2><p>netfilter 主要有三個 tables 可以處理 rule。其處裡順序為 <code>raw -> mangle -> nat -> filter</code></p><ul><li>filter table<ul><li>是處理流量的主要 table</li><li>INPUT<ul><li>發往本地 sockets的 packet</li></ul></li><li>FORWARD<ul><li>透過系統路由的 packet，經過本機的 packet</li></ul></li><li>OUTPUT<ul><li>本機端生成的 packet</li></ul></li></ul></li><li>nat table<ul><li>處理 NAT 規則</li><li>PREROUTING<ul><li>SNAT，源地址轉換</li><li>收到 packet 後立即更改 packet</li></ul></li><li>OUTPUT<ul><li>更改本機端生成的 packet</li></ul></li><li>POSTROUTING<ul><li>DNAT，目標地址轉換</li><li>packet 即將發佈時更改 packet</li></ul></li></ul></li><li>mangle table<ul><li>修改 packets</li><li>PREROUTING<ul><li>用於更改傳入連線</li></ul></li><li>OUTPUT<ul><li>更改本機端生成的 packet</li></ul></li><li>INPUT<ul><li>傳入的 packet</li></ul></li><li>POSTROUTING<ul><li>packet 即將發佈時更改 packet</li></ul></li><li>FORWARD<ul><li>透過路由轉發的 packet，經過本機的 packet</li></ul></li></ul></li><li>raw table<ul><li>做連接追蹤</li></ul></li></ul><h2 id=table-chains>Table Chains</h2><p>iptables Firewall Tables 說明的每個 tables 都包含 chains，這些 chains 是 iptables 規則的集合。</p><ul><li>filter table<ul><li>FORWARD</li><li>INPUT</li><li>OUTPUT</li></ul></li></ul><blockquote><p>可以創建自定義 chain 以保存 rules。</p></blockquote><p>如果 packet <strong>經過本地主機</strong>，將由 <strong>INPUT chain</strong> 規則處理。
+如果 packet 要去另一個主機，它將由 <strong>OUTPUT chain</strong> 規則處理。
+<strong>FORWARD chain</strong> 用於處理已訪問主機但發往另一主機的 packet。</p><h2 id=chain-policy>Chain Policy</h2><p>filter table 中的每個 chain 都有一個策略，該策略是預設操作。</p><ul><li>Policy<ul><li>DROP<ul><li>不通知 client 的情況下丟棄 packet</li></ul></li><li>REJECT<ul><li>會丟棄 packet 並通知發送人</li></ul></li><li>ACCEPT<ul><li>允許 packet 通過防火牆</li></ul></li></ul></li></ul><blockquote><p>從安全角度來看，應該 DROP 所有進入主機的 packet，並僅接受來自可信來源的 packet。</p></blockquote><h2 id=adding-iptables-rules>Adding iptables Rules</h2><p>add a new rule</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -A INPUT -i ens33 -p tcp --dport <span style=color:#ae81ff>80</span> -d 192.168.15.128 -j ACCEPT
+<span style=color:#75715e># -A 添加新規則，默認情況下，除指定另一個 table，否則所有新規則都將添加到 filter table 中。</span>
+<span style=color:#75715e># -i 哪個網路介面卡進入主機的流量。如果未指定網路介面卡，則無論網路介面卡如何，該規則都將應用於所有傳入流量。</span>
+<span style=color:#75715e># -p 指定要處理的 packet protocol，範例為 TCP。</span>
+<span style=color:#75715e># -dport 指定目標 port number，範例為 80。</span>
+<span style=color:#75715e># -d 指定目標 IP address。如果未指定目標 IP address，則該規則將應用於 eth1 上的所有傳入流量，而不管 IP address 如何。</span>
+<span style=color:#75715e># -j 指定要執行的操作或 JUMP 操作，這裡我們使用 ACCEPT Policy 接受 packe。</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -A OUTPUT -o ens33 -p tcp --sport <span style=color:#ae81ff>80</span> -j ACCEPT
+<span style=color:#75715e># -A 用於向 OUTPUT chain 添加規則</span>
+<span style=color:#75715e># -o 指定用於傳出流量的網路卡介面</span>
+<span style=color:#75715e># -sport 指定來源 port number</span>
+</code></pre></div><blockquote><p>可使用 http 或 https 等服務名稱，而不是 sport 或 dport 上的 port number。服務名稱可以在 <code>/etc/services</code> 檔案中找到。</p></blockquote><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -A INPUT -s 192.168.200.121 -j DROP <span style=color:#75715e># Block Specific IP Address in IPtables Firewall</span>
+$ sudo iptables -A INPUT -p tcp -s 192.168.200.121 -j DROP <span style=color:#75715e># block TCP traffic</span>
+</code></pre></div><h2 id=iptables-rules-order>Iptables Rules Order</h2><p>添加 rules 時，會將其添加到 chain 的末尾。
+可使用 <code>-I</code> 選項將其添加到頂部。
+可以使用 <code>I</code> flag 將規則準確插入到所需的位置。</p><blockquote><p>rules 的順序很重要</p></blockquote><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -I INPUT <span style=color:#ae81ff>2</span> -i ens33 -p udp -j ACCEPT
+$ sudo iptables -I INPUT <span style=color:#ae81ff>3</span> -i ens33 -p udp --dport <span style=color:#ae81ff>80</span> -j DROP
+</code></pre></div><p>第一條規則將接受所有 UDP 流量，然後第二條規則將被忽略，因為第一條規則已經接受了所有 UDP 流量，因此這裡的第二條規則毫無意義。</p><blockquote><p>chain 中規則的順序很重要。</p></blockquote><h2 id=list-iptables-rules>List iptables Rules</h2><ul><li>-L 列出 chain 中的 rules</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L INPUT
+Chain INPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+target     prot opt source               destination
+ACCEPT     tcp  --  anywhere             Docker               tcp dpt:http
+ACCEPT     udp  --  anywhere             anywhere
+DROP       udp  --  anywhere             anywhere             udp dpt:80
+</code></pre></div><ul><li>-line-numbers 顯示 rule 的行號</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L INPUT --line-numbers
+Chain INPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+num  target     prot opt source               destination
+<span style=color:#ae81ff>1</span>    ACCEPT     tcp  --  anywhere             Docker               tcp dpt:http
+<span style=color:#ae81ff>2</span>    ACCEPT     udp  --  anywhere             anywhere
+<span style=color:#ae81ff>3</span>    DROP       udp  --  anywhere             anywhere             udp dpt:80
+</code></pre></div><ul><li>該列表顯示了服務名稱，您可以使用 -n 選項顯示 port number</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L INPUT -n --line-numbers
+Chain INPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+num  target     prot opt source               destination
+<span style=color:#ae81ff>1</span>    ACCEPT     tcp  --  0.0.0.0/0            192.168.15.128       tcp dpt:80
+<span style=color:#ae81ff>2</span>    ACCEPT     udp  --  0.0.0.0/0            0.0.0.0/0
+<span style=color:#ae81ff>3</span>    DROP       udp  --  0.0.0.0/0            0.0.0.0/0            udp dpt:80
+</code></pre></div><ul><li>列出所有 chain 的所有 rules</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L -n --line-numbers
+</code></pre></div><ul><li>獲取每個 rules 處理的 packet 數量，使用 -v 標誌</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L -v
+</code></pre></div><blockquote><p>使用 -Z 標誌將計數器重置為零</p></blockquote><h2 id=deleting-rules>Deleting Rules</h2><ul><li>使用 -D 刪除 rules<ul><li>使用 order number 刪除規則</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -D INPUT <span style=color:#ae81ff>3</span>
+$ sudo iptables -L INPUT --line-numbers <span style=color:#75715e># 原本的第三條規則被刪除</span>
+Chain INPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+num  target     prot opt source               destination
+<span style=color:#ae81ff>1</span>    ACCEPT     tcp  --  anywhere             Docker               tcp dpt:http
+<span style=color:#ae81ff>2</span>    ACCEPT     udp  --  anywhere             anywhere
+</code></pre></div><ul><li>-F 標誌刪除特定 chain 中的所有 rules，刷新所有規則</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L OUTPUT --line-number
+Chain OUTPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+num  target     prot opt source               destination
+<span style=color:#ae81ff>1</span>    ACCEPT     tcp  --  anywhere             anywhere             tcp spt:http
+$ sudo iptables -F OUTPUT
+$ sudo iptables -L OUTPUT --line-number
+Chain OUTPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+num  target     prot opt source               destination
+</code></pre></div><blockquote><p>使用 -F 時忘記提及 chain 名稱，則將刪除所有鏈規則。</p></blockquote><h2 id=replacing-rules>Replacing Rules</h2><ul><li>-R 參數用自己新的規則替換現有規則</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -I INPUT  -i ens33 -p udp -j ACCEPT
+$ sudo iptables -L INPUT --line-number
+Chain INPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+num  target     prot opt source               destination
+<span style=color:#ae81ff>1</span>    ACCEPT     udp  --  anywhere             anywhere
+$ sudo iptables -R INPUT  <span style=color:#ae81ff>1</span> -i ens33 -p tcp -j ACCEPT <span style=color:#75715e>#新的規則替換 INPUT chain 中的第一個規則</span>
+$ sudo iptables -L INPUT --line-number
+Chain INPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+num  target     prot opt source               destination
+<span style=color:#ae81ff>1</span>    ACCEPT     tcp  --  anywhere             anywhere
+</code></pre></div><h2 id=listing-specific-table>Listing Specific Table</h2><ul><li>-t<ul><li>列出特定的 tables，使用帶有 tables 名稱</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L -t filter
+$ sudo iptables -L -t nat
+</code></pre></div><h2 id=iptables-user-defined-chain>Iptables User Defined Chain</h2><ul><li>-N<ul><li>創建用戶定義的 chain</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -N cch_chain
+$ sudo iptables -L cch_chain
+Chain cch_chain <span style=color:#f92672>(</span><span style=color:#ae81ff>0</span> references<span style=color:#f92672>)</span>
+target     prot opt source               destination
+</code></pre></div><ul><li>-E<ul><li>重新命名</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L cchong_chain
+iptables: No chain/target/match by that name.
+$ sudo iptables -L cch_chain
+Chain cch_chain <span style=color:#f92672>(</span><span style=color:#ae81ff>0</span> references<span style=color:#f92672>)</span>
+target     prot opt source               destination
+$ sudo iptables -E cch_chain cchong_chain <span style=color:#75715e># 從新命名</span>
+$ sudo iptables -L cchong_chain
+Chain cchong_chain <span style=color:#f92672>(</span><span style=color:#ae81ff>0</span> references<span style=color:#f92672>)</span>
+target     prot opt source               destination
+$ sudo iptables -L cch_chain
+iptables: No chain/target/match by that name.
+</code></pre></div><ul><li>-X<ul><li>刪除使用者定義的 chain</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -L cchong_chain
+Chain cchong_chain <span style=color:#f92672>(</span><span style=color:#ae81ff>0</span> references<span style=color:#f92672>)</span>
+target     prot opt source               destination
+$ sudo iptables -X cchong_chain <span style=color:#75715e># 刪除 chain</span>
+$ sudo iptables -L cchong_chain
+iptables: No chain/target/match by that name.
+</code></pre></div><blockquote><p>使用 -X 參數，沒給 chain 名稱，則將刪除所有用戶定義的 chains。但，無法刪除 <code>INPUT</code> 和 <code>OUTPUT</code> 等原生 chains。</p></blockquote><h2 id=redirection-to-a-user-defined-chain>Redirection to a User Defined Chain</h2><ul><li>-j<ul><li>將 packet 重定向到用戶定義的 chains，如：原生鏈</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -N CCH_ICMP <span style=color:#75715e># 建立新 chain</span>
+$ sudo iptables -L CCH_ICMP  <span style=color:#75715e># 列出 CCH_ICMP chain</span>
+Chain CCH_ICMP <span style=color:#f92672>(</span><span style=color:#ae81ff>0</span> references<span style=color:#f92672>)</span>
+target     prot opt source               destination
+$ sudo iptables -A INPUT -p icmp -j CCH_ICMP <span style=color:#75715e># 將此規則重定向至 CCH_ICMP</span>
+$ sudo iptables -L CCH_ICMP <span style=color:#75715e># 其中有一條規則參照</span>
+Chain CCH_ICMP <span style=color:#f92672>(</span><span style=color:#ae81ff>1</span> references<span style=color:#f92672>)</span>
+target     prot opt source               destination
+</code></pre></div><h2 id=setting-the-default-policy-for-chains>Setting The Default Policy for Chains</h2><ul><li>-p<ul><li>設置特定 chains 的預設策略。預設策略可以是 ACCEPT、REJECT 和 DROP。</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -P INPUT DROP <span style=color:#75715e># INPUT chain 丟棄任何 packet，除非編寫規則以允許傳入流量。</span>
+</code></pre></div><h2 id=syn-flooding>SYN Flooding</h2><p>攻擊者在不完成 TCP handshake 的情況下發送 SYN packets，因此接收主機將有許多打開的連接，使得伺服器變得太忙而無法回應其他客戶端。</p><p>使用 iptables 防火牆的 <code>limit module</code> 保護免受 SYN flooding</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -A INPUT -i ens33 -p tcp --syn -m limit --limit 5/second -j ACCEPT
+<span style=color:#75715e># 僅指定每秒 5 個 SYN packet。可以根據網路需求調整此值</span>
+</code></pre></div><blockquote><p>如果會限制網路，可以使用 <code>SYN Cookie</code></p></blockquote><h3 id=syn-cookies>SYN Cookies</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo vi /etc/sysctl.conf
+net.ipv4.tcp_syncookies  <span style=color:#ae81ff>1</span>
+$ sudo sysctl -p <span style=color:#75715e># save and reload</span>
+</code></pre></div><h2 id=drop-invalid-state-packets>Drop INVALID State Packets</h2><p>INVALID 狀態 packets 不屬於任何連接的 packet，應該丟棄。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -A INPUT -m state --state INVALID -j DROP <span style=color:#75715e># DROP 所有傳入的 INVALID packet</span>
+</code></pre></div><h2 id=drop-fragmented-packets>Drop Fragmented Packets</h2><p>Fragmented Packets 是大型 packet 的碎片，應該丟棄。</p><ul><li>-f<ul><li>告訴 iptables 防火牆選擇所有 Fragmented。如果不使用iptables 作為路由器，則可以丟棄 Fragmented Packets。</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -A INPUT -f -j DROP
+</code></pre></div><h2 id=save-iptables-rules>Save iptables Rules</h2><p>重新啟動 service，iptables 所有規則都不會保存，用以下方法保留它們</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables-save &gt; /etc/working.iptables.rules
+$ sudo iptables-restore &lt; /etc/working.iptables.rules
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables - save - t filter <span style=color:#75715e># 保存特定的表</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo apt-get install iptables-persistent -y
+$ sudo netfilter-persistent save
+run-parts: executing /usr/share/netfilter-persistent/plugins.d/15-ip4tables save
+run-parts: executing /usr/share/netfilter-persistent/plugins.d/25-ip6tables save
+$ sudo  netfilter-persistent reload
+run-parts: executing /usr/share/netfilter-persistent/plugins.d/15-ip4tables start
+run-parts: executing /usr/share/netfilter-persistent/plugins.d/25-ip6tables start
+</code></pre></div><h2 id=example>example</h2><h3 id=block-facebook-on-iptables-firewall>Block Facebook on IPtables Firewall</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ whois 157.240.15.35 | grep CIDR
+CIDR:           157.240.0.0/16
+$ sudo iptables -A OUTPUT -p tcp -d 157.240.0.0/16 -j DROP
+$ sudo iptables -L OUTPUT
+Chain OUTPUT <span style=color:#f92672>(</span>policy ACCEPT<span style=color:#f92672>)</span>
+target     prot opt source               destination
+DROP       tcp  --  anywhere             157.240.0.0/16
+</code></pre></div><h3 id=block-ping-icmp-requests>Block Ping ICMP Requests</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo iptables -A INPUT --proto icmp -j DROP
+</code></pre></div><h3 id=scenario>scenario</h3><p>Say there is a machine the local ip address of which is 192.168.0.6. You need to block connections on port 21, 22, 23, and 80 to your machine</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo  iptables -A INPUT -s 192.168.0.6 -p tcp -m multiport --dport 21,22,23,80 -j DROP
+</code></pre></div><h2 id=ref>Ref</h2><p><a href=https://www.tecmint.com/linux-iptables-firewall-rules-examples-commands/>iptables</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2017-04-21-ftp/ title="File Transfer Protocol(FTP)"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2017-11-04-ppp/ title=PPP><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

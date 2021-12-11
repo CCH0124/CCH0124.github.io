@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>PPP on</title><link>https://cch0124.github.io/tags/ppp/</link><description>Recent content in PPP on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 04 Nov 2017 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/ppp/index.xml" rel="self" type="application/rss+xml"/><item><title>PPP</title><link>https://cch0124.github.io/blog/2017-11-04-ppp/</link><pubDate>Sat, 04 Nov 2017 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/blog/2017-11-04-ppp/</guid><description>PPP 廣域網路協定 廣域網路 廣域網路（Wide Area Network，WAN ）和一般所謂的區域網路不一樣。區域網路通常是指範圍較小的網路區段，可能是同一棟大樓、同一層樓或是一個區域較小的地理位置。 而廣域網路是範圍比較廣的網路區段，一般跨國型的企業都會使用廣域網路來連結位於不同國家的各個分部，好讓資訊能夠相互流通。
+PPP 協定 PPP（Point to Point Protocol）協定是普遍被使用的廣域網路協定，如同名稱所示，PPP 協定是指點對點的網路協定，通常用於兩個網路節點的直接連接，例如兩台電腦透過電話線的網路連接，經常使用在寬頻網路連線上。目前許多ADSL 網路服務供應商（ISP ）提供使用者以 PPP 協定的方式撥接到本身的機房，然後再連上網際網路。以往，則大多使用 SLIP（Serial Line Internet Protocol ）協定，該協定採用的是TCP/IP 協定的點對點串列連線的標準。SLIP 協定是很久以前的協定，主要用於串列埠與數據機之間的連線，現在慢慢地已經被 PPP 協定取代。
+PPP 協定在廣域網路連線上的定位 PPP 協定算是廣域網路在網路協定第二層封裝協定的種類之一，當網路封包要傳送到廣域網路之前，在網路第二層協定時，就一定會先透過特定的方式進行封裝，而為了保證能使用正確的封裝方式，在設定 Cisco 設備來支援廣域網路時就必須選對正確的封裝協定，而封裝協定的選擇與所使用的廣域網路技術和廣域網路設備有關。 因此，網路管理人員一定要瞭解廣域網路所使用的封裝協定，才能夠正確的選擇並且設定第二層封裝協定。
+一般廣域網路的網路協定第二層封裝協定有以下幾個種類：
+HDLC PPP SLIP X.25 LAPB 幀中繼（Frame Relay ） ATM 所以 PPP 協定正是其中一種。
+PPP RFC 中定義資訊 PPP 協定包含了各種認證方式、加密與解密方式、壓縮資料方式以及 PPP 協定如何與其他網路協定的合作與交互關係。
+PPP 協定中的CHAP 協定，也就是握手（Handshake ）協定，用於建立撥號連接。
+PPPoE 協定在乙太網路中用於傳輸PPP 協定中的資料，經常使用於ADSL 上。
+PPPoA 協定，主要應用在以ATM 網路卡來傳輸PPP 協定的資料。由於PPPoA 使用於ATM 網路，所以也稱為PPPoATM。</description></item></channel></rss>

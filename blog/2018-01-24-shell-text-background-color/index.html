@@ -1,0 +1,30 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>人所習慣的視覺化</h1><p class=mb-1>January 24, 2018</p><p>&mdash;</p></div><div class=content><h2 id=visualize>Visualize</h2><p>視覺化能夠增強人類感知，將一些資料中的重要資訊用特別的顏色顯示，有助於提供將重要資訊顯示。</p><p>生活中日歷上特殊節日也會以紅色顯示，如國歷 10/10 國慶日、農曆 8/15 中秋節等等。</p><p>如果再 ubuntu 文字介面下沒有特別突出的顏色應該是不會去特別注意，像是安裝套件有錯誤或警告幾乎以特別的顏色顯示，以吸引或引導的方式幫助我們解決錯誤。</p><h2 id=matching-styles-to-numbers>Matching styles to numbers</h2><ul><li><p>樣式</p><ul><li>0 一般樣式</li><li>1 粗體</li><li>4 加底線</li><li>5 灰底</li><li>7 文字及背景顏色對調</li></ul></li><li><p>文字顏色</p><ul><li>30 黑色</li><li>31 紅色</li><li>32 綠色</li><li>33 黃色</li><li>34 藍色</li><li>35 紫色</li><li>36 青綠</li><li>37 白色</li></ul></li><li><p>背景顏色</p><ul><li>40 黑色</li><li>41 紅色</li><li>42 綠色</li><li>43 黃色</li><li>44 藍色</li><li>45 紫色</li><li>46 青綠</li><li>47 白色</li></ul></li></ul><h2 id=example>Example</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e>#!/bin/bash
+</span><span style=color:#75715e></span>echo <span style=color:#e6db74>&#34;\033[1m Hello World&#34;</span>
+<span style=color:#75715e># bold effect</span>
+echo <span style=color:#e6db74>&#34;\033[5m Hello World&#34;</span>
+<span style=color:#75715e># blink effect</span>
+echo <span style=color:#e6db74>&#34;\033[0m Hello World&#34;</span>
+<span style=color:#75715e># back to noraml</span>
+echo <span style=color:#e6db74>&#34;\033[31m Hello World&#34;</span>
+<span style=color:#75715e># Red color</span>
+echo <span style=color:#e6db74>&#34;\033[32m Hello World&#34;</span>
+<span style=color:#75715e># Green color</span>
+echo <span style=color:#e6db74>&#34;\033[33m Hello World&#34;</span>
+<span style=color:#75715e># See remaing on screen</span>
+echo <span style=color:#e6db74>&#34;\033[34m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[35m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[36m Hello World&#34;</span>
+echo -n <span style=color:#e6db74>&#34;\033[0m&#34;</span>
+<span style=color:#75715e># back to noraml</span>
+echo <span style=color:#e6db74>&#34;\033[41m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[42m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[43m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[44m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[45m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[46m Hello World&#34;</span>
+echo <span style=color:#e6db74>&#34;\033[0m Hello World&#34;</span>
+</code></pre></div><h2 id=reference>Reference</h2><p><a href=https://www.phpini.com/linux/shell-script-color-text>Linux 技術手札</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2017-12-27-l3-switch-boot-image-not-found/ title="交換器 image 遺失"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2018-01-28-network-troubleshotting/ title="Network Troubleshotting"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

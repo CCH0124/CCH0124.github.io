@@ -1,0 +1,28 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>IP Routing</h1><p class=mb-1>April 12, 2016</p><p>&mdash;</p></div><div class=content><h2 id=ip-routing>IP Routing</h2><p>簡易來說就是我們從台灣主機到美國 google 主機，所經過的路徑過程。過程之間都是透過路由器的決策來完成。路由器會得知目的地 IP，藉由路由表決定下一跳的路徑，接著轉發封包。</p><p><img src=https://i.imgur.com/OiSnvjA.png alt></p><p>假設 TW 想要取得 Google 的資訊，但是 Google 在跟 TW 不同的網路上。TW 會發送封包至路由器，路由起接收到封包後，會得知目的地 IP 位址，並對照路由表做決策再將 TW 發送至路由器的封包轉發到跟目標網路關聯的介面，最後抵達 Google。</p><h2 id=gateway>Gateway</h2><p>本地端主機要和遠方的主機通訊。當主機沒有遠方的主機路由資訊時，會發送至 Gateway。該 Gateway 的路由器會再做決策。</p><p>如上面的圖</p><p>TW 設置有路由器其中一個介面的 IP，TW 嘗試與遠方不同網路的 google 通訊。TW 在路由表中查找目標網路是否有路徑可到達。如果未找到該路徑，則 TW 將封包發送至路由器上的 TW Gateway IP。路由器接收風包後並將封包轉發給 google。</p><h2 id=routing-table>Routing Table</h2><p>路由器會維護一個路由表並儲存在 RAM 中。路由器使用路由表來確定到目標網路的路徑。
+每個路由表包含以下資訊：</p><pre><code class="language-shell=" data-lang="shell=">R1#show ip route
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       + - replicated route, % - next hop override
+
+Gateway of last resort is not set
+
+      192.168.1.0/24 is variably subnetted, 8 subnets, 5 masks
+R        192.168.1.0/25 [120/1] via 192.168.1.226, 00:00:14, Serial6/0
+C        192.168.1.128/26 is directly connected, Ethernet5/0
+L        192.168.1.129/32 is directly connected, Ethernet5/0
+R        192.168.1.192/27 [120/1] via 192.168.1.230, 00:00:19, Serial6/1
+C        192.168.1.224/30 is directly connected, Serial6/0
+L        192.168.1.225/32 is directly connected, Serial6/0
+C        192.168.1.228/30 is directly connected, Serial6/1
+L        192.168.1.229/32 is directly connected, Serial6/1
+
+</code></pre><ul><li>Codes<ul><li>路由器的來源</li><li>R 表示 RIP 路由協定</li><li>C 表示直連網路</li></ul></li><li>Network<ul><li>192.168.1.0/25</li><li>不同網路的網路位址和遮罩，當封包進來時為了要將封包送達至目的地，會查看目的地 IP 落在哪一條紀錄，找到後就使用該紀錄去轉發封包。</li></ul></li><li>AD/Metric<ul><li>[120/1]</li><li>AD 是 Administrative Distance，這是一種權值的表現，越低表示權重越高。</li><li>Codes 是 C 權重最高其次是靜態路由。</li></ul></li><li>Next Hop<ul><li>via 192.168.1.226</li><li>要轉發至下一跳的位址，不一定是 IP 可以是介面</li></ul></li></ul><p>寫入路由表方式有</p><ul><li>directly connected subnets</li><li>static routing</li><li>dynamic routing</li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2016-04-12-package-management/ title="Ubuntu 上的 package 管理"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2016-05-08-account-group-management/ title="Ubuntu 上的帳號和群組管理"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

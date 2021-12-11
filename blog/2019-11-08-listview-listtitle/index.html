@@ -1,0 +1,142 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>navigation drawer</h1><p class=mb-1>November 8, 2019</p><p>&mdash;</p></div><div class=content><h2 id=目標>目標</h2><p>實現抽屜樣式的下拉式選單，或許 <code>row</code> 和 <code>column</code> 也能夠實現，但是會比較麻煩。這次實現步驟是透過 <code>ListTile</code> 和 <code>ListView</code> 實現。</p><h2 id=listtle-和-listview>ListTle 和 ListView</h2><h3 id=listtile>ListTile</h3><p>官方說 <code>A single fixed-height row that typically contains some text as well as a leading or trailing icon.</code> 是一個高度固定，但單一個列，通常包含一些文字和前導或尾隨的圖示。</p><p>原始碼</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>ListTile</span> <span style=color:#66d9ef>extends</span> StatelessWidget {
+  <span style=color:#75715e>/// Creates a list tile.
+</span><span style=color:#75715e></span>  <span style=color:#75715e>///
+</span><span style=color:#75715e></span>  <span style=color:#75715e>/// If [isThreeLine] is true, then [subtitle] must not be null.
+</span><span style=color:#75715e></span>  <span style=color:#75715e>///
+</span><span style=color:#75715e></span>  <span style=color:#75715e>/// Requires one of its ancestors to be a [Material] widget.
+</span><span style=color:#75715e></span>  <span style=color:#66d9ef>const</span> ListTile({
+    Key key,
+    <span style=color:#66d9ef>this</span>.leading, <span style=color:#75715e>/// 前導，通常都用 Icon Widget
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.title, <span style=color:#75715e>/// 標題，通常都用 Text widget
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.subtitle, <span style=color:#75715e>/// 副標題
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.trailing, <span style=color:#75715e>/// 尾隨(末端)，通常都用 Icon Widget
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.isThreeLine <span style=color:#f92672>=</span> <span style=color:#66d9ef>false</span>, <span style=color:#75715e>/// 是否顯示三行的文字
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.dense, <span style=color:#75715e>/// 把 ListTitle 高度變小
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.contentPadding, <span style=color:#75715e>/// 調整邊距，預設是 `EdgeInsets.symmetric(horizontal: 16.0)`
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.enabled <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>, <span style=color:#75715e>/// 點擊動作，預設為可點擊
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.onTap, <span style=color:#75715e>/// 點擊後的行為
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.onLongPress, <span style=color:#75715e>/// 長按
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>this</span>.selected <span style=color:#f92672>=</span> <span style=color:#66d9ef>false</span>, <span style=color:#75715e>/// 選擇列表時，該列表被選重時會以 `primary color` 作為顏色，`ListTileTheme` 可覆寫
+</span><span style=color:#75715e></span>  }) <span style=color:#f92672>:</span> <span style=color:#66d9ef>assert</span>(isThreeLine <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(enabled <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(selected <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>assert</span>(<span style=color:#f92672>!</span>isThreeLine <span style=color:#f92672>||</span> subtitle <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span>),
+       <span style=color:#66d9ef>super</span>(key: key);
+</code></pre></div><blockquote><p><code>isThreeLine</code> 為 <code>true</code> 時，<code>subtitle</code> 不能為 <code>null</code>，因為需要第二行或以上</p></blockquote><p>官方示意圖</p><figure><img src=/images/flutter/flutter-listtile.png width=auto height=auto></figure><h3 id=listview>ListView</h3><p>讓 widget 能夠滾動列表。</p><p>官方說明，構造 ListView 有四個選項：</p><ol><li>默認構造函數採用 <code>children</code> 顯式 <code>List &lt;Widget></code>。適用於少量的 <code>children</code> 列表。</li><li><code>ListView.builder</code> 構造函數採用 <code>IndexedWidgetBuilder</code>，它建立在 <code>children</code> 的需求。適用於大量 <code>children</code> 或無限多個。</li><li><code>ListView.separated</code> 構造函數有兩個 <code>IndexedWidgetBuilders:itemBuilder</code> 按需求建立多個子項目，<code>separatorBuilder</code> 建立在出現在子項之間的分隔符的 <code>children</code>。適用於具有固定數量的 <code>children</code></li><li><code>ListView.custom</code> 構造需要 <code>SliverChildDelegate</code>，它提供了自定義 <code>child</code> 模型的其他方面的能力。</li></ol><p>原始碼，這邊從官網查看參數即可得知定義。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart>ListView({
+  ...  
+  <span style=color:#75715e>/// 可滾動 widget 共同參數
+</span><span style=color:#75715e></span>  Axis scrollDirection <span style=color:#f92672>=</span> Axis.vertical,
+  <span style=color:#66d9ef>bool</span> reverse <span style=color:#f92672>=</span> <span style=color:#66d9ef>false</span>,
+  ScrollController controller,
+  <span style=color:#66d9ef>bool</span> primary,
+  ScrollPhysics physics,
+  EdgeInsetsGeometry padding,
+
+  <span style=color:#75715e>///各個構造函數共同參數
+</span><span style=color:#75715e></span>  <span style=color:#66d9ef>double</span> itemExtent,
+  <span style=color:#66d9ef>bool</span> shrinkWrap <span style=color:#f92672>=</span> <span style=color:#66d9ef>false</span>,
+  <span style=color:#66d9ef>bool</span> addAutomaticKeepAlives <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>,
+  <span style=color:#66d9ef>bool</span> addRepaintBoundaries <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span>,
+  <span style=color:#66d9ef>double</span> cacheExtent,
+
+  <span style=color:#75715e>/// 子 widget 列表
+</span><span style=color:#75715e></span>  List<span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span> children <span style=color:#f92672>=</span> <span style=color:#66d9ef>const</span> <span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span>[],
+})
+</code></pre></div><h2 id=實作>實作</h2><p>下面是部分程式碼，無法完整運行。需要自行定義 <code>List&lt;NavigationModel> navigationItem</code>。這邊付上在 <code>Codelabs</code> 的完整實作<a href=https://github.com/CCH0124/flutter-codelabs/tree/master/first_flutter>鏈接</a>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>import</span> <span style=color:#e6db74>&#39;package:flutter/cupertino.dart&#39;</span>;
+<span style=color:#66d9ef>import</span> <span style=color:#e6db74>&#39;package:flutter/material.dart&#39;</span>;
+
+<span style=color:#66d9ef>import</span> <span style=color:#e6db74>&#39;navigation_model.dart&#39;</span>;
+
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>NavDrawer</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  List<span style=color:#f92672>&lt;</span>NavigationModel<span style=color:#f92672>&gt;</span> navigationItem;
+  NavDrawer({Key key, <span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.navigationItem })<span style=color:#f92672>:</span> <span style=color:#66d9ef>super</span>(key:key);
+  
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  NavDrawerState createState() <span style=color:#f92672>=&gt;</span> NavDrawerState();
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>NavDrawerState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>NavDrawer<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    Map<span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span>, <span style=color:#66d9ef>String</span><span style=color:#f92672>&gt;</span> routeValue <span style=color:#f92672>=</span> ModalRoute.of(context).settings.arguments; <span style=color:#75715e>// 不同路由傳值接值
+</span><span style=color:#75715e></span>    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> Material(
+      child: <span style=color:#66d9ef>new</span> Container(
+        width: <span style=color:#ae81ff>200</span>,
+        child: <span style=color:#66d9ef>new</span> Drawer(
+          child: <span style=color:#66d9ef>new</span> Column(
+            children: <span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span>[
+              <span style=color:#66d9ef>new</span> NavListTitle(
+                title: (routeValue <span style=color:#f92672>==</span> <span style=color:#66d9ef>null</span>) <span style=color:#f92672>?</span> <span style=color:#e6db74>&#34;F1&#34;</span> <span style=color:#f92672>:</span> routeValue[<span style=color:#e6db74>&#39;title&#39;</span>],
+                icon: Icons.person,
+              ),
+              <span style=color:#66d9ef>new</span> SizedBox(
+                width: <span style=color:#ae81ff>50</span>,
+              ),
+              <span style=color:#66d9ef>new</span> Divider(
+                color: Colors.grey,
+                height: <span style=color:#ae81ff>10.0</span>,
+              ),
+              <span style=color:#66d9ef>new</span> Expanded(
+                child: <span style=color:#66d9ef>new</span> ListView.separated( <span style=color:#75715e>/// child 之間的分割符
+</span><span style=color:#75715e></span>                  separatorBuilder: (context, index) {
+                    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> Divider(
+                      color: Colors.grey,
+                      height: <span style=color:#ae81ff>10.0</span>,
+                    );
+                  },
+                  itemBuilder: (context, index) {
+                    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> NavListTitle(
+                      title: widget.navigationItem[index].title,
+                      icon: widget.navigationItem[index].icon,
+                      onTap: () {
+                        setState(() {
+                          <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>null</span>;
+                        });
+                      },
+                    );
+                  },
+                  itemCount: widget.navigationItem.length,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>NavListTitle</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> title;
+  <span style=color:#66d9ef>final</span> IconData icon;
+  <span style=color:#66d9ef>final</span> Function onTap;
+  NavListTitle({<span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.title, <span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.icon, <span style=color:#66d9ef>this</span>.onTap});
+
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  _NavListTitleState createState() <span style=color:#f92672>=&gt;</span> _NavListTitleState();
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>_NavListTitleState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>NavListTitle<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> ListTile(
+      leading: Icon( 
+        widget.icon,
+        size: <span style=color:#ae81ff>20</span>,
+      ),
+      title: <span style=color:#66d9ef>new</span> Text(
+        widget.title,
+        style: TextStyle(fontSize: <span style=color:#ae81ff>15</span>),
+      ),
+      onTap: widget.onTap,
+    );
+  }
+}
+</code></pre></div><h2 id=參考資料>參考資料</h2><ul><li><a href="https://www.youtube.com/watch?v=l8dj0yPBvgQ">ListTile (Flutter Widget of the Week)</a></li><li><a href=https://api.flutter.dev/flutter/material/ListTile-class.html>flutter-dev-listtile</a></li><li><a href="https://www.youtube.com/watch?v=KJpkjHGiI5A">ListView (Flutter Widget of the Week)</a></li><li><a href=https://api.flutter.dev/flutter/widgets/ListView-class.html>flutter-dev-listview</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-11-15-cisco-ssh/ title=SSH><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-11-10-vlan/ title="VLAN 介紹"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

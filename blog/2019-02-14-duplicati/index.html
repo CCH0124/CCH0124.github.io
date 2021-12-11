@@ -1,0 +1,80 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Backup</h1><p class=mb-1>February 14, 2019</p><p>&mdash;</p></div><div class=content><h1 id=duplicati>duplicati</h1><p><a href=https://github.com/duplicati/duplicati>duplicati</a> 是一個開源的備份軟體，可用在 <code>cloud storage</code> 服務或者 <code>file server</code>。
+<code>duplicati</code> 可工作於 <code>WebDAV</code>、<code>Google Cloud Drive</code>、<code>MEGA</code>&mldr;等等。</p><p>最近會使用原因，因為社群有人寫<a href="http://blog.jason.tools/2019/02/pve-bak-conf.html?fbclid=IwAR14Eemed1oQVlMl1WKD6hfkjvoGKC8Im8ACnco7DrJpKOEBkgDkeeziIDs">文章</a>分享，我有時也會備份資料去雲端但大多數是開著雲端網頁拉某資料夾的檔案到網頁。因為那篇文章我就嘗試運用 <code>duplicati</code> 做定期備份，這樣減少了我的干預。<code>Duplicati</code> 也提供強大的<code>加密</code>功能，同時備份檔案放在公共網路服務器上比在家中未加密的文件更安全。</p><h2 id=install>Install</h2><p>以 ubuntu 為主機安裝 duplicati 此軟體。<a href=https://www.duplicati.com/download>載點</a></p><pre><code class="language-shell=" data-lang="shell=">$ wget https://updates.duplicati.com/beta/duplicati_2.0.4.5-1_all.deb
+$ sudo dpkg -i duplicati_2.0.4.5-1_all.deb
+(Reading database ... 99829 files and directories currently installed.)
+Preparing to unpack duplicati_2.0.4.5-1_all.deb ...
+Unpacking duplicati (2.0.4.5-1) over (2.0.4.5-1) ...
+dpkg: dependency problems prevent configuration of duplicati:
+ duplicati depends on mono-runtime (&gt;= 3.0); however:
+  Package mono-runtime is not installed.
+ duplicati depends on libmono-2.0-1; however:
+  Package libmono-2.0-1 is not installed.
+ duplicati depends on libmono-system-core4.0-cil; however:
+  Package libmono-system-core4.0-cil is not installed.
+ duplicati depends on libmono-system-configuration4.0-cil; however:
+  Package libmono-system-configuration4.0-cil is not installed.
+ duplicati depends on libmono-system-configuration-install4.0-cil; however:
+  Package libmono-system-configuration-install4.0-cil is not installed.
+ duplicati depends on libmono-system-data4.0-cil; however:
+  Package libmono-system-data4.0-cil is not installed.
+ duplicati depends on libmono-system-drawing4.0-cil; however:
+  Package libmono-system-drawing4.0-cil is not installed.
+ duplicati depends on libmono-system-net4.0-cil; however:
+  Package libmono-system-net4.0-cil is not installed.
+ duplicati depends on libmono-system-net-htt
+dpkg: error processing package duplicati (--install):
+ dependency problems - leaving unconfigured
+Processing triggers for mime-support (3.59ubuntu1) ...
+Errors were encountered while processing:
+ duplicati
+
+</code></pre><p>在使用 <code>dpkg</code> 安裝時出現 Error。這 Error 要求要一些依賴軟體</p><pre><code class="language-shell=" data-lang="shell=">$ sudo apt-get install -f
+</code></pre><p>利用下面指令確認</p><pre><code class="language-shell=" data-lang="shell=">$ sudo dpkg -l duplicati
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Inst/Conf-files/Unpacked/halF-conf/Half-inst/trig-aWait/Trig-pend
+|/ Err?=(none)/Reinst-required (Status,Err: uppercase=bad)
+||/ Name                                           Version                      Architecture                 Description
++++-==============================================-============================-============================-=================================================================================================
+ii  duplicati                                      2.0.4.5-1                    all                          Backup client for encrypted online backups
+
+</code></pre><h2 id=start-service>Start service</h2><pre><code class="language-shell=" data-lang="shell=">$ sudo systemctl start duplicati.service
+lab702@elk:~$  systemctl status duplicati
+● duplicati.service - Duplicati web-server
+   Loaded: loaded (/lib/systemd/system/duplicati.service; enabled; vendor preset: enabled)
+   Active: active (running) since Wed 2019-02-13 13:12:28 CST; 25s ago
+ Main PID: 74617 (mono)
+    Tasks: 17
+   Memory: 30.6M
+      CPU: 742ms
+   CGroup: /system.slice/duplicati.service
+           ├─74617 DuplicatiServer /usr/lib/duplicati/Duplicati.Server.exe
+           └─74628 /usr/bin/mono-sgen /usr/lib/duplicati/Duplicati.Server.exe
+
+Feb 13 13:12:28 elk systemd[1]: Started Duplicati web-server.
+lab702@elk:~$ sudo systemctl enable duplicati.service
+Created symlink from /etc/systemd/system/multi-user.target.wants/duplicati.service to /lib/systemd/system/duplicati.service.
+</code></pre><h3 id=defaul-port>Defaul port</h3><p><code>duplicati</code> 預設 port 為 <code>8200</code></p><pre><code class="language-shell=" data-lang="shell=">$ netstat -ltn | grep 8200
+tcp        0      0 127.0.0.1:8200          0.0.0.0:*               LISTEN
+</code></pre><h2 id=start-duplicati>Start duplicati</h2><p>可用以下兩種方式啟動
+1.</p><pre><code class="language-shell=" data-lang="shell=">$ duplicati
+
+
+(Duplicati.GUI.TrayIcon:97053): libappindicator-WARNING **: Unable to get the session bus: Failed to execute child process &quot;dbus-launch&quot; (No such file or directory)
+
+(Duplicati.GUI.TrayIcon:97053): LIBDBUSMENU-GLIB-WARNING **: Unable to get session bus: Failed to execute child process &quot;dbus-launch&quot; (No such file or directory)
+
+</code></pre><ol start=2><li></li></ol><pre><code class="language-shell=" data-lang="shell=">$ sudo duplicati-server --webservice-interface=192.168.222.128
+$ sudo duplicati-server --webservice-interface=192.168.222.128 &amp; # 背景執行
+</code></pre><p>192.168.222.128 為 Host IP address</p><h2 id=remove-duplicati>Remove duplicati</h2><pre><code class="language-shell=" data-lang="shell=">$ sudo dpkg -r duplicati
+</code></pre><h2 id=duplicati-backup-data-to-google-drive>Duplicati backup data to google drive</h2><ol><li></li></ol><p><img src=https://i.imgur.com/aUY5EkG.png alt></p><ol start=2><li></li></ol><p><img src=https://i.imgur.com/ET42IXt.png alt></p><ol start=3><li></li></ol><p><img src=https://i.imgur.com/8OsC6PI.png alt></p><ol start=4><li><p>點選 AuthID 登入 google 服務即可獲得 AuthID
+<img src=https://i.imgur.com/rzOuPgX.png alt></p></li><li><p>勾選要備份到雲端的資料
+<img src=https://i.imgur.com/L7kGxVY.png alt></p></li><li></li></ol><p><img src=https://i.imgur.com/fg6UIHk.png alt></p><ol start=7><li></li></ol><p><img src=https://i.imgur.com/B9hchxT.png alt></p><ol start=8><li><p>首頁會出現剛設定的 backup
+<img src=https://i.imgur.com/fiJtj07.png alt></p></li><li><p>查看雲端
+<img src=https://i.imgur.com/QOxQh2P.png alt></p></li></ol><p>其中在第二步驟輸入的密碼是在還原時，要用到的。</p><h3 id=data-restore>Data restore</h3><ol><li></li></ol><p><img src=https://i.imgur.com/cz0MMVN.png alt></p><ol start=2><li></li></ol><p><img src=https://i.imgur.com/QbYQ1nO.png alt></p><ol start=3><li><p>輸入當備份時所加密的密碼
+<img src=https://i.imgur.com/hWSLlPX.png alt></p></li><li><p>會列出當時您備份的資料，將要還原的資料打勾
+<img src=https://i.imgur.com/RPIlk9a.png alt></p></li><li><p>設定還原時選項，依照個人需求設定</p></li></ol><ul><li>您要還原檔案到哪裡？<ul><li>可以自己選擇新路徑或原本位置</li></ul></li><li>您如何處理既有檔案？<ul><li>覆寫</li><li>在檔案名稱中儲存不同版本的時間戳記</li></ul></li><li>權限<ul><li>還原讀/寫權限</li></ul></li></ul><ol start=6><li>成功畫面
+<img src=https://i.imgur.com/FVKWw3i.png alt></li></ol><h2 id=conclusion>Conclusion</h2><p>我是在 windows 上使用 <code>duplicati</code> 做備份，<code>duplicati</code> 可以幫備份資料做加密提高了安全性，又可以上傳至 <code>cloud</code> 可達成異地備份的任務，是一個很不錯的開原軟體。但有很多功能還在摸索，因此此文章只是描述我如何備份至雲端。</p><p>我在學校有管理系統，因此正在研究如何將系統的備份資料透過 <code>duplicati</code> 上傳至 NAS。這部分我成功後會修補文章。</p><h2 id=reference>Reference</h2><p><a href=https://github.com/duplicati/duplicati>github</a></p><p><a href=https://manjaro.site/install-duplicati-ubuntu-server/>install-duplicati-ubuntu-server</a></p><p><a href=https://www.slideshare.net/jasoncheng7115/duplicati-20170521-hexbase>jasoncheng</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-01-22-acl/ title=ACL><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-02-23-rai-dirver/ title=掛載雲端硬碟至本機><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

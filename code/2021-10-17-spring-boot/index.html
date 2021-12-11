@@ -1,0 +1,128 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Spring boot 概觀</h1><p class=mb-1>October 17, 2021</p><p>&mdash;</p></div><div class=content><h2 id=spring-能做什麼>Spring 能做什麼</h2><ul><li>Microservice</li><li>Reactive</li><li>Cloud</li><li>Web apps</li><li>Serverless<ul><li>FaaS</li></ul></li><li>Event Driven</li><li>Batch</li></ul><p>Spring 生態圈很大。包含以下</p><ul><li>Spring Framework<ul><li>DI</li><li>AOP</li></ul></li><li>Spring Data<ul><li>數據操作部分</li></ul></li><li>Spring Cloud</li><li>Spring Security</li><li>Spring Session</li></ul><p>Spring boot 底層是 Spring Framework。Spring5 後有了變化，有了 spring reactive
+<img src=https://spring.io/images/diagram-reactive-1290533f3f01ec9c57baf2cc9ea9fa2f.svg alt></p><p>JAVA 8 的特性也改變底層的實現原理，像是預設的 interface。</p><h2 id=什麼是-spring-boot>什麼是 Spring boot</h2><p>Spring boot makes it easy to create stand-alone, production-grade Spring based Application that you can &ldquo;just run&rdquo;.</p><p>其優點官方描述有以下</p><ul><li>Create stand-aline Spring application</li><li>Embed Tomacat, Jetty or Undertow directly (no need to deploy WAR files)</li><li>Provide opinionated &lsquo;starter&rsquo; dependencies to simplify you build configuration<ul><li>自動 starter 依賴，簡化建構配置</li></ul></li><li>Automatically configure Sping and 3rd party libraries whenever possible</li><li>Provide productioon-ready features such as metric, health checks, and externalized configuration</li><li>Absoullutely no code gneration and no requirement for XML configuration</li></ul><p>也因為封裝太好，內部原始碼複雜，不容易精通。</p><h2 id=建立一個-spring-boot-專案>建立一個 Spring boot 專案</h2><p>使用 Maven 啟動項目後其 pom.xml 如下配置</p><pre><code class="language-xml=" data-lang="xml=">    &lt;packaging&gt;jar&lt;/packaging&gt;
+    &lt;parent&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+        &lt;version&gt;2.5.5&lt;/version&gt;
+    &lt;/parent&gt;
+    
+    &lt;dependencies&gt;
+&lt;!--     引入開發 Web 包     --&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;!--   將應用打包成 jar   --&gt;
+    &lt;build&gt;
+    &lt;plugins&gt;
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;
+        &lt;/plugin&gt;
+    &lt;/plugins&gt;
+&lt;/build&gt;
+</code></pre><p>建立主程序</p><pre><code class="language-java=" data-lang="java=">@SpringBootApplication // 表示這是一個 Spring boot 應用
+public class MainApplication {
+    public static void main(String[] atgs) {
+        SpringApplication.run(MainApplication.class, args);
+    }
+}
+</code></pre><p>撰寫業務</p><pre><code class="language-java=" data-lang="java=">@RestController
+public class HelloController {
+    @RequestMapping(&quot;/hello&quot;)
+    public String handle01(){
+        return &quot;Hello&quot;;
+    }
+}
+</code></pre><p>透過 application.properties 可進行環境配置像是端口等，否則都會是預設值。最後透過 maven 打包成 jar 檔即可運行。</p><h2 id=自動配置原理>自動配置原理</h2><h3 id=依賴管理>依賴管理</h3><p>在 maven 配置中，使用了 parent 進行依賴管理</p><pre><code class="language-xml=" data-lang="xml=">    &lt;parent&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-starter-parent&lt;/artifactId&gt;
+        &lt;version&gt;2.5.5&lt;/version&gt;
+    &lt;/parent&gt;
+    而它的父項目是
+    &lt;parent&gt;
+        &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-boot-dependncies&lt;/artifactId&gt;
+        &lt;version&gt;2.5.5&lt;/version&gt;
+    &lt;/parent&gt;
+    在往上追蹤可以看到其聲明了常用的開發依賴版本號，因此會自動賦予版本
+</code></pre><p>官方提供了很多關於 starter 場景啟動器，可參考<a href=https://docs.spring.io/spring-boot/docs/current/reference/html/using.html#using.build-systems.starters>官方</a>，只要引入，該場景的所有依賴都會自動引入。</p><p>而這些依賴幫我們配置了以下</p><ul><li>自動配好 Tomcat<ul><li>在 <code>spring-boot-starter-web</code> 中自動引入 Tomcat</li></ul></li><li>自動配至 SpringMVC<ul><li>與上同樣</li><li>同時也幫我們做了編碼</li></ul></li><li>默認 Package 結構<ul><li>主程序所在包及其下面的所有子包中組件都會被默認掃描進來</li><li>無須先前的包掃描</li><li>想要改變掃描包的路徑可以透過 <code>@SpringBootApplication(scanBasePackages="PACKAGE_PATH")</code> 或是 <code>@ComponentScan(PACKAGE_NAME)</code></li></ul></li></ul><pre><code class="language-java=" data-lang="java=">@SpringBootApplication 
+相當於
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(&quot;PACKAGE_NAME&quot;)
+</code></pre><ul><li>擁有默認值<ul><li>配置檔案(application.properties)的值終究會綁定到每個類上，這個類會在容器中創建對象</li></ul></li><li>按需求加載自動配至資源<ul><li>依照引入的場景並自動配置該場景環境</li></ul></li></ul><h2 id=容器功能>容器功能</h2><ol><li>@Configuration</li></ol><ul><li>告訴 SpringBoot 這是一個配置類</li><li>透過 @Bean 給容器添加組件，以方法名作為組件的 ID。返回類型就是組件類型，返回的值，就是組件在容器中的實例</li></ul><pre><code class="language-java=" data-lang="java=">@Configuration
+public class MyConfig {
+    @Bean
+    public User user01() {
+        return User.builder().name(&quot;name&quot;).age(12).build();
+    }
+
+    @Bean()
+    public Pet pet() {
+        return Pet.builder().name(&quot;tomcat&quot;).build();
+    }
+}
+</code></pre><pre><code class="language-java=" data-lang="java=">@SpringBootApplication
+public class DemoApplication {
+    
+	public static void main(String[] args) {
+        // 返回 IOC 容器
+		ConfigurableApplicationContext run =  SpringApplication.run(DemoApplication.class, args);
+		String[] names = run.getBeanDefinitionNames();
+        // 查看使否存在於 IOC 容器中
+		Arrays.stream(names).filter(i -&gt; Objects.equals(&quot;user01&quot;, i)).forEach(System.out::println);
+		Arrays.stream(names).filter(i -&gt; Objects.equals(&quot;pet&quot;, i)).forEach(System.out::println);
+	}
+
+}
+</code></pre><p>如果不要預設名稱為方法名稱，則可以如下設置 <code>@Bean(別名)</code>。
+透過以下方式可以知道說 Bean 預設是單例的</p><pre><code class="language-java=" data-lang="java=">        Pet one = run.getBean(&quot;pet&quot;, Pet.class);
+		Pet two = run.getBean(&quot;pet&quot;, Pet.class);
+
+		System.out.println(one == two);
+</code></pre><p><em>MyConfig</em> 本身也是一個組件，<code>@Configuration</code> 預設 <code>proxyBeanMethods</code> 是 true，代理 bean 的方法。</p><p>下面的方式可以證明說，外部無論對配置類中的某個組件註冊方法都是先前註冊容器的單例方法。其原因是 <code>proxyBeanMethods=true</code>，Spring boot 會檢查該組件是否在容器中。預設是保持單例，如果設定為 <code>false</code>，<em>每次調用都會產生一個新物件</em>，這表示會少了檢查是否存在容器中的步驟，可提升性能。</p><pre><code class="language-java=" data-lang="java=">        MyConfig bean = run.getBean(MyConfig.class);
+		User u1 = bean.user01();
+		User u2 = bean.user01();
+		System.out.println(u1 == u2);
+</code></pre><ol start=2><li>@Import
+給容器中自動創建出指定類型的組件，預設組件名稱是類名。</li><li>@Conditional
+條件裝配，滿足 Conditional 指定的條件，則進行組件注入。其用法有如下圖中的等方法</li></ol><p><img src=https://i.imgur.com/zN5fLlj.png alt></p><p>在底層經常使用。</p><ol start=4><li>@ImportResource
+資源引入，像是導入 Spring 的配置檔案</li></ol><pre><code class="language-java=" data-lang="java=">@ImportResource(classpath:beans.xml)
+</code></pre><h2 id=配置綁定>配置綁定</h2><ol><li>@ConfigurationProperties</li></ol><ul><li>prefix 是一個前綴參數</li></ul><pre><code class="language-java=" data-lang="java=">@Data
+@ToString
+@ConfigurationProperties(prefix = &quot;tw&quot;)
+@Component // 將此類添加到容器中
+public class Car {
+    private String brand;
+    private Integer price;
+}
+</code></pre><p>接著我們在 application.properties 中就可以使用定義的配置</p><pre><code>tw.brand=VOLVO
+tw.price=100000
+</code></pre><blockquote><p>只有在容器中的組件，才會有 Spring boot 提供的功能</p></blockquote><p>透過簡易的 controller 設置，我們可以驗證是否存在我們設定的值</p><pre><code class="language-java=" data-lang="java=">@RestController
+public class Hello {
+    @Autowired
+    Car car;
+
+    @GetMapping(value=&quot;/car&quot;)
+    public Car getMethodName() {
+        return car;
+    }
+    
+}
+// {&quot;brand&quot;:&quot;VOLVO&quot;,&quot;price&quot;:100000}
+</code></pre><ol start=2><li>@EnableConfigurationProperties(CLASSNAME.class)</li></ol><ul><li>開啟指定類的配置綁定</li><li>把指定類的組件自動註冊到容器中
+假設使用第三方套件時，其配置類沒有 <code>@Component</code> 將其注入到容器中時，我們可藉由此屬性配置</li></ul><h3 id=引導加載自動配置類>引導加載自動配置類</h3><pre><code class="language-java=" data-lang="java=">@SpringBootApplication 
+相當於
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(&quot;PACKAGE_NAME&quot;)
+</code></pre><ol><li>@SpringBootConfiguration 表示一個配置類</li><li>@ComponentScan 指定掃描那些</li><li>@EnableAutoConfiguration
+EnableAutoConfiguration 是以下註解的合成</li></ol><pre><code class="language-java=" data-lang="java=">@AutoConfigurationPackage
+@Import({AutoConfigurationImportSelector.class})
+</code></pre><p>往下追會發現說其利用 <code>Register</code> 給容器中導入一系列組件，會從指定的 package 下，也就是 <code>@SpringBootApplication</code> 註解下該類 package。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/code/2021-09-06.junit5/ title=單元測試><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/code/2021-10-17-spring-boot-web/ title="Spring boot Web 開發"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

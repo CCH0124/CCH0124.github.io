@@ -1,0 +1,123 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day21</h1><p class=mb-1>September 11, 2020</p><p>&mdash;</p></div><div class=content><p><code>Kubernetes</code> 提供的儲存方案屬於 <code>POD</code> 的資源，一個 <code>POD</code> 中的多個容器可以一同共享其儲存數據。而在容器中的數據可能會隨著 <code>POD</code> 生命週期而消失，在 <code>Kubernetes</code> 上的儲存方案可以實現出在 <code>POD</code> 生命週期外的儲存。接下來將會介紹 <code>Kubernetes</code> 上的儲存應用。</p><h2 id=volume-概念>volume 概念</h2><p>就像開頭講的 <code>POD</code> 的生命週期無法讓容器可以永久儲存數據。以 <code>Docker</code> 來說它可以支持網路檔案系統或是一般的檔案系統以掛載方式作永久性儲存，而在 <code>Kubernetes</code> 中也為 <code>POD</code> 提供相似的功能，這功能使得容器可以可掛載 <code>POD</code> 設定的外部儲存設備方案，也可達到跨節點的需求，至於是否要持久化儲存，取決於設定。示意圖如下。</p><figure><img src=/images/k8s/K8s-volume.jpg width=auto height=auto></figure><h2 id=kubernetes-的儲存方案>Kubernetes 的儲存方案</h2><p><code>Kubernete</code> 所支援的儲存方案非常的多，儲存方面還支援了 <code>ConfigMap</code>、<code>Secret</code> 這些對於隱密資訊或一些變數的儲存。從<a href=https://kubernetes.io/docs/concepts/storage/volumes/>官方</a>可以看有很多儲存類型，不論是分散式或是雲端儲存。</p><p>官方中的 <code>emptyDir</code> 類型隨著 <code>POD</code> 生命週期變化；<code>hostPath</code> 則是以主機的目錄關聯至 <code>POD</code>，只要被重新調度，就無法使用，以持久化來看這兩個類型並非是持久的。相對的持久化的類型都要是網路儲存系統像是 <code>NFS</code>、<code>Ceph</code> 甚至是雲端的儲存方案。<code>Kubernetes</code> 中儲存有 PersistentVolume(PV) 和 persistentVolumeClaim(PVC) 的概念，<code>PV</code> 可借助管理者配置其儲存方案；<code>PVC</code> 則是去請求那些 <code>PV</code>，這過程簡化了配置儲存方案的複雜度。</p><p>前面有題到兩個特殊類型的 <code>volume</code> 分別是 <code>ConfigMap</code> 和 <code>Secret</code>，以下進行簡略介紹</p><ul><li>ConfigMap<ul><li>為 <code>POD</code> 寫入而外訊息，將數據定義至 <code>ConfigMap</code> 對象中。<code>POD</code> 需要時則在資源清單中引用即可</li></ul></li><li>Secret<ul><li>儲存較隱密的資訊用，需使用時在將其掛載至 <code>POD</code> 中，這樣避免了在製作 <code>image</code> 時隱密資訊的寫入</li></ul></li></ul><p>下面會先實作 <code>emptyDir</code> 與 <code>hostPath</code>，下一章節會在講 <code>NFS</code> 的實驗。</p><h2 id=暫存儲存卷-emptydir>暫存儲存卷 emptyDir</h2><p>可將它想成是一個暫時的目錄，它隨著 <code>POD</code> 的生命週期而的生命週期而變化，<code>POD</code> 運行則建立，<code>POD</code> 終至則刪除。透過 <code>kubectl explain pod.spec.volumes.emptyDir</code> 可查看該屬性有什麼，其屬性如下</p><ul><li>medium<ul><li>儲存的媒介，預設是 <code>default</code>，另一個為 <code>Memory</code>。<code>Memory</code> 就是實現於 <code>RAM</code> 的 <code>tmpfs</code> 檔案系統。</li></ul></li><li>sizeLimit<ul><li>使用的大小，預設是 <code>nil</code> 不限制。<code>medium</code> 為 <code>Memory</code> 應當要限制。</li></ul></li></ul><p>以下為範例的 <code>yaml</code> 檔，定義一個名稱為 <code>html</code> 的儲存卷(volume)，掛載至容器的 <code>/data/web/html</code> 和 <code>/data/</code> 下，注意定義了 <code>volumes</code> 不代表說容器就會有資訊，<code>volumes</code> 屬於 <code>POD</code> 級別因此只是建立關聯，容器要使用則需要定義 <code>volumeMounts</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#75715e># pod-emptydir-demo.yaml</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-volume-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>frontend</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+    <span style=color:#f92672>ports</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>http</span>
+      <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+    <span style=color:#f92672>volumeMounts</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>html</span>
+      <span style=color:#f92672>mountPath</span>: <span style=color:#ae81ff>/data/web/html</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>busybox</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>busybox:latest</span>
+    <span style=color:#f92672>imagePullPolicy</span>: <span style=color:#ae81ff>IfNotPresent</span>
+    <span style=color:#f92672>volumeMounts</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>html</span>
+      <span style=color:#f92672>mountPath</span>: <span style=color:#ae81ff>/data/</span>
+    <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;bin/sh&#34;</span>, <span style=color:#e6db74>&#34;-c&#34;</span>, <span style=color:#e6db74>&#34;sleep 3600&#34;</span>]
+  <span style=color:#f92672>volumes</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>html</span>
+    <span style=color:#f92672>emptyDir</span>: {} <span style=color:#75715e># {} 表示不提供任何需求</span>
+</code></pre></div><p>同樣的使用 <code>apply</code> 放式部署，之後藉由 <code>exec</code> 與容器進行交互並觀察是否有掛載本機建立的 <code>data</code> 目錄，結果如下。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec -it pod-volume-demo -c busybox -- /bin/sh <span style=color:#75715e># -c 是指定 POD 中的哪個容器</span>
+/ <span style=color:#75715e># mount | grep data</span>
+/dev/sda1 on /data type ext4 <span style=color:#f92672>(</span>rw,relatime,commit<span style=color:#f92672>=</span>30<span style=color:#f92672>)</span>
+/ <span style=color:#75715e># echo &#34;$(date)-busybox&#34; &gt;&gt; /data/index.html</span>
+/ <span style=color:#75715e># cat /data/index.html</span>
+Thu Sep <span style=color:#ae81ff>17</span> 12:36:19 UTC 2020-busybox
+/ <span style=color:#75715e># exit</span>
+$ kubectl exec -it pod-volume-demo -c myapp -- /bin/sh
+<span style=color:#75715e># cat /data/web/html/index.html</span>
+Thu Sep <span style=color:#ae81ff>17</span> 12:36:19 UTC 2020-busybox
+<span style=color:#75715e>#</span>
+</code></pre></div><p>接著這邊來驗證容器是否能夠一讀一寫，<code>yaml</code> 如下，busybox 容器負責寫，每兩秒寫一次，myapp 負責讀。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-volume-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>frontend</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+    <span style=color:#f92672>ports</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>http</span>
+      <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+    <span style=color:#f92672>volumeMounts</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>html</span>
+      <span style=color:#f92672>mountPath</span>: <span style=color:#ae81ff>/usr/share/nginx/html</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>busybox</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>busybox:latest</span>
+    <span style=color:#f92672>imagePullPolicy</span>: <span style=color:#ae81ff>IfNotPresent</span>
+    <span style=color:#f92672>volumeMounts</span>:
+    - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>html</span>
+      <span style=color:#f92672>mountPath</span>: <span style=color:#ae81ff>/data/</span>
+    <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;bin/sh&#34;</span>, <span style=color:#e6db74>&#34;-c&#34;</span>, <span style=color:#e6db74>&#34;while true; do echo $(date)-busybox &gt;&gt; /data/index.html; sleep 2; done&#34;</span>]
+  <span style=color:#f92672>volumes</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>html</span>
+    <span style=color:#f92672>emptyDir</span>: {}
+</code></pre></div><p>在 <code>GKE</code> 為了方便驗證部分請至任一節點使用 <code>curl</code> 對部署 <code>POD</code> 的 <code>IP</code> 進行請求，結果如下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec -it pod-volume-demo -c busybox -- /bin/sh
+/ <span style=color:#75715e># ls</span>
+bin   data  dev   etc   home  proc  root  sys   tmp   usr   var
+/ <span style=color:#75715e># ls -Rl data</span>
+data:
+total <span style=color:#ae81ff>12</span>
+-rw-r--r--    <span style=color:#ae81ff>1</span> root     root         <span style=color:#ae81ff>11914</span> Sep <span style=color:#ae81ff>17</span> 13:07 index.html
+$ kubectl get pods pod-volume-demo -o wide
+NAME              READY   STATUS    RESTARTS   AGE   IP           NODE                                       NOMINATED NODE   READINESS GATES
+pod-volume-demo   2/2     Running   <span style=color:#ae81ff>0</span>          13m   10.4.3.119   gke-cluster-1-default-pool-7dc8b11b-8kvr   &lt;none&gt;           &lt;none&gt;
+@gke-cluster-1-default-pool-7dc8b11b-8kvr$ curl 10.4.3.119 <span style=color:#75715e># this</span>
+Thu Sep <span style=color:#ae81ff>17</span> 12:57:16 UTC 2020-busybox
+Thu Sep <span style=color:#ae81ff>17</span> 12:57:18 UTC 2020-busybox
+Thu Sep <span style=color:#ae81ff>17</span> 12:57:20 UTC 2020-busybox
+Thu Sep <span style=color:#ae81ff>17</span> 12:57:22 UTC 2020-busybox
+</code></pre></div><h2 id=hostpath-儲存卷>hostPath 儲存卷</h2><p>簡單的說就是將節點主機上的某個檔案系統掛載至 <code>POD</code> 上，相較於 <code>emptyDir</code> 它能夠保存資訊至節點主機上，進而不被 <code>POD</code> 生命週期所影響。不過只要 <code>POD</code> 被調度至其它節點則會導致資訊無法取得。同樣的 <code>hostPath</code> 有兩個屬性分別是 <code>path</code> 和 <code>type</code>，其 <code>type</code> 有以下詳細內容查看<a href=https://kubernetes.io/docs/concepts/storage/volumes#hostpath>官方</a>即可</p><ul><li>DirectoryOrCreate</li><li>Directory</li><li>FileOrCreate</li><li>File</li><li>Socket</li><li>CharDevice</li><li>BlockDevice</li></ul><p>實驗的 <code>yaml</code>，<code>type</code> 使用 <code>DirectoryOrCreate</code> 掛載目錄不存在時就創建。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-hostpath-demo
+  namespace: default
+spec:
+  containers:
+  - name: myapp
+    image: nginx:1.18
+    volumeMounts:
+    - name: html
+      mountPath: /usr/share/nginx/html/
+  volumes:
+  - name: html
+    hostPath:
+      path: /home/cchong0124/data/pod/volume1
+      type: DirectoryOrCreate
+</code></pre></div><p>下面是從他佈署到的節點觀察，確實在 &mldr;r7rg 節點下沒定義我們的掛載目錄，但因為選擇的 <code>type</code> 是會假設不存在掛載目錄時會幫我們建立。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods pod-hostpath-demo -o wide                                                                                                        
+NAME                READY   STATUS    RESTARTS   AGE     IP          NODE                                       NOMINATED NODE   READINESS GATES
+pod-hostpath-demo   1/1     Running   <span style=color:#ae81ff>0</span>          3m13s   10.4.2.55   gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;
+gke-cluster-1-default-pool-7dc8b11b-r7rg ~ $ ls -Rl
+.:
+total <span style=color:#ae81ff>4</span>
+drwxr-xr-x <span style=color:#ae81ff>3</span> root root <span style=color:#ae81ff>4096</span> Sep <span style=color:#ae81ff>17</span> 13:41 data
+
+./data:
+total <span style=color:#ae81ff>4</span>
+drwxr-xr-x <span style=color:#ae81ff>3</span> root root <span style=color:#ae81ff>4096</span> Sep <span style=color:#ae81ff>17</span> 13:41 pod
+
+./data/pod:
+total <span style=color:#ae81ff>4</span>
+drwxr-xr-x <span style=color:#ae81ff>2</span> root root <span style=color:#ae81ff>4096</span> Sep <span style=color:#ae81ff>17</span> 13:41 volume1
+
+./data/pod/volume1:
+total <span style=color:#ae81ff>0</span>
+</code></pre></div><p>大家可以嘗試將 <code>yaml</code> 改成 <code>Deployment</code> 並在每個節點的掛載目錄下建立 <code>index.html</code> 觀察它是否是跟著節點的，原則上是。此類型的儲存對於會被調度的資源則不適用。</p><h2 id=參考資源>參考資源</h2><ul><li><a href=https://kubernetes.io/docs/concepts/storage/volumes#emptydir>官方 emptydir</a></li><li><a href=https://kubernetes.io/docs/concepts/storage/volumes#hostpath>官方 hostpath</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-10-service-discovery/ title="kubernetes - day20"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-12-volume-nfs/ title="kubernetes - day22"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

@@ -1,0 +1,155 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>30 天學習歷程-day06</h1><p class=mb-1>August 22, 2020</p><p>&mdash;</p></div><div class=content><h2 id=data-cleaning>Data cleaning</h2><p>將使用 <code>pandas</code> 工具和 <code>CICDDOS</code> 數據集進行資料清理的練習。下面會學習到 <code>pandas</code> 的使用。</p><p>###　Drop Miss Value</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> pandas <span style=color:#f92672>as</span> pd
+<span style=color:#f92672>import</span> numpy <span style=color:#f92672>as</span> np
+ddos <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(<span style=color:#e6db74>&#34;D:</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>DataSet</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>CICDDOS2019</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>01-12</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>CSV</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>DrDoS_LDAP.csv&#34;</span>)
+missing_values_count <span style=color:#f92672>=</span> ddos<span style=color:#f92672>.</span>isnull()<span style=color:#f92672>.</span>sum() <span style=color:#75715e># 檢查缺失值</span>
+missing_values_count[<span style=color:#ae81ff>20</span>:<span style=color:#ae81ff>25</span>]
+<span style=color:#75715e>##############################</span>
+<span style=color:#75715e>#Bwd Packet Length Std     0</span>
+<span style=color:#75715e>#Flow Bytes/s              12</span>
+<span style=color:#75715e># Flow Packets/s            0</span>
+<span style=color:#75715e># Flow IAT Mean             0</span>
+<span style=color:#75715e># Flow IAT Std              0</span>
+<span style=color:#75715e>#dtype: int64</span>
+<span style=color:#75715e>##############################3</span>
+<span style=color:#75715e># Flow Bytes/s 有 12 個缺失值</span>
+ddos<span style=color:#f92672>.</span>shape
+<span style=color:#75715e># (2181542, 88)</span>
+
+<span style=color:#75715e># 計算缺失值比例</span>
+total_miss_values <span style=color:#f92672>=</span> missing_values_count<span style=color:#f92672>.</span>sum()
+total_cells <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>product(ddos<span style=color:#f92672>.</span>shape)
+<span style=color:#66d9ef>print</span>(total_miss_values)
+<span style=color:#66d9ef>print</span>(total_cells)
+<span style=color:#66d9ef>print</span>((total_miss_values<span style=color:#f92672>/</span>total_cells) <span style=color:#f92672>*</span> <span style=color:#ae81ff>100</span>)
+
+<span style=color:#75715e>#12</span>
+<span style=color:#75715e>#191975696</span>
+<span style=color:#75715e>#6.250791245991888e-06</span>
+
+columns_with_na_dropped <span style=color:#f92672>=</span> ddos<span style=color:#f92672>.</span>dropna(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>) <span style=color:#75715e># 刪除缺失值欄位</span>
+columns_with_na_dropped<span style=color:#f92672>.</span>shape
+<span style=color:#75715e># (2181542, 87) Flow Bytes/s 被刪除</span>
+</code></pre></div><h3 id=filling-in-missing-values-automatically>Filling in missing values automatically</h3><p>由於數據集無 <code>NaN</code> 值，因此無實作。但這邊提供方法，在用 pandas 匯入檔案時，當有發現 <code>NaN</code> 值時，可以用 pandas 中 <code>fillna</code> 的方式去填補 <code>NaN</code> 值。該方法有提供以下方式填補 <code>backfill</code>、<code>bfill</code>、<code>pad</code> 和 <code>ffill</code>。而官網有提供<a href=https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.fillna.html>範例</a>。</p><h2 id=scaling-and-normalization>Scaling and Normalization</h2><h3 id=min-max>min-max</h3><p>使用 <a href=https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html>scikit-learn 套件實作</a></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>ddos <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(<span style=color:#e6db74>&#34;D:</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>DataSet</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>CICDDOS2019</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>01-12</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>CSV</span><span style=color:#ae81ff>\\</span><span style=color:#e6db74>DrDoS_LDAP.csv&#34;</span>)
+data_temp <span style=color:#f92672>=</span> ddos<span style=color:#f92672>.</span>iloc[:<span style=color:#ae81ff>3</span>, <span style=color:#ae81ff>8</span>:<span style=color:#ae81ff>11</span>]
+data_temp2 <span style=color:#f92672>=</span> ddos<span style=color:#f92672>.</span>iloc[:<span style=color:#ae81ff>8</span>, <span style=color:#ae81ff>8</span>:<span style=color:#ae81ff>11</span>]
+data_temp<span style=color:#f92672>.</span>values
+
+<span style=color:#75715e>#array([[9141643,   85894,      28],</span>
+<span style=color:#75715e>#       [      1,       2,       0],</span>
+<span style=color:#75715e>#       [      2,       2,       0]], dtype=int64)</span>
+
+data_temp2<span style=color:#f92672>.</span>values
+<span style=color:#75715e>#array([[9141643,   85894,      28],</span>
+<span style=color:#75715e>#       [      1,       2,       0],</span>
+<span style=color:#75715e>#       [      2,       2,       0],</span>
+<span style=color:#75715e>#       [      1,       2,       0],</span>
+<span style=color:#75715e>#       [      2,       2,       0],</span>
+<span style=color:#75715e>#       [      2,       2,       0],</span>
+<span style=color:#75715e>#       [      2,       2,       0],</span>
+<span style=color:#75715e>#       [      2,       2,       0]], dtype=int64)</span>
+
+<span style=color:#f92672>from</span> sklearn.preprocessing <span style=color:#f92672>import</span> MinMaxScaler
+scaler <span style=color:#f92672>=</span> MinMaxScaler()
+scaler<span style=color:#f92672>.</span>fit(data_temp<span style=color:#f92672>.</span>values)
+
+<span style=color:#66d9ef>print</span>(scaler<span style=color:#f92672>.</span>data_max_) <span style=color:#75715e># [9.141643e+06 8.589400e+04 2.800000e+01]</span>
+<span style=color:#66d9ef>print</span>(scaler<span style=color:#f92672>.</span>data_min_) <span style=color:#75715e># [1. 2. 0.]</span>
+
+<span style=color:#66d9ef>print</span>(scaler<span style=color:#f92672>.</span>transform(data_temp2<span style=color:#f92672>.</span>values))
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>[[1.00000000e+00 1.00000000e+00 1.00000000e+00]
+</span><span style=color:#e6db74> [0.00000000e+00 0.00000000e+00 0.00000000e+00]
+</span><span style=color:#e6db74> [1.09389539e-07 0.00000000e+00 0.00000000e+00]
+</span><span style=color:#e6db74> [0.00000000e+00 0.00000000e+00 0.00000000e+00]
+</span><span style=color:#e6db74> [1.09389539e-07 0.00000000e+00 0.00000000e+00]
+</span><span style=color:#e6db74> [1.09389539e-07 0.00000000e+00 0.00000000e+00]
+</span><span style=color:#e6db74> [1.09389539e-07 0.00000000e+00 0.00000000e+00]
+</span><span style=color:#e6db74> [1.09389539e-07 0.00000000e+00 0.00000000e+00]]
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+</code></pre></div><h3 id=standardscaler>StandardScaler</h3><p>使用 <a href=https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html>scikit-learn 套件實作</a></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> sklearn.preprocessing <span style=color:#f92672>import</span> StandardScaler
+scaler <span style=color:#f92672>=</span> StandardScaler()
+scaler<span style=color:#f92672>.</span>fit(data_temp<span style=color:#f92672>.</span>values)
+
+<span style=color:#66d9ef>print</span>(scaler<span style=color:#f92672>.</span>mean_) <span style=color:#75715e># [3.04721533e+06 2.86326667e+04 9.33333333e+00]</span>
+<span style=color:#66d9ef>print</span>(scaler<span style=color:#f92672>.</span>var_) <span style=color:#75715e># [1.85710243e+13 1.63943015e+09 1.74222222e+02]</span>
+
+<span style=color:#66d9ef>print</span>(scaler<span style=color:#f92672>.</span>transform(data_temp2<span style=color:#f92672>.</span>values))
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>[[ 1.41421356  1.41421356  1.41421356]
+</span><span style=color:#e6db74> [-0.7071069  -0.70710678 -0.70710678]
+</span><span style=color:#e6db74> [-0.70710667 -0.70710678 -0.70710678]
+</span><span style=color:#e6db74> [-0.7071069  -0.70710678 -0.70710678]
+</span><span style=color:#e6db74> [-0.70710667 -0.70710678 -0.70710678]
+</span><span style=color:#e6db74> [-0.70710667 -0.70710678 -0.70710678]
+</span><span style=color:#e6db74> [-0.70710667 -0.70710678 -0.70710678]
+</span><span style=color:#e6db74> [-0.70710667 -0.70710678 -0.70710678]]
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+</code></pre></div><p>scikit-learn 提供了多種數值縮放的方式，如下</p><ul><li>sklearn.preprocessing.MaxAbsScaler</li><li>sklearn.preprocessing.MinMaxScaler</li><li>sklearn.preprocessing.RobustScaler</li><li>sklearn.preprocessing.StandardScaler</li><li>&mldr;</li></ul><h2 id=data-parse>Data Parse</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>ddos[<span style=color:#e6db74>&#39; Timestamp&#39;</span>]
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>0          2018-12-01 11:22:40.254769
+</span><span style=color:#e6db74>1          2018-12-01 11:22:40.255361
+</span><span style=color:#e6db74>2          2018-12-01 11:22:40.255568
+</span><span style=color:#e6db74>3          2018-12-01 11:22:40.256113
+</span><span style=color:#e6db74>4          2018-12-01 11:22:40.256285
+</span><span style=color:#e6db74>                      ...            
+</span><span style=color:#e6db74>2181537    2018-12-01 11:32:32.914224
+</span><span style=color:#e6db74>2181538    2018-12-01 11:32:32.914273
+</span><span style=color:#e6db74>2181539    2018-12-01 11:32:32.914438
+</span><span style=color:#e6db74>2181540    2018-12-01 11:32:32.915067
+</span><span style=color:#e6db74>2181541    2018-12-01 11:32:32.915361
+</span><span style=color:#e6db74>Name:  Timestamp, Length: 2181542, dtype: object
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+ddos[<span style=color:#e6db74>&#39;date_parsed&#39;</span>] <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>to_datetime(ddos[<span style=color:#e6db74>&#39; Timestamp&#39;</span>], format<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;%Y-%m-</span><span style=color:#e6db74>%d</span><span style=color:#e6db74> %H:%M:%S.</span><span style=color:#e6db74>%f</span><span style=color:#e6db74>&#34;</span>) <span style=color:#75715e># parse</span>
+
+ddos[<span style=color:#e6db74>&#39;date_parsed&#39;</span>]<span style=color:#f92672>.</span>dt<span style=color:#f92672>.</span>day[:<span style=color:#ae81ff>3</span>]
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>0    1
+</span><span style=color:#e6db74>1    1
+</span><span style=color:#e6db74>2    1
+</span><span style=color:#e6db74>Name: date_parsed, dtype: int64
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+<span style=color:#66d9ef>print</span>(ddos[<span style=color:#e6db74>&#39;date_parsed&#39;</span>]<span style=color:#f92672>.</span>dt<span style=color:#f92672>.</span>month[:<span style=color:#ae81ff>3</span>])
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>0    12
+</span><span style=color:#e6db74>1    12
+</span><span style=color:#e6db74>2    12
+</span><span style=color:#e6db74>Name: date_parsed, dtype: int64
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+</code></pre></div><p>pandas 能夠對日期進行一些的計算，如相差幾天等。pandas 對於數據的處裡提供很多強大的 API 使用。</p><p><code>format</code> 補充</p><pre><code>%a  Locale’s abbreviated weekday name.
+%A  Locale’s full weekday name.      
+%b  Locale’s abbreviated month name.     
+%B  Locale’s full month name.
+%c  Locale’s appropriate date and time representation.   
+%d  Day of the month as a decimal number [01,31].    
+%f  Microsecond as a decimal number [0,999999], zero-padded on the left
+%H  Hour (24-hour clock) as a decimal number [00,23].    
+%I  Hour (12-hour clock) as a decimal number [01,12].    
+%j  Day of the year as a decimal number [001,366].   
+%m  Month as a decimal number [01,12].   
+%M  Minute as a decimal number [00,59].      
+%p  Locale’s equivalent of either AM or PM.
+%S  Second as a decimal number [00,61].
+%U  Week number of the year (Sunday as the first day of the week)
+%w  Weekday as a decimal number [0(Sunday),6].   
+%W  Week number of the year (Monday as the first day of the week)
+%x  Locale’s appropriate date representation.    
+%X  Locale’s appropriate time representation.    
+%y  Year without century as a decimal number [00,99].    
+%Y  Year with century as a decimal number.   
+%z  UTC offset in the form +HHMM or -HHMM.
+%Z  Time zone name (empty string if the object is naive).    
+%%  A literal '%' character.
+</code></pre><h2 id=inconsistent-data-entry>Inconsistent Data Entry</h2><p>在我們上面範例中，數據集中的表頭有空白地方而我們將解決這一個部分。在數據集中對於一些字串可能也會有全小寫或大寫的需求，而這也能夠透過程式來解決。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python>header <span style=color:#f92672>=</span> ddos<span style=color:#f92672>.</span>columns[:<span style=color:#ae81ff>4</span>]
+<span style=color:#66d9ef>print</span>(header)
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>Index([&#39;Unnamed: 0&#39;, &#39;Flow ID&#39;, &#39; Source IP&#39;, &#39; Source Port&#39;], dtype=&#39;object&#39;)
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+
+<span style=color:#66d9ef>print</span>(header<span style=color:#f92672>.</span>str<span style=color:#f92672>.</span>strip()) <span style=color:#75715e># 去除頭尾空白</span>
+Index([<span style=color:#e6db74>&#39;Unnamed: 0&#39;</span>, <span style=color:#e6db74>&#39;Flow ID&#39;</span>, <span style=color:#e6db74>&#39;Source IP&#39;</span>, <span style=color:#e6db74>&#39;Source Port&#39;</span>], dtype<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;object&#39;</span>)
+
+</code></pre></div></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2020-08-21-data-pre-processing/ title="30 天學習歷程-day05"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2020-08-25-simple-linear-regression/ title="30 天學習歷程-day07"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

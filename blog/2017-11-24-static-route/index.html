@@ -1,0 +1,77 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Static routes</h1><p class=mb-1>November 24, 2017</p><p>&mdash;</p></div><div class=content><h2 id=routing-table>Routing table</h2><p>路由器是一個負責將封包送往目的地的設備，而路由器跟路由器之間必須要分享所學習到的資訊，並且把交換的資訊以到鄰居的成本以和使用什麼路由協定等給記錄至一張表格，而這張表格就是 <code>Routing table</code>。</p><p>此篇文章範圍是 <code>Static Route</code> 的概念。</p><h2 id=the-router-decides-how-to-send-the-packet>The router decides how to send the packet</h2><ul><li>Static Route<ul><li>手動輸入<ul><li>網路有變化，需要人員的管理</li></ul></li><li>無須學習<ul><li>因此速度快</li></ul></li></ul></li><li>Dynamic Route<ul><li>做 <code>Routing Protocol</code> 的設定<ul><li>耗資源</li></ul></li><li>由 router 之間去做協調</li><li>網路有變化，會透過 <code>Routing Protocol</code> 學習</li></ul></li></ul><blockquote><p>Default route （預設路由）所謂的預設路由就是當不知道要將這個封包送往哪裡的時候，就會採用這個預設路由所指定的路徑。</p></blockquote><h2 id=example>Example</h2><p><img src=https://i.imgur.com/sIzooXT.png alt></p><p>這邊不描述 IP address 的設定。</p><p>目標：</p><ul><li>設置 R1 <code>Static Route</code>。</li><li>R2 和 R3 都各有一條 <code>Default route</code>。</li></ul><h3 id=set-r2--r3-default-route>Set R2 & R3 Default route</h3><h5 id=r2>R2</h5><p>將來自不存在於路由表的目的地給丟置 10.0.0.1 的 R1 處裡。如：<code>PC 5</code> 想與 <code>PC 8</code> 溝通，則 <code>PC 5</code> 送往 <code>192.168.2.10</code> 的目的地不再 <code>R2</code> 的路由表因此會將此封包先丟往 <code>gateway</code> 再交由 <code>R1</code> 做處裡。再者，<code>R2</code> 想到 <code>R3</code> 必須經由 <code>R1</code> 因此要從 <code>R1</code> 做 <code>Static Route</code> 設定。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R2<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e># ip route 0.0.0.0 0.0.0.0 10.0.0.1</span>
+</code></pre></div><p>查看 R2 路由表，觀察靜態路由的宣告。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R2#show ip route
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type <span style=color:#ae81ff>2</span>
+       E1 - OSPF external type 1, E2 - OSPF external type <span style=color:#ae81ff>2</span>
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       + - replicated route, % - next hop override
+
+Gateway of last resort is 10.0.0.1 to network 0.0.0.0
+
+S*    0.0.0.0/0 <span style=color:#f92672>[</span>1/0<span style=color:#f92672>]</span> via 10.0.0.1
+      10.0.0.0/8 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        10.0.0.0/30 is directly connected, Serial6/0
+L        10.0.0.2/32 is directly connected, Serial6/0
+      172.24.0.0/16 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        172.24.0.0/16 is directly connected, Ethernet5/0
+L        172.24.0.1/32 is directly connected, Ethernet5/0
+      172.25.0.0/16 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        172.25.0.0/16 is directly connected, Ethernet5/1
+L        172.25.0.1/32 is directly connected, Ethernet5/1
+      172.26.0.0/16 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        172.26.0.0/16 is directly connected, Ethernet5/2
+L        172.26.0.1/32 is directly connected, Ethernet5/2
+      172.27.0.0/16 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        172.27.0.0/16 is directly connected, Ethernet5/3
+L        172.27.0.1/32 is directly connected, Ethernet5/3
+
+</code></pre></div><p><code>S</code> 表示 <code>static route</code> 設定，<code>AD</code> 值為 1，比其它 <code>Dynamic Route</code> 優先權來得高。</p><h5 id=r3>R3</h5><p>將來自不存在於路由表的目的地給丟置 10.0.0.5 的 R1 處裡。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e># ip route 0.0.0.0 0.0.0.0 10.0.0.5</span>
+</code></pre></div><h3 id=set-r1-static-route>Set R1 Static Route</h3><p>靜態路由指令的關鍵字是</p><p><code>ip route</code>
+<code>ip route [目的地的網路 IP 位址][目的地子網路的網路遮罩][到達目的地而要經過的下一台路由器設備的 IP 位址]</code></p><h5 id=next-hop-ip>Next Hop IP</h5><p>當上述的封包抵達 R1 做轉發時，會看著路由表是否有到達目的地的條目，如果有則會進行轉發。<code>PC 5</code> 傳到 <code>PC 8</code> 封包到達 <code>R1</code> 時發現有可以達到 <code>PC 8</code> 網段的路徑（即第二條宣告）。
+R1 <code>Static Route</code> 宣告</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e># ip route 172.0.0.0 255.224.0.0 10.0.0.2</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e># ip route 192.168.0.0 255.255.252.0 10.0.0.6</span>
+</code></pre></div><p>R1 路由表</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show ip route
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type <span style=color:#ae81ff>2</span>
+       E1 - OSPF external type 1, E2 - OSPF external type <span style=color:#ae81ff>2</span>
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       + - replicated route, % - next hop override
+
+Gateway of last resort is not set
+
+      10.0.0.0/8 is variably subnetted, <span style=color:#ae81ff>4</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        10.0.0.0/30 is directly connected, Serial6/0
+L        10.0.0.1/32 is directly connected, Serial6/0
+C        10.0.0.4/30 is directly connected, Serial6/1
+L        10.0.0.5/32 is directly connected, Serial6/1
+S     172.0.0.0/11 <span style=color:#f92672>[</span>1/0<span style=color:#f92672>]</span> via 10.0.0.2
+S     192.168.0.0/22 <span style=color:#f92672>[</span>1/0<span style=color:#f92672>]</span> via 10.0.0.6
+      192.168.64.0/24 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        192.168.64.0/24 is directly connected, Ethernet5/0
+L        192.168.64.1/32 is directly connected, Ethernet5/0
+      192.168.65.0/24 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        192.168.65.0/24 is directly connected, Ethernet5/1
+L        192.168.65.1/32 is directly connected, Ethernet5/1
+</code></pre></div><h5 id=next-hop-interface>Next Hop Interface</h5><p>第二種宣告方式</p><p><code>ip route [目的地的網路 IP 位址][目的地子網路的網路遮罩][到達目的地而要經過的下一台路由器設備的介面][到達目的地而要經過的下一台路由器設備的 IP]</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e># ip route 172.0.0.0 255.224.0.0 Serial6/0 10.0.0.2</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e># ip route 192.168.0.0 255.255.252.0 Serial6/1 10.0.0.6</span>
+</code></pre></div><h3 id=pc-觀察>PC 觀察</h3><h5 id=pc5-to-pc8>PC5 to PC8</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>PC-5&gt; trace 192.168.2.10
+trace to 192.168.2.10, <span style=color:#ae81ff>8</span> hops max, press Ctrl+C to stop
+ <span style=color:#ae81ff>1</span>   172.26.0.1   697.380 ms  19.832 ms  9.425 ms
+ <span style=color:#ae81ff>2</span>   10.0.0.1   226.608 ms  30.747 ms  41.659 ms
+ <span style=color:#ae81ff>3</span>   10.0.0.6   165.173 ms  40.168 ms  61.269 ms
+ <span style=color:#ae81ff>4</span>   *192.168.2.10   152.268 ms <span style=color:#f92672>(</span>ICMP type:3, code:3, Destination port unreachable<span style=color:#f92672>)</span>
+</code></pre></div><p><code>PC5</code> 從 <code>R2</code> <code>gateway</code> 出去（透過 <code>Default route</code>）到達 <code>R1</code> 再經由 <code>R1</code> <code>Static Route</code> 抵達 <code>R3</code></p><h5 id=pc9-to-pc1>PC9 to PC1</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>PC-9&gt; ping 192.168.64.10
+<span style=color:#ae81ff>84</span> bytes from 192.168.64.10 icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>32.737 ms
+<span style=color:#ae81ff>84</span> bytes from 192.168.64.10 icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>39.684 ms
+<span style=color:#ae81ff>84</span> bytes from 192.168.64.10 icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>39.186 ms
+</code></pre></div><h2 id=conclusion>conclusion</h2><p><code>Static Route</code> 比較適合在 <code>stub Network</code>（透過單一路由路徑連接的網路）下設置，當然也適合用在預設閘道上，因為這些地方不易變化。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2017-11-11-dhcp/ title=DHCP><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2017-12-27-l3-switch-boot-image-not-found/ title="交換器 image 遺失"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

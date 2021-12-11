@@ -1,0 +1,107 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>物件導向 01 - 類的成員</h1><p class=mb-1>December 17, 2020</p><p>&mdash;</p></div><div class=content><h2 id=oop-學習>OOP 學習</h2><ol><li>JAVA 的 Class 與 Class 中的成員</li></ol><ul><li>屬性</li><li>方法</li><li>建構方法</li><li>區塊</li><li>內部類</li></ul><ol start=2><li>以下特徵</li></ol><ul><li>封裝</li><li>繼承</li><li>多態</li><li>抽象</li></ul><h2 id=class-與-object>Class 與 Object</h2><p>Class 為對事物的描述，一種抽象概念。Object 實際存在的個體，也稱實例(instance)。</p><p>以下為 Class 範例，當中會包含屬性與行為</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Person</span> <span style=color:#f92672>{</span>
+    <span style=color:#75715e>// 屬性
+</span><span style=color:#75715e></span>    String name<span style=color:#f92672>;</span>
+    <span style=color:#66d9ef>int</span> age<span style=color:#f92672>;</span>
+    <span style=color:#75715e>// 行為
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>eat</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;吃飯&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>sleep</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;睡覺&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>say</span><span style=color:#f92672>(</span>String language<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;我使用&#34;</span> <span style=color:#f92672>+</span> language <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;說話&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><p>當把人這抽象的事物給描述好後，要建立一個實際的實例。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> args<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+        Person human <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Person<span style=color:#f92672>();</span> <span style=color:#75715e>// 實例化
+</span><span style=color:#75715e></span>        <span style=color:#75715e>// 調用其屬性與方法 
+</span><span style=color:#75715e></span>        human<span style=color:#f92672>.</span><span style=color:#a6e22e>name</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;Kevin&#34;</span><span style=color:#f92672>;</span>
+        human<span style=color:#f92672>.</span><span style=color:#a6e22e>age</span> <span style=color:#f92672>=</span> 13<span style=color:#f92672>;</span>
+        human<span style=color:#f92672>.</span><span style=color:#a6e22e>eat</span><span style=color:#f92672>();</span>
+        human<span style=color:#f92672>.</span><span style=color:#a6e22e>say</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;English&#34;</span><span style=color:#f92672>);</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>human<span style=color:#f92672>.</span><span style=color:#a6e22e>name</span><span style=color:#f92672>);</span> <span style=color:#75715e>// Kevin
+</span><span style=color:#75715e></span>        Person human1 <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Person<span style=color:#f92672>();</span> 
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>human1<span style=color:#f92672>.</span><span style=color:#a6e22e>name</span><span style=color:#f92672>);</span> <span style=color:#75715e>// null
+</span><span style=color:#75715e></span>    <span style=color:#f92672>}</span>
+</code></pre></div><p>我們建立兩個實例，而兩個實例是在不同的堆空間中，因此不會相互影響。因此它們各自有獨立的屬性，如果宣告為 <code>static</code> 則為共用。</p><p>以下寫法讓 human2 和 human 指向同一個在堆的實例地址。這邊在說明<em>屬性會加載至堆空間(非 static)，局部變數則是棧空間</em>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>Person human2 <span style=color:#f92672>=</span> human<span style=color:#f92672>;</span>
+System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>human2<span style=color:#f92672>.</span><span style=color:#a6e22e>name</span><span style=color:#f92672>);</span> <span style=color:#75715e>// Kevin
+</span><span style=color:#75715e></span>System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>human2<span style=color:#f92672>.</span><span style=color:#a6e22e>age</span><span style=color:#f92672>);</span> <span style=color:#75715e>// 13
+</span></code></pre></div><h2 id=匿名物件>匿名物件</h2><p>簡單來說是沒有變數名稱的實例，每 <code>new</code> 一次就是一個不同地址的實例，此種方式通常會在多型時使用。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Phone</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>double</span> price<span style=color:#f92672>;</span>
+
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>playGame</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Play Game&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>call</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Call~~&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> args<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+        Phone p <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Phone<span style=color:#f92672>();</span>
+        p<span style=color:#f92672>.</span><span style=color:#a6e22e>call</span><span style=color:#f92672>();</span>
+        p<span style=color:#f92672>.</span><span style=color:#a6e22e>playGame</span><span style=color:#f92672>();</span>
+
+        <span style=color:#75715e>// 匿名
+</span><span style=color:#75715e></span>        <span style=color:#66d9ef>new</span> Phone<span style=color:#f92672>().</span><span style=color:#a6e22e>call</span><span style=color:#f92672>();</span>
+        <span style=color:#66d9ef>new</span> Phone<span style=color:#f92672>().</span><span style=color:#a6e22e>playGame</span><span style=color:#f92672>();</span>
+    <span style=color:#f92672>}</span>
+
+</code></pre></div><h2 id=方法>方法</h2><h3 id=重載-overload>重載 (Overload)</h3><p>在一個 <code>class</code> 中，可以有多個同樣名稱的方法，但其參數必須是不同。與<em>回傳值</em>或權限(private、public、protected)無關。從 <code>Arrays</code> 類別中即可看到可察看此<a href=https://docs.oracle.com/javase/8/docs/api/java/util/Arrays.html>鏈接</a>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>show</span><span style=color:#f92672>(</span>String list<span style=color:#f92672>){</span>
+
+<span style=color:#f92672>}</span>
+
+<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>show</span><span style=color:#f92672>(</span>String list<span style=color:#f92672>,</span> String list2<span style=color:#f92672>){</span>
+
+<span style=color:#f92672>}</span>
+</code></pre></div><h3 id=可變形參-varargs>可變形參 (Varargs)</h3><p>讓方法傳入的參數可以多個。限制有以下，假設當法有參數配合形參則形參<em>必須為最後一個位置</em>且在一個有形參的方法中只能存在一個形參。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>show</span><span style=color:#f92672>(</span>String <span style=color:#f92672>...</span> list<span style=color:#f92672>){</span>
+
+<span style=color:#f92672>}</span>
+</code></pre></div><p>注意以下的重載會造成錯誤，因為在沒有形參之前都以陣列方式實現，因此會認定是相通的</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>show</span><span style=color:#f92672>(</span>String <span style=color:#f92672>...</span> s<span style=color:#f92672>){</span>
+
+<span style=color:#f92672>}</span>
+
+<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>show</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> s<span style=color:#f92672>){</span>
+        
+<span style=color:#f92672>}</span>
+</code></pre></div><h3 id=值傳遞機制>值傳遞機制</h3><p>我們都知道方法必須由所在的類或物件調用才有意義。而方法參數會包含以下</p><ul><li>形參<ul><li>方法聲明的參數</li></ul></li><li>實參<ul><li>方法調用時所傳遞給形參的值</li></ul></li></ul><p>在 JAVA 中都是以<strong>值傳遞</strong>實現，將實際參數的副本傳入方法內，而參數本身不受影響。如果為<em>基本數據類型</em>是將<em>數據值</em>傳遞給形參；如過為<em>引用數據類型</em>則是將<em>地址值</em>傳遞給形參。</p><p>基本數據類型</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>        <span style=color:#66d9ef>int</span> m <span style=color:#f92672>=</span> 10<span style=color:#f92672>;</span>
+        <span style=color:#66d9ef>int</span> n <span style=color:#f92672>=</span> m<span style=color:#f92672>;</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;m: &#34;</span> <span style=color:#f92672>+</span> m <span style=color:#f92672>+</span><span style=color:#e6db74>&#34; n: &#34;</span><span style=color:#f92672>+</span> n<span style=color:#f92672>);</span> <span style=color:#75715e>// m: 10 n: 10
+</span><span style=color:#75715e></span>        n <span style=color:#f92672>=</span> 50<span style=color:#f92672>;</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;m: &#34;</span> <span style=color:#f92672>+</span> m <span style=color:#f92672>+</span><span style=color:#e6db74>&#34; n: &#34;</span><span style=color:#f92672>+</span> n<span style=color:#f92672>);</span> <span style=color:#75715e>// m: 10 n: 50
+</span></code></pre></div><p>引用類型</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Order</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>int</span> orderId<span style=color:#f92672>;</span>
+<span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> args<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+        Order o <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Order<span style=color:#f92672>();</span>
+        o<span style=color:#f92672>.</span><span style=color:#a6e22e>orderId</span> <span style=color:#f92672>=</span> 1001<span style=color:#f92672>;</span>
+        Order o2 <span style=color:#f92672>=</span> o<span style=color:#f92672>;</span> <span style=color:#75715e>// 指向堆中的同一地址
+</span><span style=color:#75715e></span>        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;o: &#34;</span> <span style=color:#f92672>+</span> o<span style=color:#f92672>.</span><span style=color:#a6e22e>orderId</span> <span style=color:#f92672>+</span><span style=color:#e6db74>&#34; o2: &#34;</span><span style=color:#f92672>+</span> o2<span style=color:#f92672>.</span><span style=color:#a6e22e>orderId</span><span style=color:#f92672>);</span> <span style=color:#75715e>// o: 1001 o2: 1001
+</span><span style=color:#75715e></span>        o2<span style=color:#f92672>.</span><span style=color:#a6e22e>orderId</span> <span style=color:#f92672>=</span> 1000<span style=color:#f92672>;</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;o: &#34;</span> <span style=color:#f92672>+</span> o<span style=color:#f92672>.</span><span style=color:#a6e22e>orderId</span> <span style=color:#f92672>+</span><span style=color:#e6db74>&#34; o2: &#34;</span><span style=color:#f92672>+</span> o2<span style=color:#f92672>.</span><span style=color:#a6e22e>orderId</span><span style=color:#f92672>);</span> <span style=color:#75715e>// o: 1000 o2: 1000
+</span><span style=color:#75715e></span>    <span style=color:#f92672>}</span>
+</code></pre></div><h2 id=封裝與隱藏>封裝與隱藏</h2><p>簡單來說該隱藏的隱藏該暴露的暴露，封裝就在於實現該原理。在 JAVA 中有以下權限而封裝性由它們來實現</p><ul><li>private</li><li>default</li><li>protected</li><li>public</li></ul><p>上述權限由小排到大，詳細可參考此<a href=https://openhome.cc/Gossip/JavaEssence/PackageAndModifier.html>鏈接</a></p><p>避免使用者直接引用屬性賦值時可使用，再搭配著 getter、setter 進行取值和賦值。這也實現了封裝性。除了限制前面描述內容外，還可以實現私有類的方法，使得該方法只能在該類中進行調用。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Animal</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>private</span> <span style=color:#66d9ef>int</span> age<span style=color:#f92672>;</span>
+
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>setAge</span><span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> age<span style=color:#f92672>){</span>
+        <span style=color:#66d9ef>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>age</span> <span style=color:#f92672>=</span> age<span style=color:#f92672>;</span>
+    <span style=color:#f92672>}</span>
+
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>int</span> <span style=color:#a6e22e>getAge</span><span style=color:#f92672>(){</span>
+        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>age</span><span style=color:#f92672>;</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><p>上述所提到的屬性可修飾類(只限定於 default 和 public )、屬性、建構方法、內部類等。</p><h2 id=建構方法>建構方法</h2><p>建構方法的作用</p><ul><li>建立物件</li><li>初始化物件資料</li><li>預設是空參數的構造器，<em>在沒定義的時候</em></li><li>可實現重載</li><li>無回傳值，<code>void</code> 也沒有</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Person</span> <span style=color:#f92672>{</span>
+    String name<span style=color:#f92672>;</span>
+    <span style=color:#66d9ef>int</span> age<span style=color:#f92672>;</span>
+<span style=color:#f92672>}</span>
+
+<span style=color:#75715e>// 調用，當中 Person() 就是建構方法
+</span><span style=color:#75715e></span>Person p <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Person<span style=color:#f92672>();</span>
+</code></pre></div><h2 id=屬性賦值先後順序>屬性賦值先後順序</h2><ol><li>默認初始</li><li>顯示初始</li><li>建構方法賦值</li><li>透過物件賦值(方法或屬性)</li></ol></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/code/2020-12-17-oop/ title="物件導向 03 - Interface"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/code/2020-12-17-oop-extends/ title="物件導向 01 - extends"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

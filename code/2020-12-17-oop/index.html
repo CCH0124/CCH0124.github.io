@@ -1,0 +1,166 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>物件導向 03 - Interface</h1><p class=mb-1>December 17, 2020</p><p>&mdash;</p></div><div class=content><h2 id=static>static</h2><p>編寫一個類時，只有透過 <code>new</code> 關鍵字才會產生出物件，此時系統<em>才會分配記憶體空間給該物件</em>，這樣才能供外部調用。但某些特定數據在記憶體空間只有一份。台灣是個國家名稱，每一個台灣人都共享此國家名稱，不必每一個人的實例都分配一個代表國家名稱的變量。</p><ul><li><code>static</code> 修飾的變量是共享的</li><li>因為 <code>class</code> 只會加載一次，則 <code>static</code> 變量在記憶體中也只會存在一份，存在方法區的靜態域</li><li>靜態方法中，只能調用靜態的方法或屬性，非靜態方法，既可調用非靜態的方法或屬性，也可以調用靜態的方法或屬性</li><li>在靜態方法內，不能使用 <code>this</code>、<code>super</code> 關鍵字，生命週期</li><li>操作靜態屬性的方法，通常設置為 <code>static</code></li><li>工具類中的方法，習慣聲名為 <code>static</code></li><li>靜態變數隨著類加載而加載，因此早於物件的建立</li></ul><h2 id=代碼塊>代碼塊</h2><ul><li>用來初始類和對象</li><li>有修飾的話只能用 <code>static</code></li><li>比較<ul><li>靜態代碼塊<ul><li>內部可以有輸出句</li><li>隨著類加載而執行，且只執行一次</li><li>初始化類的訊息</li><li>如果一個類中定義了多個靜態代碼塊，則按照宣告先後順序執行</li><li>靜態代碼塊的執行要優先於非靜態代碼塊的執行</li><li>靜態代碼塊內只調用靜態的屬性、靜態的方法，不能調用非靜態的結構</li></ul></li><li>非靜態代碼塊<ul><li>內部可以有輸出句</li><li>隨著物件的創見而執行</li><li>每創建一個物件，就執行一次非靜態代碼塊</li><li>可以在創建對象時，隊對象的屬性等進行初始化</li><li>如果一個類中定義了多個非靜態代碼塊，則按照宣告先後順序執行</li><li>非靜態代碼塊內只調用靜態的屬性、靜態的方法，也能調用非靜態的結構</li></ul></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Person</span> <span style=color:#f92672>{</span>
+    String name<span style=color:#f92672>;</span>
+    <span style=color:#66d9ef>int</span> age<span style=color:#f92672>;</span>
+    <span style=color:#66d9ef>static</span> String des <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;Hello&#34;</span><span style=color:#f92672>;</span>
+    
+    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>Person</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+    <span style=color:#f92672>}</span>
+
+    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>Person</span><span style=color:#f92672>(</span>String name<span style=color:#f92672>,</span> <span style=color:#66d9ef>int</span> age<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+        <span style=color:#66d9ef>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>name</span> <span style=color:#f92672>=</span> name<span style=color:#f92672>;</span>
+        <span style=color:#66d9ef>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>age</span> <span style=color:#f92672>=</span> age<span style=color:#f92672>;</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#75715e>// 隨著類加載而執行
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>static</span> <span style=color:#f92672>{</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Hello Static block&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#75715e>// 隨著物件的建立而執行
+</span><span style=color:#75715e></span>    <span style=color:#f92672>{</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Hello block&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>eat</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>print</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;eat...&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>sleep</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>print</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;sleep...&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+
+    <span style=color:#75715e>// 隨著類加載而加載
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>info</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>print</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;info...&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h2 id=創建抽像類的匿名子類對象>創建抽像類的匿名子類對象</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>PersonTest</span><span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> args<span style=color:#f92672>){</span>
+        method<span style=color:#f92672>(</span><span style=color:#66d9ef>new</span> Student<span style=color:#f92672>());</span> <span style=color:#75715e>// 匿名物件
+</span><span style=color:#75715e></span>        Worker worker <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Worker<span style=color:#f92672>();</span>
+        method1<span style=color:#f92672>(</span>worker<span style=color:#f92672>);</span><span style=color:#75715e>// 非匿名的類非匿名的物件
+</span><span style=color:#75715e></span>        method1<span style=color:#f92672>(</span><span style=color:#66d9ef>new</span> worker<span style=color:#f92672>());</span> <span style=color:#75715e>// 非匿名的類匿名的物件
+</span><span style=color:#75715e></span>        
+        Person p <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Person<span style=color:#f92672>(){</span> <span style=color:#75715e>// 創建匿名子類的對象
+</span><span style=color:#75715e></span>            <span style=color:#75715e>/**
+</span><span style=color:#75715e>             * 當成子類，只有子類才能覆寫
+</span><span style=color:#75715e>             * */</span>
+            <span style=color:#a6e22e>@Override</span>
+            <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>eat</span><span style=color:#f92672>(){</span>
+            
+            <span style=color:#f92672>}</span>
+            <span style=color:#a6e22e>@Override</span>
+            <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>breath</span><span style=color:#f92672>(){</span>
+            
+            <span style=color:#f92672>}</span>
+        <span style=color:#f92672>};</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>method1</span><span style=color:#f92672>(</span>Person p<span style=color:#f92672>){</span>
+        p<span style=color:#f92672>.</span><span style=color:#a6e22e>eat</span><span style=color:#f92672>();</span>
+        p<span style=color:#f92672>.</span><span style=color:#a6e22e>walk</span><span style=color:#f92672>();</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>method</span><span style=color:#f92672>(</span>Student s<span style=color:#f92672>){</span>
+        
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Worker</span> <span style=color:#66d9ef>extends</span> Prson<span style=color:#f92672>{</span>
+    <span style=color:#f92672>...</span>
+    <span style=color:#f92672>...</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h2 id=interface>interface</h2><ul><li>有多重繼承效果</li><li>沒有 is-a 關係，是 has a<ul><li>定義共同的行為特徵</li></ul></li><li><code>extends</code> 是一個是不是的關係，<code>interface</code> 是能不能的關係</li><li><code>interface</code> 本質是契約、標準、規範</li><li>不能定義建構方法，表示無法實例化</li><li>如果實現類沒有覆蓋 interf`ace 中所有抽象方法。則此實現仍然為一個抽象類</li><li><code>interface</code> 與 <code>interface</code> 之間可以繼承，也可以多繼承</li><li><code>interface</code> 多態性</li></ul><pre><code class="language-java=" data-lang="java=">interface AA {
+
+}
+interface BB {
+
+}
+interface CC extends AA, BB {
+
+}
+</code></pre><p>定義的結構</p><ul><li>JDK7<ul><li>只能定義<ul><li>全域常量<ul><li>public static final</li></ul></li><li>抽象方法<ul><li>public abstrace</li></ul></li></ul></li></ul></li><li>JDK8<ul><li>全域常量</li><li>抽象方法</li><li>靜態方法</li><li>默認方法</li><li>等</li></ul></li></ul><h3 id=abstract-和-interface-差異>abstract 和 interface 差異</h3><ul><li>相同<ul><li>不能實例</li><li>都可被繼承</li></ul></li><li>不同<ul><li>抽象有建構方法</li><li><code>interface</code> 不能宣告建構方法</li><li>類，單繼承性</li><li><code>interface</code>，多繼承性，類 <code>interface</code> 多實現</li></ul></li></ul><h3 id=interface-應用>interface 應用</h3><ul><li>代理模式（Proxy）</li><li>工廠模式</li></ul><h3 id=除錯>除錯</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>interface</span> <span style=color:#a6e22e>A</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>int</span> x <span style=color:#f92672>=</span> 0<span style=color:#f92672>;</span>
+<span style=color:#f92672>}</span>
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>B</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>int</span> x <span style=color:#f92672>=</span> 1<span style=color:#f92672>;</span>
+<span style=color:#f92672>}</span>
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>C</span> <span style=color:#66d9ef>extends</span> B <span style=color:#66d9ef>implements</span> A <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>px</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>x<span style=color:#f92672>);</span> <span style=color:#75715e>// 不知道是哪一個
+</span><span style=color:#75715e></span>    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> args<span style=color:#f92672>){</span>
+        <span style=color:#66d9ef>new</span> C<span style=color:#f92672>().</span><span style=color:#a6e22e>pX</span><span style=color:#f92672>();</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h3 id=java8-interface>JAVA8 interface</h3><ul><li>靜態方法<ul><li><code>static</code> 修飾</li><li>只能藉由 <code>interface</code> 自己調用</li></ul></li><li>默認方法<ul><li><code>default</code> 修飾</li><li>透過實現類對象調用</li><li>可以 <code>override</code></li><li>如果子類(或實現類)繼承的父類和實現的 <code>interface</code> 聲明同名同參數的方法，那麼子類在沒有重寫此方法下，默認調用的是父類中的<ul><li>類優先原則</li></ul></li><li>如果實現類實現多個 <code>interface</code>，而這多個 <code>interface</code> 中定義了同名同參的默認方法，那麼實現類沒有重寫此方法的情況下<ul><li>接口衝突</li></ul></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>interface</span> <span style=color:#a6e22e>CompareA</span><span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>method1</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;...&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>default</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>method2</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;...&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>default</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>method3</span><span style=color:#f92672>(){</span>
+        System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;...&#34;</span><span style=color:#f92672>);</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>myMethod</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+    method3<span style=color:#f92672>();</span>
+    <span style=color:#66d9ef>super</span><span style=color:#f92672>.</span><span style=color:#a6e22e>method3</span><span style=color:#f92672>();</span>
+    <span style=color:#75715e>// 調用 interdace 中默認方法
+</span><span style=color:#75715e></span>    CompareA<span style=color:#f92672>.</span><span style=color:#a6e22e>super</span><span style=color:#f92672>.</span><span style=color:#a6e22e>method3</span><span style=color:#f92672>();</span>
+    CompareB<span style=color:#f92672>.</span><span style=color:#a6e22e>super</span><span style=color:#f92672>.</span><span style=color:#a6e22e>method3</span><span style=color:#f92672>()</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h2 id=內部類>內部類</h2><p>類別中的類別</p><ul><li><code>Inner class</code> 一般用在定義他的類或語句區塊之內，在外部引用時必須給出完整的名稱<ul><li><code>Inner class</code> 的名字不能包含它的外部類類名相同</li></ul></li><li>分類<ul><li>成員內部類<ul><li><code>static</code> 成員內部類和非 <code>static</code> 成員內部類</li></ul></li><li>局部內部類<ul><li>匿名內部類</li><li>方法內</li><li>代碼區塊內</li><li>建構方法內</li></ul></li></ul></li><li>成員內部類<ul><li>作為外部類成員<ul><li>調用外部類結構</li><li><code>static</code> 修飾</li><li>可被權限修飾</li></ul></li><li>作為一個類<ul><li>可聲明屬性、方法、建構方法</li><li>可被 <code>final</code> 修飾</li><li>繼承</li><li>可被 <code>abstract</code></li></ul></li></ul></li><li>如何實例化成員內部類</li><li>如何在成員內部類中區分調用外部類的結構</li><li>開發中局部內部類的使用</li><li>編譯後，外部和內部會生成 bytecode 檔案<ul><li>成員內部類<ul><li>外部類$內部類名.class</li></ul></li><li>局部內部類<ul><li>外部類$數字 內部類.class</li></ul></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String <span style=color:#f92672>[]</span> args<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+    Person<span style=color:#f92672>.</span><span style=color:#a6e22e>Dog</span> dog <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Person<span style=color:#f92672>.</span><span style=color:#a6e22e>Dog</span><span style=color:#f92672>();</span> <span style=color:#75715e>// 靜態 Dog 實例
+</span><span style=color:#75715e></span>    dog<span style=color:#f92672>.</span><span style=color:#a6e22e>method</span><span style=color:#f92672>();</span>
+    Person p <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Person<span style=color:#f92672>();</span>
+    Person<span style=color:#f92672>.</span><span style=color:#a6e22e>Cat</span> cat <span style=color:#f92672>=</span> p<span style=color:#f92672>.</span><span style=color:#a6e22e>new</span> <span style=color:#a6e22e>Cat</span><span style=color:#f92672>();</span> <span style=color:#75715e>// 非靜態實例
+</span><span style=color:#75715e></span>    cat<span style=color:#f92672>.</span><span style=color:#a6e22e>method</span><span style=color:#f92672>();</span>
+<span style=color:#f92672>}</span>
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Person</span> <span style=color:#f92672>{</span>
+    String name<span style=color:#f92672>;</span>
+    <span style=color:#75715e>// 成員內部類
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Dog</span> <span style=color:#f92672>{</span>
+        
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Cat</span><span style=color:#f92672>{</span>
+        String name<span style=color:#f92672>;</span>
+        Person<span style=color:#f92672>.</span><span style=color:#a6e22e>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>method</span><span style=color:#f92672>();</span> <span style=color:#75715e>// 調用外部類方法
+</span><span style=color:#75715e></span>        <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>display</span><span style=color:#f92672>(</span>String name<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>name<span style=color:#f92672>);</span> <span style=color:#75715e>// 參數
+</span><span style=color:#75715e></span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span><span style=color:#66d9ef>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>name</span><span style=color:#f92672>);</span> <span style=color:#75715e>// 內部類
+</span><span style=color:#75715e></span>            System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>println</span><span style=color:#f92672>(</span>Person<span style=color:#f92672>.</span><span style=color:#a6e22e>this</span><span style=color:#f92672>.</span><span style=color:#a6e22e>name</span><span style=color:#f92672>);</span><span style=color:#75715e>// 外部類
+</span><span style=color:#75715e></span>        <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#a6e22e>Person</span><span style=color:#f92672>(){</span>
+        <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>CC</span> <span style=color:#f92672>{</span>
+        
+        <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>method</span><span style=color:#f92672>()</span> <span style=color:#f92672>{</span>
+        <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>AA</span> <span style=color:#f92672>{</span>
+            
+        <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#f92672>{</span>
+        <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>BB</span> <span style=color:#f92672>{</span>
+        
+        <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>InnerClass</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>method</span><span style=color:#f92672>(){</span>
+        <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>AA</span><span style=color:#f92672>{</span>
+            
+        <span style=color:#f92672>}</span>
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> Comparable <span style=color:#a6e22e>getComparable</span><span style=color:#f92672>(){</span>
+        <span style=color:#75715e>// 局部內部類
+</span><span style=color:#75715e></span>        <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>MyComparable</span> implement Comparable<span style=color:#f92672>{</span>
+            <span style=color:#a6e22e>@Override</span>
+            <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>int</span> <span style=color:#a6e22e>compareTo</span><span style=color:#f92672>(</span>Object o<span style=color:#f92672>){</span>
+                <span style=color:#66d9ef>return</span> 0<span style=color:#f92672>;</span>
+            <span style=color:#f92672>}</span>
+        <span style=color:#f92672>}</span>
+        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> MyComparable<span style=color:#f92672>();</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div><h3 id=內部類使用注意點>內部類使用注意點</h3><ul><li>在局部內部類的方法中，如果調用局部內部類所聲明的方法中的局部變量，要求該局部變量為 final，jdk 1.7 前都是這樣要求，JAVA 8 之後可省略，預設就是</li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/code/2020-12-13-addtwonumbers/ title="LeetCode 2. Add Two Numbers"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/code/2020-12-17-oop-class/ title="物件導向 01 - 類的成員"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

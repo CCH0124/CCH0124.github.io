@@ -1,0 +1,123 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes 之訪問安全控制</h1><p class=mb-1>October 16, 2021</p><p>&mdash;</p></div><div class=content><h2 id=controlling-access-to-the-kubernetes-api>Controlling Access to the Kubernetes API</h2><p>API Server 是存取和管理資源對象的入口，不管是 kube-controllermanager、kube-scheduler、kubelet 和kube-proxy 等都要透過 API Server 進行存取。而每一次的訪問請求都須進行合法的驗證，如身分、操作權限等，當這些流程都為正常才能將書據存入 etcd 中。當請求到 API 時，會經歷幾個階段，如下圖所示：</p><p><img src=https://d33wubrfki0l68.cloudfront.net/673dbafd771491a080c02c6de3fdd41b09623c90/50100/images/docs/admin/access-control-overview.svg alt title="from kubernetes.io"></p><p>當收到一個用戶端的請求後，會調用 Authentication 來驗證用戶端身分，如果前者驗證通過接著會驗證 Authorization 是否有權限去操作用戶端發送的請求（建立、讀取、刪除等），如果授權(Authorization)通過驗證必須在通過 Admission Control 檢測像是 namespace 是否存在、使否違反資源限制等。</p><p>用戶端存取 API 可以透過 kubectl、函式庫或使用 REST 方式，然而可以操作的主體被分為人和 POD 物件，其分別對應 <code>User Account</code> 和 <code>Service Account</code>。</p><ul><li>User Account<ul><li>非 kubernetes 所使用的管理帳號，像是密鑰、Keystone 或是以檔案方式的使用者和密碼列表</li><li><em>名稱</em>需是唯一值</li></ul></li><li>Service Account<ul><li>是 Kubernetes API 所管理的帳號，使用在 POD 之中的服務行程訪問 Kubernetes API 時提供的身分標識</li><li>一般會綁定特定 namespace，會附帶 Secret 資源的憑證用於訪問 API Server</li></ul></li></ul><p>上面兩種類型都可隸屬一或多個用戶組，而用戶組本身沒有操作權限，其本身只是一個 User Account 的邏輯集合。Kubernetes 有以下特殊目的的組</p><ul><li><code>system:unauthenticated</code><ul><li>未能通過任何一個 Authentication 檢驗的帳號</li></ul></li><li><code>system:authenticated</code><ul><li>驗證工的用戶自動加入的一個組，用於快速引用所有通過認證的用戶帳號</li></ul></li><li><code>system:serviceaccounts</code><ul><li>當前系統尚所有 Service Account 物件</li></ul></li><li><code>system:serviceaccounts:&lt;namespace></code><ul><li>特定 namespace 下的 Service Account 帳號</li></ul></li></ul><h2 id=authenticationauthorization-和-admission-control>Authentication、Authorization 和 Admission Control</h2><p>Kubernetes 用認證方式對 API 請求進行身份驗證，支援的認證有以下</p><ul><li>證書</li><li>bearer tokens</li><li>authenticating proxy</li><li>HTTP basic</li><li>等</li></ul><p>認證過程會驗證以下屬性</p><ul><li>Username</li><li>UID</li><li>Groups</li><li>Extra</li></ul><p>API Server 支援以下幾種認證方式</p><ul><li>X509<ul><li>藉由 <code>--client-ca-file=SOMEFILE</code> 啟用 API Server 客戶端證書身份驗證選項</li></ul></li><li>Static Token File<ul><li>使用 <code>--token-auth-file=SOMEFILE</code>，API Server 從中讀取 bearer token</li></ul><pre><code>token,user,uid,&quot;group1,group2,group3&quot;
+</code></pre></li><li>Bootstrap Tokens</li><li>靜態密碼檔案<ul><li>使用 <code>--basic-auth-file</code> 加載，用戶名和密碼等令牌以明文格式儲存的 CSV 格式檔案</li></ul></li><li>Service Account Token<ul><li>使用 <code>--service-account-key-file</code> 加載</li></ul></li><li>OpenID Connect Tokens<ul><li>OAuth2 風格</li></ul></li><li>Webhook Token</li><li>Authentication Proxy</li><li>Keystone</li><li>匿名請求<ul><li>未被任何驗證機制明確拒絕的用戶即為匿名用戶，其會被自動標識為用戶名 <code>system:anonymous</code>，並屬於 <code>system:unauthenticated</code> 用戶組；在 API Server 啟用了除 <code>AlwaysAllow</code> 以外的認證機 制時，匿名用戶處於啟用狀態，但管理員可通過 &ndash;anonymousauth=false` 選項將其禁用</li></ul></li></ul><p><a href=https://kubernetes.io/docs/reference/access-authn-authz/authentication/>authentication 官方資源</a></p><p>API Server 主要支援以下授權機制來定義用戶操作的權限</p><ul><li>Node<ul><li>基於 POD 資源的目標調度節點來實現的對 kubelet 的訪問控制</li></ul></li><li>ABAC(attribute-based access control)</li><li>RBAC(role-based access control)</li><li>WebHook<ul><li>基於 HTTP 回調機制由外部 REST 服務檢查確認用戶授權的訪問控制</li></ul></li></ul><p><a href=https://kubernetes.io/docs/reference/access-authn-authz/authorization/>authorization 官方資源</a></p><p>最後 Admission Controller 用於在客戶端請求經過身份驗證和授權檢查之後，會在存入 etcd 時攔截該請求，進行語意驗證，其支援的方式有以下</p><ul><li>AlwaysAdmit</li><li>AlwaysDeny</li><li>AlwaysPullImages</li><li>NamespaceLifecycle</li><li>LimitRanger</li><li>ServiceAccount</li><li>PersistentVolumeLabel</li><li>DefaultStorageClass</li><li>ResourceQuota</li><li>DefaultTolerationSeconds</li><li>ValidatingAdmissionWebhook</li><li>MutatingAdmissionWebhook</li></ul><p><a href=https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/>官方資源</a></p><h2 id=service-account-管理與應用>Service Account 管理與應用</h2><p>當我們使用 <code>kubectl run nginx --image=nginx:latest</code> 運行一個 nginx 應用時，此 POD 會自動關連一個儲存卷，並讓該容器掛載。如下使用 <code>kubectl describe</code> 進行觀察</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>...
+Containers:
+  nginx:
+    Container ID:
+    Image:          nginx:latest
+    ...
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-fmjkg <span style=color:#f92672>(</span>ro<span style=color:#f92672>)</span>
+...
+Volumes:
+  default-token-fmjkg:
+    Type:        Secret <span style=color:#f92672>(</span>a volume populated by a Secret<span style=color:#f92672>)</span>
+    SecretName:  default-token-fmjkg
+    Optional:    false
+....
+</code></pre></div><p>當我們使用 <code>kubectl describe secrets</code> 該 SecretName 對應的物件時，會發現其有三個資料分別是 <code>ca.crt</code>、<code>namespace</code> 和 <code>token</code>，而 <code>token</code> 儲存了 Service Account 的認證 token，容器中的行程使用它向 API Server 發送連接請求，接著進行 Authentication 驗證，在將其用戶名稱傳遞給 Authorization 進行下一階段驗證。每個 POD 對象都只有一個 Service Account，如果未明確指定，Admission Controller 會自動使用當前 namespace 的默認 Service Account，通常是 default，如下。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>kubectl describe serviceaccounts default 
+Name:                default
+Namespace:           default
+Labels:              &lt;none&gt;
+Annotations:         &lt;none&gt;
+Image pull secrets:  &lt;none&gt;
+Mountable secrets:   default-token-fmjkg
+Tokens:              default-token-fmjkg
+Events:              &lt;none&gt;
+</code></pre></div><p>Kubernetes 透過 Service Account 准入控制器、令牌控制器（token controller）和 Service Account 帳戶控制器，實現自動化。</p><ul><li>Service Account 帳戶控制器負責為 namespace 管理相應資源，且確保每個 namespace 中都存在一個 <em>default</em> 的 Service Account 物件。</li><li>Service Account 准入控制器是 API Server 的一部分，負責在<em>建立</em>或<em>更新</em> POD 時對其按需進行 Service Account 物件相關資訊的修改，包括如下操作：<ul><li>POD 沒有明確定義使用哪個 Service Account 物件時，則將設定為 default</li><li>確定 POD 正確引用已存在的 Service Account</li><li>POD 中未定義 <code>ImagePullSecerts</code>，則將 Service Account 的 <code>ImagePullSecerts</code> 添加上去</li><li>為帶有訪問 API 的 Token 的 POD 添加一個儲存卷</li><li>為 POD 中每個容器添加一個 <code>volumeMounts</code>，掛載至 <code>/var/run/secrets/kubernetes.io/serviceaccount</code></li></ul></li><li>token controller 是 controller-manager 的子元件，負責以下<ul><li>監控 Service Account 的<em>建立操作</em>，且為其新增用於訪問 API 的 Secret 物件</li><li>監控 Service Account 的<em>刪除操作</em>，且刪除其相關的所有 Service Account token</li><li>監控 Secret 物件的<em>新增操作</em>，確保其引用的 Service Account 已存在，且在必要時為 Secret 物件新增認證 token</li><li>監控 Secret 物件的<em>刪除操作</em>，確保刪除每個 Service Account 中對此 Secret 的引用</li></ul></li></ul><p>在 <code>/etc/kubernetes/manifests/</code> 中 <code>kube-controller-manager.yaml</code> 這個檔案有一個 <code>--service-account-private-key-file=/etc/kubernetes/pki/sa.key</code> 配置它用於對生成的 Service Account token 進行簽章，以確保完整性。同樣的在 <code>kube-apiserver.yaml</code> 中使用了 <code>--service-account-signing-key-file=/etc/kubernetes/pki/sa.key</code> 參數用於認證期間的檢驗。</p><h2 id=create-service-account>Create Service Account</h2><p>當我們使用 <code>kubectl get serviceaccounts --all-namespaces</code> 進行觀察時每個 namespace 下都會存在一個 default 物件，其讓 POD 有權限讀取同一 namespace 下的其它資源。因此要讓 POD 有更大權限時，使用者必須自定義 Service Account 資源。當然一個 POD 物件最多也只能存在一個 Service Account 資源，可以透過 <code>spec.serviceAccountName</code> 指定要使用的 Service Account 物件，否則就是 default。</p><p>如何建立呢 ?可以透過 <code>kubectl create servic-eaccount</code> 或是 yaml 檔案形式如下：</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>ServiceAccount</span>
+<span style=color:#f92672>metadata</span>:
+    <span style=color:#f92672>name</span>: <span style=color:#ae81ff>emqx　# 建立一個 emqx 的服務帳戶</span>
+    <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+</code></pre></div><p>建立一個 <code>Deployment</code> 物件，並指定 emqx 的服務帳戶</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>emqx-cluster</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>emqx-ns</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>emqx</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>3</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>emqx-app</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>emqx-app</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>serviceAccountName</span>: <span style=color:#ae81ff>emqx</span> <span style=color:#75715e># this</span>
+...
+</code></pre></div><p>當 POD 向 API Server 發送請求時，其設定的 token 在通過認證後將由 Authorization 進行 Service Account 是否有權限訪問所請求資源的判定，而當前 <code>RBAC</code> 為主流。</p><h5 id=配置-kubeconfig>配置 kubeconfig</h5><p>透過 kubeconfig 配置可以提供 kubectl、kubelet 等元件提供集群相關的配置，並且能夠設定上下文環境，並在不同環境中進行切換。</p><pre><code>                          -----&gt; kubernetes cluster1 API Server
+                         /
+Kubectl -----&gt; kubeconfig
+                         \
+                          -----&gt; kubernetes cluster2 API Server
+</code></pre><p>當使用 <code>kubeadm init</code> 初始化 <code>Kubernetes</code> 集群後 <code>/etc/kubernetes/admin.conf</code> 檔案是 <code>kubeconfig</code> 格式的配置檔案，藉由 <code>kubectl</code> 加載至預設路徑 <code>$HOME/.kube/config</code>。</p><p>透過 <code>kubectl config view</code> 可以獲取當前使用的環境配置。</p><pre><code class="language-bash=" data-lang="bash=">$ kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://172.17.205.10:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED
+</code></pre><p>上面結果訊息內容包含：</p><ul><li>clusters<ul><li>包含訪問 API Server 的 URL 和所屬集群名稱</li></ul></li><li>users<ul><li>包含訪問 API Server 時使用者名稱和認證訊息</li></ul></li><li>contexts<ul><li>kubelete 的可用上下文，從 <code>users</code> 中某個使用者和 <code>clusters</code> 中某個集群名稱組合</li></ul></li><li>current-context<ul><li>當前使用的上下文名稱，<code>contexts</code> 中某一個選項</li></ul></li></ul><p>結構上可以參考此圖 <img src=https://eliu.github.io/2020/03/28/manage-kubeconfig/kubeconfig-structure.png alt=&ldquo;https://eliu.github.io/2020/03/28/manage-kubeconfig/ ">from <a href=https://eliu.github.io/2020/03/28/manage-kubeconfig/>https://eliu.github.io/2020/03/28/manage-kubeconfig/</a></p><p>簡單的說使用 kubectl 後操作 <code>current-context</code> 然後對應 <code>contexts</code> 中某一個選項。</p><p>對我們來說也可自訂義相關配置訊息至 <code>kubeconfig</code> 檔案中，並實現不同帳號接入集群功能。這些操作可使用 <code>kubectl config</code> 方式來操作</p><pre><code class="language-bash=" data-lang="bash=">kubectl config view # 列出 kubeconfig 內容
+kubectl config set-cluster # 設定 kubeconfig 中 clusters
+kubectl config set-credentials # 設定 kubeconfig 中 users
+kubectl config set-context # 設定 kubeconfig 中 contexts
+kubectl config use-context # 設定 kubeconfig 中 current-context
+</code></pre><p>初始化集群後，<code>/etc/kubernetes/admin.conf</code> 是默認管理及群的權限。</p><p>官方可參考<a href=https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/>資源</a></p><h2 id=實作地端操作-gke>實作地端操作 GKE</h2><p>以下是實現從本地端的 K8s 群集操作 GKE。先從 GKE 上的群集 <code>.kube/config</code> 進行複製並貼上至本地端主機 <code>master</code> 上，這邊將其複製到 <code>gke1</code> 檔案。</p><pre><code class="language-shell=" data-lang="shell=">$ KUBECONFIG=gke1:~/.kube/config kubectl config view
+ # gke1 是 GKE 的 key
+ # DATA+OMITTED 會導致資訊不完全因此需用以下方式攤平
+$ KUBECONFIG=gke1:~/.kube/config kubectl config view --flatten
+$ KUBECONFIG=gke1:~/.kube/config kubectl config view --flatten &gt; new
+
+$ KUBECONFIG=new kubectl config get-contexts
+CURRENT   NAME                                                    CLUSTER                                                 AUTHINFO                                                NAMESPACE
+*         gke_sunny-catwalk-286908_us-central1-c_cluster-1-test   gke_sunny-catwalk-286908_us-central1-c_cluster-1-test   gke_sunny-catwalk-286908_us-central1-c_cluster-1-test
+          gke_sunny-catwalk-286908_us-central1-c_cluster-2-test   gke_sunny-catwalk-286908_us-central1-c_cluster-2-test   gke_sunny-catwalk-286908_us-central1-c_cluster-2-test
+          kubernetes-admin@kubernetes                             kubernetes                                              kubernetes-admin
+$ KUBECONFIG=new kubectl config use-context kubernetes-admin@kubernetes # 切換
+Switched to context &quot;kubernetes-admin@kubernetes&quot;.
+$ KUBECONFIG=new kubectl config get-contexts
+CURRENT   NAME                                                    CLUSTER                                                 AUTHINFO                                                NAMESPACE
+          gke_sunny-catwalk-286908_us-central1-c_cluster-1-test   gke_sunny-catwalk-286908_us-central1-c_cluster-1-test   gke_sunny-catwalk-286908_us-central1-c_cluster-1-test
+          gke_sunny-catwalk-286908_us-central1-c_cluster-2-test   gke_sunny-catwalk-286908_us-central1-c_cluster-2-test   gke_sunny-catwalk-286908_us-central1-c_cluster-2-test
+*         kubernetes-admin@kubernetes                             kubernetes                                              kubernetes-admin
+$ KUBECONFIG=new kubectl get nodes
+NAME     STATUS   ROLES    AGE     VERSION
+master   Ready    master   5d18h   v1.18.8
+node01   Ready    &lt;none&gt;   5d17h   v1.18.8
+node02   Ready    &lt;none&gt;   5d17h   v1.18.8
+</code></pre><p>切換至 GKE 叢集</p><pre><code class="language-shell=" data-lang="shell=">cch@master:~/context$ KUBECONFIG=new kubectl config use-context gke_sunny-catwalk-286908_us-central1-c_cluster-1-test
+Switched to context &quot;gke_sunny-catwalk-286908_us-central1-c_cluster-1-test&quot;.
+cch@master:~/context$ KUBECONFIG=new kubectl config current-context
+gke_sunny-catwalk-286908_us-central1-c_cluster-1-test
+cch@master:~/context$ KUBECONFIG=new kubectl get nodes
+NAME                                            STATUS   ROLES    AGE     VERSION
+gke-cluster-1-test-default-pool-255d7fb2-1f8l   Ready    &lt;none&gt;   4d12h   v1.15.12-gke.2
+gke-cluster-1-test-default-pool-255d7fb2-lbwc   Ready    &lt;none&gt;   4d12h   v1.15.12-gke.2
+gke-cluster-1-test-default-pool-255d7fb2-ppnm   Ready    &lt;none&gt;   4d12h   v1.15.12-gke.2
+
+</code></pre><p>切記 cloud sdk 需要安裝，之後才能操作</p><pre><code class="language-shell=" data-lang="shell=">$ echo &quot;deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main&quot; | 
+$ sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+$ sudo apt-get install apt-transport-https ca-certificates gnupg
+$ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+$ sudo apt-get update &amp;&amp; sudo apt-get install google-cloud-sdk
+$ gcloud auth login # 它會引導認證
+</code></pre><ul><li><a href=https://kubernetes.io/zh/docs/tasks/access-application-cluster/configure-access-multiple-clusters/>更多資訊可參考官網</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2021-10-23-rbac/ title="kubernetes 之訪問安全控制 - RBAC"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><i class="nav-menu-disabled fas fa-chevron-circle-right"></i></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

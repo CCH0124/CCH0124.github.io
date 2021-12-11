@@ -1,0 +1,46 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>物件導向 01 - extends</h1><p class=mb-1>December 17, 2020</p><p>&mdash;</p></div><div class=content><h2 id=繼承extends>繼承(extends)</h2><p>好處是減少代碼冗余、增加覆用性、便於功能的擴展、多態性。子類繼承父類後，子類會獲取父類的結構、屬性、方法，如果為 <code>private</code>，因為封裝性影響，子類不能直接調用父類結構，需透過 getter 和 setter 進行操作。</p><p>子類繼承之後可以聲名自己持有的屬性和方法，實現功能擴展。在 JAVA 只支持單繼承和多層繼承，無多重繼承。一個類能被多個子類繼承，一個類只能有一個父類。</p><blockquote><p>所有 java 類（除 java.lang.Object）直接會間接繼承 java.lang.Object 類</p></blockquote><h2 id=覆寫-override>覆寫 (override)</h2><ul><li>回傳類型、方法名和參數個數需一致<ul><li>回傳類型可以是該類型的子類</li><li>同名同參數方法要是非 static 實現重寫，否則為非重寫</li></ul></li><li>子類重寫的方法權限修飾不小於父類被重寫的方法的權限</li><li>子類拋出的異常範圍不能大於父類</li></ul><p>以繼承來說 B 繼承 A，只要 B 有覆寫 A 的相關方法，則建立物件時取得的是 B 的覆寫，否則就是 A 的。</p><h2 id=super>super</h2><p>用來調用以下</p><ul><li><p>屬性</p></li><li><p>法</p></li><li><p>建構方法</p></li><li><p>在子類的方法或建構方法中，透過使用 <code>super.屬性</code>或 <code>super.方法</code>的方式，顯示的調用父類中聲明的屬性或方法，通常都省略</p></li><li><p>當子類和父類中定義同名屬性時，要從子類調用父類的屬性，則必須使用 <code>super.屬性</code>或 <code>super.方法</code></p></li><li><p>在建構方法中使用 <code>super(參數列表)</code></p></li><li><p>需再首行</p></li><li><p>無聲明 <code>this()</code>、<code>super()</code>，默認使用父類別中空參的建構方法</p></li><li><p>與 <code>this</code> 不能同時使用。為何不能與 <code>this</code> 出現在同一個建構方法 ?(因為要寫在首行) 為何只能在第一句出現 ?(初始化)</p></li></ul><h2 id=子類物件實例化過程>子類物件實例化過程</h2><p>假設 D 繼承 C，C 繼承 B，B 繼承 A。在建立物件 D 時在堆中會將一連串的類別進行載入，就是加載父類中聲明的屬性。這過程中我們會直接或間接調用父類的<em>建構方法</em>，直到 <code>Object</code> 類為止。</p><h2 id=多態性-polymorphism>多態性 (Polymorphism)</h2><p>物件的多態性，父類的引用指向子類的物件，會應用於抽象類(Abstract)或介面(interface)上。在 JAVA 中引用變數有兩個類型非分別是<code>編譯時類型</code>、<code>運行時類型</code>，若兩者類型不一致則會出現多態。</p><ul><li>父類的引用指向子類的對象</li><li>當調用父子類同名同參數方法時，實際執行的是子類重寫父類的方法(虛擬方法調用)<ul><li>編譯時只能調用父類聲名的方法，但在運行期，實際是子類重寫父類的方法(編譯看左邊，運行看右邊)</li></ul></li><li>多態的前提<ul><li>類的繼承關係</li><li>方法的重寫</li></ul></li><li>物件的多態性，適用於方法，不適用於屬性<ul><li>因此屬性調用時以左邊為主</li></ul></li><li><strong>屬於運行時行為</strong><ul><li>因為不明確結果</li></ul></li><li>對於<code>重載</code>而言，在方法調用之前，編譯器就已經確定了所要調用的方法，這稱為<code>靜態綁定</code>；對於多態而言，只有等到方法調用的那一刻，編譯器才會確定所要調用的具體方法，這稱為<code>動態綁定</code><ul><li>多態性更是解決重載的副作用</li></ul></li><li><code>interface</code>、<code>Abstract</code> 肯定體現多態性</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Animal</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>a</span><span style=color:#f92672>(){</span>
+
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>b</span><span style=color:#f92672>(){</span>
+        
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Dog</span> <span style=color:#66d9ef>extends</span> Animal<span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>a</span><span style=color:#f92672>(){</span>
+
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>b</span><span style=color:#f92672>(){</span>
+        
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Cat</span> <span style=color:#66d9ef>extends</span> Animal<span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>a</span><span style=color:#f92672>(){</span>
+
+    <span style=color:#f92672>}</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>b</span><span style=color:#f92672>(){</span>
+        
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+
+<span style=color:#75715e>// 調用時
+</span><span style=color:#75715e></span>
+<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Test</span> <span style=color:#f92672>{</span>
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String <span style=color:#f92672>[]</span> args<span style=color:#f92672>){</span>
+        Test t <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Test<span style=color:#f92672>();</span>
+        t<span style=color:#f92672>.</span><span style=color:#a6e22e>fun</span><span style=color:#f92672>(</span><span style=color:#66d9ef>new</span> Dog<span style=color:#f92672>());</span>
+        t<span style=color:#f92672>.</span><span style=color:#a6e22e>fun</span><span style=color:#f92672>(</span><span style=color:#66d9ef>new</span> Cat<span style=color:#f92672>());</span>
+    <span style=color:#f92672>}</span>
+
+    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>fun</span><span style=color:#f92672>(</span>Animal animal<span style=color:#f92672>){</span>
+        animal<span style=color:#f92672>.</span><span style=color:#a6e22e>a</span><span style=color:#f92672>();</span>
+        animal<span style=color:#f92672>.</span><span style=color:#a6e22e>b</span><span style=color:#f92672>();</span>
+    <span style=color:#f92672>}</span>
+<span style=color:#f92672>}</span>
+</code></pre></div></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/code/2020-12-17-oop-class/ title="物件導向 01 - 類的成員"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/code/2020-12-25-two-sum/ title="LeetCode Two Sum I and II"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

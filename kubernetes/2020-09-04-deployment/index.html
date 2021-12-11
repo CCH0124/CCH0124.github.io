@@ -1,0 +1,252 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day14</h1><p class=mb-1>September 4, 2020</p><p>&mdash;</p></div><div class=content><p><code>Deployment</code> 縮寫為 <code>deploy</code>，它被建構在 <code>ReplicaSet</code> 控制器之上的控制器。為 <code>POD</code> 和 <code>ReplicaSet</code> 提供聲明式更新，而 <code>Deployment</code> 基本上和 <code>ReplicaSet</code> 很相似，只不過多了這些特性</p><ul><li>可以觀察 <code>Deployment</code> 升級的過程</li><li>可以用回滾方式回到歷史版本中的某一個版本</li><li>對 <code>Deployment</code> 操作紀錄作保存，以便可回滾</li><li>在每一次升級過程中都可暫停或啟動</li><li>自動更新機制有兩種<ul><li>Recreate<ul><li>一次性刪除所有 <code>POD</code>，之後再用新版本佈署</li></ul></li><li>RollingUpdate<ul><li>滾動式更新，小階段的更新</li></ul></li></ul></li></ul><h2 id=deployment-的建立>Deployment 的建立</h2><p>其定義的字段與 <code>Replica</code> 很像，如 <code>replicas</code>、<code>selector</code>、<code>template</code> 等。下面是本章節的實驗範例。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#75715e># deploy-demo.yaml</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp-deploy</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>5</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+      <span style=color:#f92672>release</span>: <span style=color:#ae81ff>canary</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+     <span style=color:#f92672>labels</span>:
+       <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+       <span style=color:#f92672>release</span>: <span style=color:#ae81ff>canary</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.10</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>http</span>
+          <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+</code></pre></div><p>佈署該 <code>yaml</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -f deploy-demo.yaml
+</code></pre></div><p>列出 Deployment 的相關訊息</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get deploy myapp-deploy
+NAME           READY   UP-TO-DATE   AVAILABLE   AGE
+myapp-deploy   5/5     <span style=color:#ae81ff>5</span>            <span style=color:#ae81ff>5</span>           14s
+</code></pre></div><ul><li>UP-TO-DATE<ul><li>以達到想要的 <code>POD</code> 個數</li></ul></li><li>AVAILABLE<ul><li>當前處於可用狀態的數量</li></ul></li></ul><p>前面有提到說 <code>Deployment</code> 和 <code>ReplicaSet</code> 之間關係，從下面的查看可以驗證，<code>Deployment</code> 在 <code>ReplicaSet</code> 之上，在 <code>NAME</code> 方面 <code>myapp-deploy</code> 控制了 <code>ReplicaSet</code> 資源，因此會有此前綴。而在標籤選擇器上，<code>ReplicaSet</code> 使用的是 <code>Deployment</code> 資源清單所設定的標籤選擇器。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get rs -l app<span style=color:#f92672>=</span>myapp -o wide
+NAME                      DESIRED   CURRENT   READY   AGE     CONTAINERS   IMAGES       SELECTOR
+myapp-deploy-5bc49f9bb9   <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>       4m15s   myapp        nginx:1.10   app<span style=color:#f92672>=</span>myapp,pod-template-hash<span style=color:#f92672>=</span>5bc49f9bb9,release<span style=color:#f92672>=</span>canary
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe rs myapp-deploy-5bc49f9bb9
+Name:           myapp-deploy-5bc49f9bb9
+Namespace:      default
+Selector:       app<span style=color:#f92672>=</span>myapp,pod-template-hash<span style=color:#f92672>=</span>5bc49f9bb9,release<span style=color:#f92672>=</span>canary
+Labels:         app<span style=color:#f92672>=</span>myapp
+                pod-template-hash<span style=color:#f92672>=</span>5bc49f9bb9
+                release<span style=color:#f92672>=</span>canary
+Annotations:    deployment.kubernetes.io/desired-replicas: <span style=color:#ae81ff>5</span>
+                deployment.kubernetes.io/max-replicas: <span style=color:#ae81ff>7</span>
+                deployment.kubernetes.io/revision: <span style=color:#ae81ff>1</span>
+Controlled By:  Deployment/myapp-deploy <span style=color:#75715e># 這邊清楚的知道 Deployment 控制 ReplicaSet</span>
+Replicas:       <span style=color:#ae81ff>5</span> current / <span style=color:#ae81ff>5</span> desired
+Pods Status:    <span style=color:#ae81ff>5</span> Running / <span style=color:#ae81ff>0</span> Waiting / <span style=color:#ae81ff>0</span> Succeeded / <span style=color:#ae81ff>0</span> Failed
+Pod Template:
+  Labels:  app<span style=color:#f92672>=</span>myapp
+           pod-template-hash<span style=color:#f92672>=</span>5bc49f9bb9
+           release<span style=color:#f92672>=</span>canary
+  Containers:
+   myapp:
+    Image:        nginx:1.10
+    Port:         80/TCP
+    Host Port:    0/TCP
+    Environment:  &lt;none&gt;
+    Mounts:       &lt;none&gt;
+  Volumes:        &lt;none&gt;
+Events:
+  Type    Reason            Age   From                   Message
+  ----    ------            ----  ----                   -------
+  Normal  SuccessfulCreate  28m   replicaset-controller  Created pod: myapp-deploy-5bc49f9bb9-hcfbq
+  Normal  SuccessfulCreate  28m   replicaset-controller  Created pod: myapp-deploy-5bc49f9bb9-bpcjp
+  Normal  SuccessfulCreate  28m   replicaset-controller  Created pod: myapp-deploy-5bc49f9bb9-5hqgb
+  Normal  SuccessfulCreate  28m   replicaset-controller  Created pod: myapp-deploy-5bc49f9bb9-75hxv
+  Normal  SuccessfulCreate  28m   replicaset-controller  Created pod: myapp-deploy-5bc49f9bb9-lhnsz
+</code></pre></div><p>接下來我們查看 <code>POD</code> 資源，我們觀察 <code>NAME</code> 的命名格式，它以上面的 <code>ReplicaSet</code> 的名稱為前綴，表示由 <code>ReplicaSet</code> 控制。這樣的標記方式讓管理者更直覺的知道這是什麼。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+NAME                            READY   STATUS    RESTARTS   AGE
+myapp-5t5qf                     1/1     Running   <span style=color:#ae81ff>0</span>          14h
+myapp-deploy-5bc49f9bb9-5hqgb   1/1     Running   <span style=color:#ae81ff>0</span>          8m30s
+myapp-deploy-5bc49f9bb9-75hxv   1/1     Running   <span style=color:#ae81ff>0</span>          8m30s
+myapp-deploy-5bc49f9bb9-bpcjp   1/1     Running   <span style=color:#ae81ff>0</span>          8m30s
+myapp-deploy-5bc49f9bb9-hcfbq   1/1     Running   <span style=color:#ae81ff>0</span>          8m30s
+myapp-deploy-5bc49f9bb9-lhnsz   1/1     Running   <span style=color:#ae81ff>0</span>          8m30s
+myapp-dnbf6                     1/1     Running   <span style=color:#ae81ff>0</span>          14h
+myapp-flv45                     1/1     Running   <span style=color:#ae81ff>0</span>          22h
+myapp-gjpp6                     1/1     Running   <span style=color:#ae81ff>0</span>          14h
+myapp-t82p4                     1/1     Running   <span style=color:#ae81ff>0</span>          14h
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe pods myapp-deploy-5bc49f9bb9-75hxv
+Name:           myapp-deploy-5bc49f9bb9-75hxv
+Namespace:      default
+Priority:       <span style=color:#ae81ff>0</span>
+Node:           gke-cluster-1-default-pool-7dc8b11b-z2gx/10.128.0.20
+Start Time:     Thu, <span style=color:#ae81ff>10</span> Sep <span style=color:#ae81ff>2020</span> 06:53:22 +0000
+Labels:         app<span style=color:#f92672>=</span>myapp
+                pod-template-hash<span style=color:#f92672>=</span>5bc49f9bb9
+                release<span style=color:#f92672>=</span>canary
+Annotations:    kubernetes.io/limit-ranger: LimitRanger plugin set: cpu request <span style=color:#66d9ef>for</span> container myapp
+Status:         Running
+IP:             10.4.0.20
+IPs:            &lt;none&gt;
+Controlled By:  ReplicaSet/myapp-deploy-5bc49f9bb9 <span style=color:#75715e># 驗證說明此 POD 由 ReplicaSet 控制</span>
+</code></pre></div><p>藉由上面的範例，可以更清楚知道 <code>Deployment</code> 和 <code>ReplicaSet</code> 之間關係，其操作的技巧都非常相似，但 <code>Deployment</code> 卻有著更高階的操作技巧。總體來說它門之間關係如下圖所示</p><figure><img src=/images/k8s/K8s-deployment.jpg width=auto height=auto></figure><h2 id=更新策略>更新策略</h2><p>在 <code>ReplicaSet</code> 文章中，我們發現它對於更新操作需要人為介入，有人為操作就有操作錯誤的風險。而 <code>Deployment</code> 就移除了人為操作更新的介入，不論修改容器中鏡像版本或是更改 <code>Template</code>，<code>Deployment</code> 會幫助我們完成。這邊使用 <code>describe</code> 觀察建立的 <code>Deployment</code> 預設更新策略，發現是 <code>RollingUpdate</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe deploy myapp-deploy
+Name:                   myapp-deploy
+Namespace:              default
+CreationTimestamp:      Thu, <span style=color:#ae81ff>10</span> Sep <span style=color:#ae81ff>2020</span> 06:53:22 +0000
+Labels:                 &lt;none&gt;
+Annotations:            deployment.kubernetes.io/revision: <span style=color:#ae81ff>1</span>
+Selector:               app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary
+Replicas:               <span style=color:#ae81ff>5</span> desired | <span style=color:#ae81ff>5</span> updated | <span style=color:#ae81ff>5</span> total | <span style=color:#ae81ff>5</span> available | <span style=color:#ae81ff>0</span> unavailable
+StrategyType:           RollingUpdate <span style=color:#75715e># 更新策略</span>
+MinReadySeconds:        <span style=color:#ae81ff>0</span>
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app<span style=color:#f92672>=</span>myapp
+           release<span style=color:#f92672>=</span>canary
+  Containers:
+   myapp:
+    Image:        nginx:1.10
+    Port:         80/TCP
+...
+</code></pre></div><p>這邊在藉由 <code>explain</code> 來看更新策略是否是文章開頭的兩種，從下面來看確實是 <code>RollingUpdate</code> 和 <code>Recreate</code> 兩種，而 <code>RollingUpdate</code> 是預設。前面有稍微提到 <code>Recreate</code> 的用法，一次終止所有 <code>POD</code> 在進行佈署，這依然存在有短暫時間無法存取的問題，感覺上適用於舊版與新版的兼容性很差時。<code>RollingUpdate</code> 它以小批次方式進行更新，刪除一些 <code>POD</code> 在創建新版的 <code>POD</code>。相較於 <code>Recreate</code>，會有要存取新版還是舊版 <code>POD</code> 的問題，但是不會有無法存取的問題。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl explain deployment.spec.strategy
+KIND:     Deployment
+VERSION:  extensions/v1beta1
+
+RESOURCE: strategy &lt;Object&gt;
+
+DESCRIPTION:
+     The deployment strategy to use to replace existing pods with new ones.
+
+     DeploymentStrategy describes how to replace existing pods with new ones.
+
+FIELDS:
+   rollingUpdate        &lt;Object&gt;
+     Rolling update config params. Present only <span style=color:#66d9ef>if</span> DeploymentStrategyType <span style=color:#f92672>=</span>
+     RollingUpdate.
+
+   type &lt;string&gt;
+     Type of deployment. Can be <span style=color:#e6db74>&#34;Recreate&#34;</span> or <span style=color:#e6db74>&#34;RollingUpdate&#34;</span>. Default is
+     RollingUpdate.
+</code></pre></div><p>在 <code>Deployment</code> 中 <code>RollingUpdate</code> 的操作非是同一個 <code>ReplicaSet</code> 來執行，而是會新建一個 <code>ReplicaSet</code>，這之間會將先前 <code>ReplicaSet</code> 控管的 <code>POD</code> 做刪除，同時間新的 <code>ReplicaSet</code> 會增加新版的 <code>POD</code>，停止條件簡單來說就是舊 <code>ReplicaSet</code> 要沒有 <code>POD</code>，新 <code>ReplicaSet</code> 要符合正確的 <code>POD</code> 數量，這過程用下圖表示，圖中可以看到舊版的 <code>ReplicaSet</code> 未被刪除，是因為它可用作<em>回滾</em>這個動作，<code>revisionHistoryLimit</code> 這字段用於控制可保存 <code>ReplicaSet</code> 的數量，預設是 10。</p><figure><img src=/images/k8s/K8s-deploy-rollingupdate.jpg width=auto height=auto></figure><p>然而 <code>Deployment</code> 中有調整滾動更新細粒度的設置選項，分別是 <code>maxSurge</code> 和 <code>maxUnavailable</code>。透過 <code>kubectl explain deployment.spec.strategy.rollingUpdate</code> 可以查看其作用。這邊可以使用 <code>describe</code> 觀察 <code>deployment</code> 的設定其預設是 <code>25% max unavailable, 25% max surge</code>。這邊簡單的說明作用</p><ul><li>maxSurge<ul><li>更新期間存在的 <code>POD</code> 總數量最多可超出的數量</li></ul></li><li>maxUnavailable<ul><li>更新期間能不可存取 <code>POD</code> 的數量</li><li>不論是舊版還是新版</li></ul></li></ul><p>下兩張圖為 <em>Kubernetes in action</em> 的圖，可以嘗試理解其作用。</p><p><img src=https://i.imgur.com/v7X7Iet.png alt></p><p><img src=https://i.imgur.com/rrFZ2iR.png alt></p><h2 id=deployment-更新>Deployment 更新</h2><p>這邊將要實驗 <code>Deployment</code> 的滾動更新，而我們要修改的是 <code>image</code>，這部分可以透過 <code>apply</code>、<code>edit</code>、<code>patch</code> 或 <code>set image</code> 等來實現。下面使用 <code>set image</code> 更換鏡像，再使用 <code>rollout status</code> 查看其更新的狀態，接著觀察 <code>replicaSet</code>，其保留舊版，而換新版的 <code>replicaSet</code> 控制 <code>POD</code>，而 <code>POD</code> 的 <code>NAME</code>，將由新版 <code>replicaSet</code> 作為前綴。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl set image deploy myapp-deploy myapp<span style=color:#f92672>=</span>nginx:1.15 
+deployment.extensions/myapp-deploy image updated
+$ kubectl rollout status deploy myapp-deploy <span style=color:#75715e># 滾動更新的狀態</span>
+deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> successfully rolled out
+$ kubectl get replicasets -l app<span style=color:#f92672>=</span>myapp
+NAME                      DESIRED   CURRENT   READY   AGE
+myapp-deploy-5bc49f9bb9   <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>       110m <span style=color:#75715e># 舊版的保留</span>
+myapp-deploy-8664dd475d   <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>       2m15s
+</code></pre></div><h2 id=回滾操作>回滾操作</h2><p>可能因為佈署新版本時遇到鏡像無法拉取或是應用程式的 <code>Bug</code> 因此要將此佈署往之前的一個版本做佈署。我們可以使用 <code>undo</code> 關鍵字進行回滾</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o custom-columns<span style=color:#f92672>=</span>Name:metadata.name,Image:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image <span style=color:#75715e># 先確認鏡像是否更新至 1.15 </span>
+Name                            Image
+...
+myapp-deploy-8664dd475d-gn9lb   nginx:1.15
+myapp-deploy-8664dd475d-hqwfq   nginx:1.15
+myapp-deploy-8664dd475d-mvpvr   nginx:1.15
+myapp-deploy-8664dd475d-plq8h   nginx:1.15
+myapp-deploy-8664dd475d-tbtpq   nginx:1.15
+...
+</code></pre></div><p>這邊要將 <code>nginx:1.15</code> 回滾為 <code>nginx:1.10</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl rollout undo deploy myapp-deploy
+deployment.extensions/myapp-deploy rolled back
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o custom-columns<span style=color:#f92672>=</span>Name:metadata.name,Image:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image
+Name                            Image
+...
+myapp-deploy-5bc49f9bb9-2csm6   nginx:1.10 <span style=color:#75715e># 版本回滾，RS 資源回到上一個</span>
+myapp-deploy-5bc49f9bb9-9lvlp   nginx:1.10
+myapp-deploy-5bc49f9bb9-bqxv8   nginx:1.10
+myapp-deploy-5bc49f9bb9-ghp6h   nginx:1.10
+myapp-deploy-5bc49f9bb9-h45cm   nginx:1.10
+...
+</code></pre></div><p>這邊我們藉由，<code>rollout history</code> 查看回滾紀錄。觸發回滾時其 <code>REVISION</code> 的紀錄訊息會變更，回滾操作會被視為一次滾動更新因此會被新增自歷史紀錄，我們上前面的回滾紀錄被記做是 3，被回滾的紀錄會被刪除。<code>--to-revision</code> 這關鍵字可用來要回滾的版本，這邊再新增一個 <code>nginx:1.18</code> 的更新紀錄，這樣就有 2、3 和 4 可選，預設會是以第一列回滾。這邊我們嘗試指定 3 來回滾(版本會回到 1.10)。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl rollout history deploy myapp-deploy <span style=color:#75715e># 查看 REVISION 紀錄</span>
+deployment.extensions/myapp-deploy
+REVISION  CHANGE-CAUSE
+<span style=color:#ae81ff>2</span>         &lt;none&gt;
+<span style=color:#ae81ff>3</span>         &lt;none&gt;
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl set image deploy myapp-deploy myapp<span style=color:#f92672>=</span>nginx:1.18
+$ kubectl rollout history deploy myapp-deploy
+deployment.extensions/myapp-deploy
+REVISION  CHANGE-CAUSE
+<span style=color:#ae81ff>2</span>         &lt;none&gt;
+<span style=color:#ae81ff>3</span>         &lt;none&gt;
+<span style=color:#ae81ff>4</span>         &lt;none&gt; <span style=color:#75715e># 剛才的更新配紀錄在這邊</span>
+$ kubectl get rs -l app<span style=color:#f92672>=</span>myapp
+NAME                      DESIRED   CURRENT   READY   AGE
+myapp-deploy-5bc49f9bb9   <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>5</span>       139m
+myapp-deploy-8664dd475d   <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>       32m
+myapp-deploy-cd5f457bf    <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>       3m22s
+$ kubectl rollout undo deploy myapp-deploy --to-revision<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span>
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary -o custom-columns<span style=color:#f92672>=</span>Name:metadata.name,Image:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image
+Name                            Image
+...
+myapp-deploy-5bc49f9bb9-42w6g   nginx:1.10
+myapp-deploy-5bc49f9bb9-dcnpp   nginx:1.10
+myapp-deploy-5bc49f9bb9-hlk8r   nginx:1.10
+myapp-deploy-5bc49f9bb9-k42bd   nginx:1.10
+myapp-deploy-5bc49f9bb9-tnt9f   nginx:1.10
+...
+$ kubectl rollout history deployments myapp-deploy
+deployment.extensions/myapp-deploy
+REVISION  CHANGE-CAUSE
+<span style=color:#ae81ff>2</span>         &lt;none&gt;
+<span style=color:#ae81ff>4</span>         &lt;none&gt;
+<span style=color:#ae81ff>5</span>         &lt;none&gt; <span style=color:#75715e># 剛回滾被記錄在這</span>
+</code></pre></div><h3 id=pause-與-resume>pause 與 resume</h3><p>這兩個元素，用於佈署時可以針對一小部分進行更新，並觀察期更新的 <code>POD</code> 運行結果，此時舊版 <code>POD</code> 依舊存在，當新的 <code>POD</code> 確認穩定後，再將剩下舊版的 <code>POD</code> 資源進行更新。</p><p><code>pause</code>，只更新一個並讓資源進入暫停狀態。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl set image deploy myapp-deploy myapp<span style=color:#f92672>=</span>nginx:1.14 <span style=color:#f92672>&amp;&amp;</span> kubectl rollout pause deploy myapp-deploy
+deployment.extensions/myapp-deploy image updated
+deployment.extensions/myapp-deploy paused
+$ kubectl rollout status deploy myapp-deploy <span style=color:#75715e># 監聽 rollout 狀態</span>
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>5</span> out of <span style=color:#ae81ff>10</span> new replicas have been updated...
+</code></pre></div><p><code>resume</code>，讓暫停的資源重新啟用並執行相對應動作</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl rollout resume deploy myapp-deploy
+deployment.extensions/myapp-deploy resumed
+$ kubectl rollout status deploy myapp-deploy
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>5</span> out of <span style=color:#ae81ff>10</span> new replicas have been updated...
+Waiting <span style=color:#66d9ef>for</span> deployment spec update to be observed...
+Waiting <span style=color:#66d9ef>for</span> deployment spec update to be observed...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>5</span> out of <span style=color:#ae81ff>10</span> new replicas have been updated...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>5</span> out of <span style=color:#ae81ff>10</span> new replicas have been updated...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>3</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>3</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>3</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>2</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>2</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>2</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>1</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>1</span> old replicas are pending termination...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>8</span> of <span style=color:#ae81ff>10</span> updated replicas are available...
+Waiting <span style=color:#66d9ef>for</span> deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> rollout to finish: <span style=color:#ae81ff>9</span> of <span style=color:#ae81ff>10</span> updated replicas are available...
+deployment <span style=color:#e6db74>&#34;myapp-deploy&#34;</span> successfully rolled out<span style=color:#e6db74>```</span>
+</code></pre></div><h2 id=伸縮-pod-數量>伸縮 POD 數量</h2><p>使用 <code>patch</code> 方式跟新 <code>replicas</code> 的副本數量，這邊將其擴充到 10 個，這邊不限制是 <code>patch</code> 可以是 <code>edit</code> 或 <code>apply</code> 等。然而因為 <code>replicas</code> 非 <code>Template</code> 級別因此不會記錄在 <code>rollout</code> 中。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl patch deploy myapp-deploy -p <span style=color:#e6db74>&#39;{&#34;spec&#34;:{&#34;replicas&#34;: 10}}&#39;</span>
+deployment.extensions/myapp-deploy patched
+$ kubectl get deploy myapp-deploy <span style=color:#75715e># 驗證</span>
+NAME           READY   UP-TO-DATE   AVAILABLE   AGE
+myapp-deploy   10/10   <span style=color:#ae81ff>10</span>           <span style=color:#ae81ff>10</span>          146m
+</code></pre></div><h2 id=結論>結論</h2><p><code>Deployment</code> 靈活性高於 <code>ReplicaSet</code>，尤其是在滾動更新方面，也介紹像是 <code>rollingUpdate</code> 和 <code>minReadySeconds</code> 等字段應用。同時也嘗試使用不同更新佈署資源的方式像是 <code>edit</code>、<code>patch</code> 等。之後會有一篇更好的 <code>Deployment</code> 應用，來說明一些模式的操作。上面提到的一些字段使用以下 <code>yaml</code> 作為範例。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp-deploy</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>5</span>
+  <span style=color:#f92672>strategy</span>:
+    <span style=color:#f92672>type</span>: <span style=color:#ae81ff>RollingUpdate</span>
+    <span style=color:#f92672>rollingUpdate</span>:
+      <span style=color:#f92672>maxSurge</span>: <span style=color:#ae81ff>1</span>
+      <span style=color:#f92672>maxUnavailable</span>: <span style=color:#ae81ff>1</span>
+  <span style=color:#f92672>minReadySeconds</span>: <span style=color:#ae81ff>3</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+      <span style=color:#f92672>release</span>: <span style=color:#ae81ff>canary</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+     <span style=color:#f92672>labels</span>:
+       <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+       <span style=color:#f92672>release</span>: <span style=color:#ae81ff>canary</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.10</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>http</span>
+          <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+</code></pre></div><h2 id=參考資料>參考資料</h2><ul><li><a href=https://kubernetes.io/zh/docs/concepts/workloads/controllers/deployment/>官方 deployment</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-03-replicaset/ title="kubernetes - day13"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-05-daemonset/ title="kubernetes - day15"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

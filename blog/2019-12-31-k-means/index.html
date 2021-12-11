@@ -1,0 +1,145 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>ML day1 k-means</h1><p class=mb-1>December 31, 2019</p><p>&mdash;</p></div><div class=content><h2 id=what-is-k-means>What is K-means</h2><p>物以類聚的概念，<code>K-means</code> 的 <code>K</code> 就是幾群的意思。利用距離和群心的計算去完成聚類的任務。</p><h2 id=k-means-algorithm>K-means Algorithm</h2><ol><li>先設定 K 要分為幾群</li><li>輸入特徵</li><li>為 K 個群心計算 Euclidean distance</li><li>把每個資料分群至距離最短的該群心</li><li>重新計算各群的群心</li><li>不斷重複 3-5，直到收斂</li></ol><h2 id=python-sklearn-example>Python sklearn example</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>import</span> pandas <span style=color:#f92672>as</span> pd
+<span style=color:#f92672>import</span> numpy <span style=color:#f92672>as</span> np
+<span style=color:#f92672>import</span> sklearn.metrics <span style=color:#f92672>as</span> sm
+<span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#f92672>as</span> plt
+<span style=color:#f92672>from</span> sklearn.cluster <span style=color:#f92672>import</span> KMeans
+<span style=color:#f92672>from</span> sklearn <span style=color:#f92672>import</span> datasets
+<span style=color:#f92672>from</span> sklearn <span style=color:#f92672>import</span> preprocessing
+
+url <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv&#34;</span>
+data <span style=color:#f92672>=</span> pd<span style=color:#f92672>.</span>read_csv(url)
+le <span style=color:#f92672>=</span> preprocessing<span style=color:#f92672>.</span>LabelEncoder()
+data[<span style=color:#e6db74>&#39;species&#39;</span>] <span style=color:#f92672>=</span> le<span style=color:#f92672>.</span>fit_transform(data<span style=color:#f92672>.</span>iloc[:,<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>])
+
+X <span style=color:#f92672>=</span> data<span style=color:#f92672>.</span>iloc[:, <span style=color:#ae81ff>0</span>:<span style=color:#ae81ff>4</span>]<span style=color:#f92672>.</span>to_numpy()
+y <span style=color:#f92672>=</span> data<span style=color:#f92672>.</span>iloc[:,<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>]<span style=color:#f92672>.</span>to_numpy()
+
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>n_clusters 分幾群
+</span><span style=color:#e6db74>n_init 運行幾次
+</span><span style=color:#e6db74>init 選擇質心的演算法
+</span><span style=color:#e6db74>verbose 為 True 顯示訓練過程
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+model <span style=color:#f92672>=</span> KMeans(n_clusters<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span>, n_init<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span>, init<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;k-means++&#39;</span>, verbose<span style=color:#f92672>=</span>True)
+model<span style=color:#f92672>.</span>fit(X)
+
+<span style=color:#f92672>from</span> sklearn.metrics <span style=color:#f92672>import</span> accuracy_score, confusion_matrix
+<span style=color:#66d9ef>print</span>(accuracy_score(y, model<span style=color:#f92672>.</span>labels_))
+<span style=color:#66d9ef>print</span>(confusion_matrix(y, model<span style=color:#f92672>.</span>labels_))
+
+colormap<span style=color:#f92672>=</span>np<span style=color:#f92672>.</span>array([<span style=color:#e6db74>&#39;Red&#39;</span>,<span style=color:#e6db74>&#39;green&#39;</span>,<span style=color:#e6db74>&#39;blue&#39;</span>])
+plt<span style=color:#f92672>.</span>scatter(data<span style=color:#f92672>.</span>petal_length, data<span style=color:#f92672>.</span>petal_width, c<span style=color:#f92672>=</span>colormap[y], s<span style=color:#f92672>=</span><span style=color:#ae81ff>50</span>)
+plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>&#39;Classification Actually&#39;</span>)
+plt<span style=color:#f92672>.</span>show()
+
+plt<span style=color:#f92672>.</span>scatter(data<span style=color:#f92672>.</span>petal_length, data<span style=color:#f92672>.</span>petal_width, c<span style=color:#f92672>=</span>colormap[model<span style=color:#f92672>.</span>labels_], s<span style=color:#f92672>=</span><span style=color:#ae81ff>50</span>)
+plt<span style=color:#f92672>.</span>title(<span style=color:#e6db74>&#39;Classification Prediction&#39;</span>)
+plt<span style=color:#f92672>.</span>show()
+</code></pre></div><p><a href=https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html>詳細配置</a></p><h2 id=implement-k-means>Implement K-means</h2><p><a href=https://stanford.edu/~cpiech/cs221/handouts/kmeans.html>參考來源</a></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#75715e># Function: K Means</span>
+<span style=color:#75715e># -------------</span>
+<span style=color:#75715e># K-Means is an algorithm that takes in a dataset and a constant</span>
+<span style=color:#75715e># k and returns k centroids (which define clusters of data in the</span>
+<span style=color:#75715e># dataset which are similar to one another).</span>
+<span style=color:#f92672>import</span> numpy <span style=color:#f92672>as</span> np
+<span style=color:#f92672>import</span> matplotlib.pyplot <span style=color:#f92672>as</span> plt
+
+MAX_ITERATIONS <span style=color:#f92672>=</span> <span style=color:#ae81ff>10000</span>
+<span style=color:#75715e># Function: K Means</span>
+<span style=color:#75715e># -------------</span>
+<span style=color:#75715e># K-Means is an algorithm that takes in a dataset and a constant</span>
+<span style=color:#75715e># k and returns k centroids (which define clusters of data in the</span>
+<span style=color:#75715e># dataset which are similar to one another).</span>
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>kmeans</span>(dataSet, k):
+	
+    <span style=color:#75715e># Initialize centroids randomly</span>
+    <span style=color:#75715e># numFeatures = dataSet.getNumFeatures()</span>
+    numFeatures <span style=color:#f92672>=</span> dataSet<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
+    centroids <span style=color:#f92672>=</span> getRandomCentroids(numFeatures, k)
+    <span style=color:#75715e># Initialize book keeping vars.</span>
+    iterations <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+    oldCentroids <span style=color:#f92672>=</span> None
+    
+    <span style=color:#75715e># Run the main k-means algorithm</span>
+    <span style=color:#66d9ef>while</span> <span style=color:#f92672>not</span> shouldStop(oldCentroids, centroids, iterations):
+        <span style=color:#75715e># Save old centroids for convergence test. Book keeping.</span>
+        oldCentroids <span style=color:#f92672>=</span> centroids
+        iterations <span style=color:#f92672>+=</span> <span style=color:#ae81ff>1</span>
+        
+        <span style=color:#75715e># Assign labels to each datapoint based on centroids</span>
+        labels <span style=color:#f92672>=</span> getLabels(dataSet, centroids)
+        
+        <span style=color:#75715e># Assign centroids based on datapoint labels</span>
+        centroids <span style=color:#f92672>=</span> getCentroids(dataSet, labels, k)
+        
+    <span style=color:#75715e># We can get the labels too by calling getLabels(dataSet, centroids)</span>
+    <span style=color:#66d9ef>return</span> centroids
+<span style=color:#75715e># Function: Should Stop</span>
+<span style=color:#75715e># -------------</span>
+<span style=color:#75715e># Returns True or False if k-means is done. K-means terminates either</span>
+<span style=color:#75715e># because it has run a maximum number of iterations OR the centroids</span>
+<span style=color:#75715e># stop changing.</span>
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>shouldStop</span>(oldCentroids, centroids, iterations):
+    <span style=color:#66d9ef>if</span> iterations <span style=color:#f92672>&gt;</span> MAX_ITERATIONS: <span style=color:#66d9ef>return</span> True
+    <span style=color:#66d9ef>return</span> (oldCentroids <span style=color:#f92672>==</span> centroids)<span style=color:#f92672>.</span>any()
+<span style=color:#75715e># Function: Get Labels</span>
+<span style=color:#75715e># -------------</span>
+<span style=color:#75715e># Returns a label for each piece of data in the dataset. </span>
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>getLabels</span>(dataSet, centroids):
+    <span style=color:#75715e># For each element in the dataset, chose the closest centroid. </span>
+    <span style=color:#75715e># Make that centroid the element&#39;s label.</span>
+    label_list <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros(len(dataSet))
+    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(len(dataSet)):
+        old_distance <span style=color:#f92672>=</span> getDistance(dataSet[i], centroids[<span style=color:#ae81ff>0</span>])
+        label <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
+        <span style=color:#66d9ef>for</span> j <span style=color:#f92672>in</span> range(len(centroids)):
+            distance <span style=color:#f92672>=</span> getDistance(dataSet[i], centroids[j])
+            <span style=color:#66d9ef>if</span> old_distance <span style=color:#f92672>&gt;</span> distance:
+                label <span style=color:#f92672>=</span> j
+        label_list[i] <span style=color:#f92672>=</span> label
+    <span style=color:#66d9ef>return</span> label_list
+    
+<span style=color:#75715e># Function: Get Centroids</span>
+<span style=color:#75715e># -------------</span>
+<span style=color:#75715e># Returns k random centroids, each of dimension n.</span>
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>getCentroids</span>(dataSet, labels, k):
+    <span style=color:#75715e># Each centroid is the geometric mean of the points that</span>
+    <span style=color:#75715e># have that centroid&#39;s label. Important: If a centroid is empty (no points have</span>
+    <span style=color:#75715e># that centroid&#39;s label) you should randomly re-initialize it.</span>
+    col_num <span style=color:#f92672>=</span> dataSet<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>]
+    sum_ <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>zeros([k, col_num])
+    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(k):
+        index_k <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>where(labels <span style=color:#f92672>==</span> i)[<span style=color:#ae81ff>0</span>]
+        sum_[i] <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>sum(dataSet[index_k], axis <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>) <span style=color:#f92672>/</span>(len(index_k))
+    <span style=color:#66d9ef>return</span> sum_
+
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>getRandomCentroids</span>(numFeatures, k):
+    centroids <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>random<span style=color:#f92672>.</span>normal(<span style=color:#ae81ff>0</span>,<span style=color:#ae81ff>1</span>,(k,numFeatures))
+    <span style=color:#66d9ef>return</span> centroids
+
+<span style=color:#66d9ef>def</span> <span style=color:#a6e22e>getDistance</span>(d1, d2):
+    vec1 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(d1)
+    vec2 <span style=color:#f92672>=</span> np<span style=color:#f92672>.</span>array(d2)
+    <span style=color:#66d9ef>return</span> np<span style=color:#f92672>.</span>sqrt(np<span style=color:#f92672>.</span>sum(np<span style=color:#f92672>.</span>square(vec1<span style=color:#f92672>-</span>vec2)))
+
+<span style=color:#f92672>from</span> sklearn.datasets <span style=color:#f92672>import</span> make_blobs
+<span style=color:#66d9ef>if</span> __name__ <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;__main__&#39;</span> :
+    X_varied, y <span style=color:#f92672>=</span> make_blobs(n_samples<span style=color:#f92672>=</span><span style=color:#ae81ff>200</span>,
+                                centers<span style=color:#f92672>=</span><span style=color:#ae81ff>5</span>,
+                                n_features<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span>,
+                                <span style=color:#75715e># cluster_std=[1.0, 2.5, 0.5],</span>
+                                random_state<span style=color:#f92672>=</span><span style=color:#ae81ff>123</span>)
+    <span style=color:#66d9ef>print</span>(X_varied<span style=color:#f92672>.</span>shape)
+    k <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>
+    c <span style=color:#f92672>=</span> kmeans(X_varied, k)
+    <span style=color:#66d9ef>print</span>(c)
+    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(len(X_varied)):
+        plt<span style=color:#f92672>.</span>plot(X_varied[i, <span style=color:#ae81ff>0</span>], X_varied[i, <span style=color:#ae81ff>1</span>], marker<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;o&#39;</span>, markersize <span style=color:#f92672>=</span> <span style=color:#ae81ff>5</span>)
+    mark <span style=color:#f92672>=</span> [<span style=color:#e6db74>&#39;Dr&#39;</span>, <span style=color:#e6db74>&#39;Db&#39;</span>, <span style=color:#e6db74>&#39;Dg&#39;</span>, <span style=color:#e6db74>&#39;Dk&#39;</span>, <span style=color:#e6db74>&#39;^b&#39;</span>, <span style=color:#e6db74>&#39;+b&#39;</span>, <span style=color:#e6db74>&#39;sb&#39;</span>, <span style=color:#e6db74>&#39;db&#39;</span>, <span style=color:#e6db74>&#39;&lt;b&#39;</span>, <span style=color:#e6db74>&#39;pb&#39;</span>]
+    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> range(k):
+        plt<span style=color:#f92672>.</span>plot(c[i, <span style=color:#ae81ff>0</span>], c[i, <span style=color:#ae81ff>1</span>], mark[i], markersize <span style=color:#f92672>=</span> <span style=color:#ae81ff>12</span>)
+    plt<span style=color:#f92672>.</span>show()
+</code></pre></div><h2 id=更新日期>更新日期</h2><ul><li>2010/01/01 新增實作 k-means 部分(還會繼續修正)</li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-12-31-supervised-unsupervised/ title="supervised vs unsupervised Learning"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2020-01-02-dbscan/ title=ML-2-DBSCAN><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

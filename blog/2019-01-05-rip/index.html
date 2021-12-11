@@ -1,0 +1,182 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>RIP 與子網路切割</h1><p class=mb-1>January 5, 2019</p><p>&mdash;</p></div><div class=content><h2 id=拓樸>拓樸</h2><p><img src=https://i.imgur.com/G9RFAnG.png alt></p><h2 id=學習目標>學習目標</h2><ul><li>切割子網路</li><li>設定 RIP 協定</li><li>ping 和 traceroute 驗證</li><li>封包驗證</li></ul><h2 id=拓樸子網路分配取切割>拓樸子網路分配取切割</h2><p>定義了 <code>192.168.1.0/24</code> 是給一間學校的網段。其中 R1、R2、R3 是學校三棟大樓的核心。
+R1 假設為一年級電腦教室，在介面 <code>e5/0</code> 下給了 40 個主機給一年級使用；R2 假設為二、三年級電腦教室，在介面 <code>e5/0</code> 給了 80 個主機給二年級電腦教室使用；R3 假設為四年級電腦教室，在介面 <code>e5/0</code> 給了 20 個主機給二年級電腦教室使用。但是要如何有效切割子網路才能達到節省 IP 的目標 ? 「必須利用<code>無類別區隔路由（CIDR）</code>技巧來達到節省 IP」。</p><p>IP 為 32 bit 組成，IP 位址以 <code>Classful</code> 分類為 A、B、C、D、E 五類。是以 32 bit 以每 8 bit 一組來區隔做不同的類別，如下表。</p><table><thead><tr><th style=text-align:left>網路類別</th><th style=text-align:left>IP 位置範圍</th></tr></thead><tbody><tr><td style=text-align:left>Class A</td><td style=text-align:left>0.0.0.0 ~ 127.0.0.0</td></tr><tr><td style=text-align:left>Class B</td><td style=text-align:left>128.0.0.0 ~ 191.255.0.0</td></tr><tr><td style=text-align:left>Class C</td><td style=text-align:left>192.0.0.0 ~ 223.255.255.0</td></tr><tr><td style=text-align:left>Class D</td><td style=text-align:left>224.0.0.0 ~ 239.255.255.255</td></tr><tr><td style=text-align:left>Class E</td><td style=text-align:left>240.0.0.0 ~ 255.255.255.255</td></tr></tbody></table><p>在每個類跟類之間都有一定的 IP 可用數量，可根據需求去分配位置，而這樣的方式會造成 IP 可用數量的浪費。</p><h3 id=classless-inter-domain-routingcidr>Classless Inter-Domain Routing（CIDR）</h3><p>它跟上述 <code>Classful</code> 差異是在<strong>CIDR 可以變動子網路遮罩（netmask）</strong>。
+以拓樸 Address Space 為例 <code>192.168.1.0/24</code>，此表示代表網路位址是 <code>192.168.1.0</code>，而後面的 <code>24</code> 表示網路遮罩的二進位表示法中，最後 8 個數字為 0，若以二進位表示網路遮罩的話如下：
+<code>11111111.11111111.11111111.0000000</code> 24 個 1，將它轉換為 10 進位就變成 <code>255.255.255.0</code>。</p><h3 id=network-address-和-host-address-與-broadcast-address>Network Address 和 Host Address 與 Broadcast address</h3><p>假設有一個 IP 為 <code>192.168.1.126/24</code> 他位於 <code>192.168.1.0/24</code> 子網路內。則</p><ul><li>Network Address<ul><li>不能拿來當作主機位址</li><li>192.168.1.0 轉二進位則變 <code>11000000.10101000.00000001.00000000</code></li></ul></li><li>Host Address<ul><li>192.168.1.126</li></ul></li><li>Broadcast address<ul><li>將主機位址可分配的位元都設為 1 即可得知</li><li>不能拿來當作主機位址</li><li>192.168.1.255 轉二進位則變 <code>11000000.10101000.00000001.11111111</code></li></ul></li></ul><h3 id=子網路可使用-ip-數量>子網路可使用 IP 數量</h3><p>網路遮罩就是可以來限制一個子網路可擁有的 IP 數量。</p><h3 id=實作切割子網路>實作切割子網路</h3><p>我們先分配二年級 80 台電腦。</p><p>2x > 80，得知 x = 7 才會大於 80
+32 - 7 = 25，得知 25 為子網遮罩，所以由 <code>192.168.1.0/24</code> 切給二年級的子網路為</p><p><code>11000000.10101000.00000001.00000000</code> (原本 Address Space)</p><p><code>11111111.11111111.11111111.10000000</code> (得知的網路遮罩 25)</p><p><strong>11000000.10101000.00000001.0</strong>0000000 (遮罩為 25 前 25 位元不能動)</p><p>再利用 <code>192.168.1.0/25</code> 來分配給 80 個主機。
+因為 27 = 128，所以一個子網路只能有 128 個位址，因此分配給二年級
+<code>192.168.1.0 ~ 192.168.1.127</code> 的位址，<strong>記住 <code>Network Address</code>(192.168.1.0) 和 <code>Broadcast address</code>(即一個子網路的最後一個位址 192.168.1.127) 不能當 <code>Host address</code></strong>。</p><p>再來分配一年級 40 個主機。
+2x > 40，得知 x = 6 才會大於 40。
+32 - 6 = 26，26 則為遮罩。
+<code>11000000.10101000.00000001.00000000</code> (原本 Address Space)</p><p><code>11111111.11111111.11111111.11000000</code> (得知的網路遮罩 26)</p><p><strong>11000000.10101000.00000001.00</strong>000000 (遮罩為 25 前 25 位元不能動)
+再利用 <code>192.168.1.0/26</code> 來分配給 40 個主機。
+因為 26 = 64，所以一個子網路只能有 64 個位址，因此分配給一年級
+<code>192.168.1.0 ~ 192.168.1.63</code> 的位址，但是因為二年級分配的位址是 <code>192.168.1.0 ~ 192.168.1.127</code>，因此子網路 <code>192.168.1.0 ~ 192.168.1.63</code>、<code>192.168.1.64 ~ 192.168.1.127</code> 不能分配給一年級，要從 <code>192.168.1.128 ~ 192.168.1.191</code>。</p><p>剩下部分交給讀者自行運算了解。路由器特性也很重要喔!!</p><p><a href=https://study-ccna.com/create-subnets/>建立子網路</a></p><h3 id=設定-r1-和-pc-ip-位址與-gateway>設定 R1 和 PC IP 位址與 gateway</h3><p>R1、R2、R3 以 R1 範例做為示範，R2、R3 設定也是相似的</p><h4 id=r1>R1</h4><p>以 R1 e5/0 介面為例</p><pre><code class="language-shell=" data-lang="shell=">R1#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+R1(config)#interface ethernet 5/0
+R1(config-if)#ip address 192.168.1.129 255.255.255.192
+R1(config-if)#no shutdown
+</code></pre><p>檢察界面次是否有設定即啟動</p><pre><code class="language-shell=" data-lang="shell=">R1#show ip int brief
+Interface                  IP-Address      OK? Method Status                Prot                                          ocol
+FastEthernet0/0            unassigned      YES NVRAM  administratively down down                                          
+FastEthernet1/0            unassigned      YES NVRAM  administratively down down                                          
+FastEthernet1/1            unassigned      YES NVRAM  administratively down down                                          
+FastEthernet2/0            unassigned      YES NVRAM  administratively down down                                          
+FastEthernet2/1            unassigned      YES NVRAM  administratively down down                                          
+GigabitEthernet3/0         unassigned      YES NVRAM  administratively down down                                          
+GigabitEthernet4/0         unassigned      YES NVRAM  administratively down down                                          
+Ethernet5/0                192.168.1.129   YES NVRAM  up                    up                                            
+Ethernet5/1                unassigned      YES NVRAM  administratively down down                                          
+Ethernet5/2                unassigned      YES NVRAM  administratively down down                                          
+Ethernet5/3                unassigned      YES NVRAM  administratively down down                                          
+Serial6/0                  192.168.1.225   YES NVRAM  up                    up                                            
+Serial6/1                  192.168.1.229   YES NVRAM  up                    up                                            
+Serial6/2                  unassigned      YES NVRAM  administratively down down                                          
+Serial6/3                  unassigned      YES NVRAM  administratively down down                                          
+Serial6/4                  unassigned      YES NVRAM  administratively down down                                          
+Serial6/5                  unassigned      YES NVRAM  administratively down down                                          
+Serial6/6                  unassigned      YES NVRAM  administratively down down                                          
+Serial6/7                  unassigned      YES NVRAM  administratively down down                                          
+</code></pre><h4 id=pc-1-與-ubuntu-1-和-pythongoperlphp-1-設定>PC-1 與 ubuntu-1 和 Python,Go,Perl,PHP-1 設定</h4><p>PC-1 就是 PC，假設讀者都將所有介面的 IP 都設置完畢。</p><pre><code class="language-shell=" data-lang="shell=">PC-1&gt; ip 192.168.1.126/25 192.168.1.1
+PC-1&gt; show ip # 查看 IP 資訊
+
+NAME        : PC-1[1]
+IP/MASK     : 192.168.1.126/25
+GATEWAY     : 192.168.1.1
+DNS         :
+MAC         : 00:50:79:66:68:00
+LPORT       : 10001
+RHOST:PORT  : 127.0.0.1:10002
+MTU:        : 1500
+
+</code></pre><p>ubuntu-1 和 Python,Go,Perl,PHP-1 滑鼠點選電腦右鍵 <code>Edit Config</code> 即可編輯設定網路
+以 ubuntu-1 為範例</p><pre><code class="language-shell=" data-lang="shell=">#
+# This is a sample network config uncomment lines to configure the network
+#
+
+
+# Static config for eth0
+auto eth0
+iface eth0 inet static
+	address 192.168.1.190
+	netmask 255.255.255.192
+	gateway 192.168.1.129
+#	up echo nameserver 192.168.0.1 &gt; /etc/resolv.conf
+
+# DHCP config for eth0
+# auto eth0
+# iface eth0 inet dhcp
+</code></pre><h4 id=ping-測試>ping 測試</h4><p>當上述設定好之後，我們利用 ping 指令來測試能否到達自家的路由器。
+以 PC-1 為測試 ping R2 的 <code>e5/0</code> 介面，路由器與路由器之間也可以用 ping 來測試，但是是要直連的網路，直連的網路不須透過路由協定即可學習並寫入至<strong>路由表</strong>。</p><h5 id=直連網路>直連網路</h5><p>查看 R1 路由表，原則上沒做到路由協定設定應該只會只有直連的網路。
+C 表示直連網路，從字面上來看不必透過任何媒介即可到達目的地。PC-1 直接的連接 R2 <code>e5/0</code> 介面，但兩個介面應該要是 up 的。
+路由器能夠路由所有發往直接連接到其 up 的介面的子網中所有主機的封包。</p><pre><code class="language-shell=" data-lang="shell=">R1#show ip route
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       + - replicated route, % - next hop override
+
+Gateway of last resort is not set
+
+      192.168.1.0/24 is variably subnetted, 8 subnets, 5 masks
+R        192.168.1.0/25 [120/1] via 192.168.1.226, 00:00:14, Serial6/0
+C        192.168.1.128/26 is directly connected, Ethernet5/0
+L        192.168.1.129/32 is directly connected, Ethernet5/0
+R        192.168.1.192/27 [120/1] via 192.168.1.230, 00:00:19, Serial6/1
+C        192.168.1.224/30 is directly connected, Serial6/0
+L        192.168.1.225/32 is directly connected, Serial6/0
+C        192.168.1.228/30 is directly connected, Serial6/1
+L        192.168.1.229/32 is directly connected, Serial6/1
+
+</code></pre><h5 id=pc-1>PC-1</h5><p>因為是直連網路所以要能通，如果出現錯誤，請檢察兩邊介面的 IP 或閘道和介面有無啟動。</p><pre><code class="language-shell=" data-lang="shell=">PC-1&gt; ping 192.168.1.1
+84 bytes from 192.168.1.1 icmp_seq=1 ttl=255 time=3.930 ms
+84 bytes from 192.168.1.1 icmp_seq=2 ttl=255 time=8.928 ms
+84 bytes from 192.168.1.1 icmp_seq=3 ttl=255 time=17.355 ms
+</code></pre><h5 id=r3>R3</h5><p>! 表示有通，. 表示沒通。</p><pre><code class="language-shell=" data-lang="shell=">R3#ping 192.168.1.229
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.1.229, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 16/31/52 ms
+</code></pre><blockquote><p>ping 可以用 ICMP 方式來診斷網路通訊的問題。</p></blockquote><h2 id=rip>RIP</h2><p>上面步驟如果都成功理論上，PC-1 想取得 ubuntu 資訊是不可能的。因為我們沒設定路由協定，讓路由學習路線資訊。因此，我們在這邊使用 <code>RIPv2</code> 路由協定來實現。</p><p>RIP 是採用 <code>Distance Vector</code> 演算法，利用 <code>Hops</code> 決定路徑，會在鄰近的路由設備間將路徑資料分享。</p><blockquote><p>RIP 的協定是 UDP 用 520 Port</p></blockquote><h3 id=rip-特性>RIP 特性</h3><ol><li>使用 <code>Distance Vector</code> 演算法</li><li>根據網路路徑所必須經過的設備數目決定最佳路徑</li><li>一條網路路徑最多經過 15 個路由設備</li><li>預設每 30 秒互相傳遞路由資訊做更新</li><li>支援 Load blance 功能，預設四條路徑，至多六條</li></ol><h3 id=ripv1-與-ripv2-差異>RIPv1 與 RIPv2 差異</h3><table><thead><tr><th style=text-align:left>差異</th><th style=text-align:left>RIPv1</th><th style=text-align:left>RIPv1</th></tr></thead><tbody><tr><td style=text-align:left>路由類型</td><td style=text-align:left>Classful</td><td style=text-align:left>Classless</td></tr><tr><td style=text-align:left>可變化長度子網路遮罩</td><td style=text-align:left>否</td><td style=text-align:left>是</td></tr><tr><td style=text-align:left>手動路由匯總</td><td style=text-align:left>否</td><td style=text-align:left>是</td></tr><tr><td style=text-align:left>認證</td><td style=text-align:left>否</td><td style=text-align:left>是</td></tr><tr><td style=text-align:left>傳送路由資訊</td><td style=text-align:left>Broadcast</td><td style=text-align:left>Multicast</td></tr></tbody></table><h3 id=路由設定>路由設定</h3><p>使用 R1 做設定，R2、R3 也是類似的設定</p><h4 id=選擇使用的路由協定>選擇使用的路由協定</h4><pre><code class="language-shell=" data-lang="shell=">R1(config)#router rip
+R1(config-router)#version 2
+</code></pre><h4 id=設定網路>設定網路</h4><pre><code class="language-shell=" data-lang="shell=">R1(config-router)#network 192.168.1.129
+R1(config-router)#network 192.168.1.225
+R1(config-router)#network 192.168.1.229
+R1(config-router)#no auto-summary
+</code></pre><p>做完之後 R2、R3 也可以進行設定了。</p><h4 id=檢視-rip-路由協定設定值>檢視 RIP 路由協定設定值</h4><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show ip protocols
+*** IP Routing is NSF aware ***
+
+Routing Protocol is <span style=color:#e6db74>&#34;rip&#34;</span>
+  Outgoing update filter list <span style=color:#66d9ef>for</span> all interfaces is not set
+  Incoming update filter list <span style=color:#66d9ef>for</span> all interfaces is not set
+  Sending updates every <span style=color:#ae81ff>30</span> seconds, next due in <span style=color:#ae81ff>26</span> seconds
+  Invalid after <span style=color:#ae81ff>180</span> seconds, hold down 180, flushed after <span style=color:#ae81ff>240</span>
+  Redistributing: rip
+  Default version control: send version 2, receive version <span style=color:#ae81ff>2</span>
+    Interface             Send  Recv  Triggered RIP  Key-chain
+    Ethernet5/0           <span style=color:#ae81ff>2</span>     <span style=color:#ae81ff>2</span>
+    Serial6/0             <span style=color:#ae81ff>2</span>     <span style=color:#ae81ff>2</span>
+    Serial6/1             <span style=color:#ae81ff>2</span>     <span style=color:#ae81ff>2</span>
+  Automatic network summarization is not in effect
+  Maximum path: <span style=color:#ae81ff>4</span>
+  Routing <span style=color:#66d9ef>for</span> Networks:
+    192.168.1.0
+  Routing Information Sources:
+    Gateway         Distance      Last Update
+    192.168.1.226        <span style=color:#ae81ff>120</span>      00:00:15
+    192.168.1.230        <span style=color:#ae81ff>120</span>      00:00:25
+  Distance: <span style=color:#f92672>(</span>default is 120<span style=color:#f92672>)</span>
+
+
+</code></pre></div><p><code>Sending updates every 30 seconds</code> 每 30 秒更新。
+<code>Invalid after 180 seconds, hold down 180, flushed after 240</code>，假設 R1 180 秒內沒收到其他路由器傳的路由更新資訊，R1 會將此路由路徑標記為 <code>Possibly Down</code>。</p><p><code>hold down 180</code>，當 R1 發現有 <code>Possibly Down</code> 的路由資訊時，會立即啟動 <code>Hold-Down Timer</code>，如果經 180 秒後，都沒收到那筆路由資訊更新時，R1 會將此路由資訊視同無法到達。</p><p><code>flushed after 240</code>，若經過 240 秒後沒再收到任意的路由資訊更新，則 R1 會把此筆路由資料從 Routing Table 中移除。</p><p><code>Routing for Networks</code>，表示 R1 正在處裡的網段。</p><p><code>Routing Information Sources</code>，代表這些 IP 會傳送路由資訊給 R1 這台路由器。</p><h4 id=查看路由表>查看路由表</h4><p>此時應該會多出現 <code>R</code> Codes。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show ip route
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type <span style=color:#ae81ff>2</span>
+       E1 - OSPF external type 1, E2 - OSPF external type <span style=color:#ae81ff>2</span>
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       + - replicated route, % - next hop override
+
+Gateway of last resort is not set
+
+      192.168.1.0/24 is variably subnetted, <span style=color:#ae81ff>8</span> subnets, <span style=color:#ae81ff>5</span> masks
+R        192.168.1.0/25 <span style=color:#f92672>[</span>120/1<span style=color:#f92672>]</span> via 192.168.1.226, 00:00:29, Serial6/0
+C        192.168.1.128/26 is directly connected, Ethernet5/0
+L        192.168.1.129/32 is directly connected, Ethernet5/0
+R        192.168.1.192/27 <span style=color:#f92672>[</span>120/1<span style=color:#f92672>]</span> via 192.168.1.230, 00:00:27, Serial6/1
+C        192.168.1.224/30 is directly connected, Serial6/0
+L        192.168.1.225/32 is directly connected, Serial6/0
+C        192.168.1.228/30 is directly connected, Serial6/1
+L        192.168.1.229/32 is directly connected, Serial6/1
+
+</code></pre></div><p>以 <code>R 192.168.1.0/25 [120/1] via 192.168.1.226, 00:00:29, Serial6/0</code> 作為解讀範例。
+從 Serial6/0 介面出去，經由 192.168.1.226(下一台路由器介面 IP 位址) 可以抵達 192.168.1.0/25 子網路。<code>[120/1]</code>，120 表 RIP 路由協定 AD 值，1 表 Hops，需要經過一個路由器才能到 192.168.1.0/25 子網路。</p><h3 id=traceroute-查看>traceroute 查看</h3><p>ubuntu-1 traceroute Python,Go,Perl,PHP-1
+觀察他經過的節點，他經過 2 hops。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>root@Ubuntu-1:~# traceroute 192.168.1.222
+traceroute to 192.168.1.222 <span style=color:#f92672>(</span>192.168.1.222<span style=color:#f92672>)</span>, <span style=color:#ae81ff>30</span> hops max, <span style=color:#ae81ff>60</span> byte packets
+ <span style=color:#ae81ff>1</span>  192.168.1.129 <span style=color:#f92672>(</span>192.168.1.129<span style=color:#f92672>)</span>  7.106 ms  8.197 ms  8.512 ms
+ <span style=color:#ae81ff>2</span>  192.168.1.230 <span style=color:#f92672>(</span>192.168.1.230<span style=color:#f92672>)</span>  27.850 ms  28.273 ms  28.259 ms
+ <span style=color:#ae81ff>3</span>  192.168.1.222 <span style=color:#f92672>(</span>192.168.1.222<span style=color:#f92672>)</span>  37.986 ms  38.207 ms  38.246 ms
+</code></pre></div><h2 id=使用-wireshark-觀察>使用 wireshark 觀察</h2><h3 id=ubuntu-1-ping-pythongoperlphp-1>ubuntu-1 ping Python,Go,Perl,PHP-1</h3><p>wireshark 監控 e7(ethernwtswitch-3) 與 eth0(Python,Go,Perl,PHP-1 ) 之間介面</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>root@Ubuntu-1:~# ping 192.168.1.222
+PING 192.168.1.222 <span style=color:#f92672>(</span>192.168.1.222<span style=color:#f92672>)</span> 56<span style=color:#f92672>(</span>84<span style=color:#f92672>)</span> bytes of data.
+<span style=color:#ae81ff>64</span> bytes from 192.168.1.222: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>42.3 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.1.222: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>38.3 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.1.222: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>24.4 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.1.222: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>4</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>28.7 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.1.222: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>5</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>24.4 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.1.222: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>6</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>29.3 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.1.222: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>7</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>62</span> time<span style=color:#f92672>=</span>22.4 ms
+^C
+--- 192.168.1.222 ping statistics ---
+<span style=color:#ae81ff>7</span> packets transmitted, <span style=color:#ae81ff>7</span> received, 0% packet loss, time 6005ms
+rtt min/avg/max/mdev <span style=color:#f92672>=</span> 22.416/30.037/42.391/7.015 ms
+root@Ubuntu-1:~#
+
+</code></pre></div><h3 id=wireshark>wireshark</h3><p>抓到封包的資訊如下</p><p><img src=https://i.imgur.com/ULJtoR9.png alt></p><p>這是使用 ping 的封包</p><p><img src=https://i.imgur.com/P6rcBk3.png alt></p><p>查看第 40 個封包，觀察來源和目的的 MAC 位址。</p><p><img src=https://i.imgur.com/jn1S3yo.png alt></p><p>從 RIPv2 協定查看內容，可以發現以 520 UDP 傳送資訊。</p><p><img src=https://i.imgur.com/znzGMjC.png alt></p><h2 id=參考>參考</h2><p><a href=https://zh.wikipedia.org/wiki/IP%E5%9C%B0%E5%9D%80>wiki</a></p><p><a href=https://zh.wikipedia.org/wiki/%E5%88%86%E7%B1%BB%E7%BD%91%E7%BB%9C>wiki2</a></p><p><a href="https://www.netadmin.com.tw/article_content.aspx?sn=1511090002&jump=1">netadmin</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2018-12-22-xss/ title=XSS><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-01-22-acl/ title=ACL><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

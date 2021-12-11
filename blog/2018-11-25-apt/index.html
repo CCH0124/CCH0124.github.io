@@ -1,0 +1,107 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>apt 使用</h1><p class=mb-1>November 25, 2018</p><p>&mdash;</p></div><div class=content><h1 id=apt>apt</h1><p>apt 是 Debian 和 Ubuntu 系統中的核心工具。可以使用 apt 指令安裝或刪除應用程式。</p><h2 id=應用>應用</h2><p>因為我在學校有負責管理 bit 系統，因為當時交接給我的人得知的資訊很少，當時也想了解系統上所安裝的應用程式和依賴的應用程式，因此對 <code>apt</code> 指令的應用做了一個筆記。
+交接時文件很重要，這會讓下一個交接者加速了解環境。</p><h3 id=取得更新update>取得更新（update）</h3><pre><code class="language-shell=" data-lang="shell=">$ sudo apt update
+Hit:1 http://us.archive.ubuntu.com/ubuntu xenial InRelease
+Hit:2 https://download.docker.com/linux/ubuntu xenial InRelease
+Get:3 http://us.archive.ubuntu.com/ubuntu xenial-updates InRelease [109 kB]
+Get:4 http://us.archive.ubuntu.com/ubuntu xenial-backports InRelease [107 kB]
+Get:5 http://security.ubuntu.com/ubuntu xenial-security InRelease [109 kB]
+Fetched 325 kB in 4s (66.5 kB/s)
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+163 packages can be upgraded. Run 'apt list --upgradable' to see them.
+</code></pre><h3 id=安全更新upgrade>安全更新（upgrade）</h3><p>升級系統上當前安裝的所有應用程式</p><pre><code class="language-shell=" data-lang="shell=">$ sudo apt upgrade -y
+</code></pre><h3 id=查看可在系統上升級的應用程式upgradable>查看可在系統上升級的應用程式（upgradable）</h3><pre><code class="language-shell=" data-lang="shell=">$ apt list --upgradable
+</code></pre><h3 id=完整的系統升級full-upgrade>完整的系統升級（full-upgrade）</h3><p>如：ubuntu 16.04 安裝至 ubuntu 16.04.1
+升級過程中會移除當前的應用程式。</p><pre><code class="language-shell=" data-lang="shell=">$ sudo apt full-upgrade -y
+</code></pre><blockquote><p>在這過程中，也不能安裝應用程式</p></blockquote><h3 id=安裝軟體包install>安裝軟體包（install）</h3><pre><code class="language-shell=" data-lang="shell=">$ sudo apt install [nginx] -y
+</code></pre><h3 id=刪除軟體包remove>刪除軟體包（remove）</h3><p>除了系統上的配置檔案外，將刪除所有檔案。</p><pre><code class="language-shell=" data-lang="shell=">$ sudo apt remove [nginx] -y
+$ tree /var/www/
+/var/www/
+└── html
+    └── index.nginx-debian.html
+
+1 directory, 1 file
+$ tree /etc/nginx/
+/etc/nginx/
+├── conf.d
+├── fastcgi.conf
+├── fastcgi_params
+├── koi-utf
+├── koi-win
+├── mime.types
+├── nginx.conf
+├── proxy_params
+├── scgi_params
+├── sites-available
+│   └── default
+├── sites-enabled
+│   └── default -&gt; /etc/nginx/sites-available/default
+├── snippets
+│   ├── fastcgi-php.conf
+│   └── snakeoil.conf
+├── uwsgi_params
+└── win-utf
+
+4 directories, 14 files
+
+</code></pre><h3 id=刪除應用程式和配置文件purge>刪除應用程式和配置文件（purge）</h3><p>刪除應用程式會刪除所有應用程式的數據，但通常會留下修改的用戶配置檔案。
+誤刪的話，將刪除的應用程式安裝回來即可。</p><pre><code class="language-shell=" data-lang="shell=">$ sudo apt purge [nginx*]  -y
+...
+Purging configuration files for nginx-common (1.10.3-0ubuntu0.16.04.3) ...
+dpkg: warning: while removing nginx-common, directory '/var/www/html' not empty so not removed
+...
+</code></pre><h4 id=autoremove>AUTOREMOVE</h4><p>用於刪除自動安裝的應用程式以滿足其他應用程式的依賴關係，現在不再需要這些應用程式，因為依賴關係已更改或者同時刪除了需要它們的應用程式。</p><pre><code class="language-shell=" data-lang="shell=">$ sudo apt autoremove [nginx*] -y
+</code></pre><h3 id=搜尋軟體search>搜尋軟體（search）</h3><pre><code class="language-shell=" data-lang="shell=">$ sudo apt search [mariadb*]
+</code></pre><h3 id=查找關於軟體的訊息show>查找關於軟體的訊息（show）</h3><pre><code class="language-shell=" data-lang="shell=">$ apt show [apache2]
+Package: apache2
+Version: 2.4.18-2ubuntu3.9
+Priority: optional
+Section: web
+Origin: Ubuntu
+Maintainer: Ubuntu Developers &lt;ubuntu-devel-discuss@lists.ubuntu.com&gt;
+Original-Maintainer: Debian Apache Maintainers &lt;debian-apache@lists.debian.org&gt;
+Bugs: https://bugs.launchpad.net/ubuntu/+filebug
+Installed-Size: 502 kB
+Provides: httpd, httpd-cgi
+Pre-Depends: dpkg (&gt;= 1.17.14)
+Depends: lsb-base, procps, perl, mime-support, apache2-bin (= 2.4.18-2ubuntu3.9), apache2-utils (&gt;= 2.4), apache2-data (= 2.4.18-2ubuntu3.9)
+Recommends: ssl-cert
+Suggests: www-browser, apache2-doc, apache2-suexec-pristine | apache2-suexec-custom, ufw
+Conflicts: apache2.2-bin, apache2.2-common
+Replaces: apache2.2-bin, apache2.2-common
+Homepage: http://httpd.apache.org/
+Task: lamp-server, mythbuntu-frontend, mythbuntu-desktop, mythbuntu-backend-slave, mythbuntu-backend-master, mythbuntu-backend-master
+Supported: 5y
+Download-Size: 86.6 kB
+APT-Sources: http://us.archive.ubuntu.com/ubuntu xenial-updates/main amd64 Packages
+Description: Apache HTTP Server
+ The Apache HTTP Server Project's goal is to build a secure, efficient and
+ extensible HTTP server as standards-compliant open source software. The
+ result has long been the number one web server on the Internet.
+ .
+ Installing this package results in a full installation, including the
+ configuration files, init scripts and support scripts.
+
+N: There are 2 additional records. Please use the '-a' switch to see them.
+
+</code></pre><h2 id=列出應用程式list>列出應用程式（list）</h2><p>通常會配合 <code>grep</code> 並找自己想要的資訊</p><pre><code class="language-shell=" data-lang="shell=">$ apt list | grep php7
+</code></pre><h2 id=列出所有安裝的應用程式installed>列出所有安裝的應用程式（installed）</h2><p>可以配合 <code>grep</code> 看是否有安裝過軟體</p><pre><code class="language-shell=" data-lang="shell=">$ apt list --installed | grep nginx
+</code></pre><h2 id=列出應用程式依賴的應用程式depends>列出應用程式依賴的應用程式（depends）</h2><pre><code class="language-shell=" data-lang="shell=">$ apt depends [nginx]
+nginx
+ |Depends: nginx-core (&gt;= 1.10.3-0ubuntu0.16.04.3)
+ |Depends: nginx-full (&gt;= 1.10.3-0ubuntu0.16.04.3)
+ |Depends: nginx-light (&gt;= 1.10.3-0ubuntu0.16.04.3)
+  Depends: nginx-extras (&gt;= 1.10.3-0ubuntu0.16.04.3)
+ |Depends: nginx-core (&lt;&lt; 1.10.3-0ubuntu0.16.04.3.1~)
+ |Depends: nginx-full (&lt;&lt; 1.10.3-0ubuntu0.16.04.3.1~)
+ |Depends: nginx-light (&lt;&lt; 1.10.3-0ubuntu0.16.04.3.1~)
+  Depends: nginx-extras (&lt;&lt; 1.10.3-0ubuntu0.16.04.3.1~)
+
+</code></pre><h2 id=禁止應用程式升級hold>禁止應用程式升級（hold）</h2><p>表示禁止升級除非取消（unhold）</p><pre><code class="language-shell=" data-lang="shell=">$ apt hold [nginx] // 禁止
+$ apt unhold [nginx] // 取消
+</code></pre><h2 id=ubuntu-16-前後的指令差異>ubuntu 16 前後的指令差異</h2><p>apt ubuntu16 之後；apt-get ubuntu16 之前。差異其實不會很大&mldr;</p><table><thead><tr><th>apt</th><th>apt-get</th></tr></thead><tbody><tr><td>apt install</td><td>apt-get install</td></tr><tr><td>apt remove</td><td>apt-get remove</td></tr><tr><td>apt purge</td><td>apt-get purge</td></tr><tr><td>apt search</td><td>apt-cache search</td></tr><tr><td>apt show</td><td>apt-cache show</td></tr></tbody></table></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2018-11-23-new-web/ title=新增網站><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2018-12-10-forget-password/ title=前人沒留下資料，需要通靈><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

@@ -1,0 +1,124 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>負載均衡</h1><p class=mb-1>April 6, 2019</p><p>&mdash;</p></div><div class=content><h2 id=hsrp-introduction>HSRP Introduction</h2><p><code>HSRP</code> 是提供 <code>first-hop</code> 來提供高網路可用性的標準方法。它使一組路由器接口能夠協同工作，向 LAN 上的主機呈現單個<code>虛擬路由</code>或 <code>default gateway</code> 的方法。在網路的多個路由器上配置 <code>HSRP</code> 時，它會提供虛擬媒體訪問控制（MAC,virtual Media Access Control）位址和一組已配置的路由器之間共享的 IP 地址。</p><p>當其中一個路由器被選擇為 <code>active</code> 路由器，另一個路由器作為 <code>standby</code> 路由器。在一組設有 <code>HSRP</code> 路由器接口中，<code>active</code> 路由器是路由封包的首選路由器；<code>standby</code> 路由器是在 <code>active</code> 路由器出現故障或滿足預設條件時接管路由任務的路由器。</p><blockquote><p>HSRP 支持的任何路由器接口</p></blockquote><h2 id=implement-hsrp-topology>Implement HSRP Topology</h2><p><img src=https://i.imgur.com/ViISv6c.png alt></p><p>這邊 Cloud1 是透過虛擬機網路卡取得 IP，這邊不詳述。</p><h3 id=目標>目標</h3><ol><li>配置 EIGRP</li><li>設定 HSRP</li><li>測試</li></ol><h3 id=eigrp-configuration>EIGRP Configuration</h3><p>我將 R1、R2、R3、R4 配置 EIGRP 協定並將 AS 設定為 100。
+這邊用 R1、R2 做範例，其中會在 EIGRP 中加入預設路由。</p><h5 id=r1>R1</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>router eigrp <span style=color:#ae81ff>100</span>
+ network 172.16.1.0 0.0.0.3
+ redistribute static metric <span style=color:#ae81ff>100000</span> <span style=color:#ae81ff>1000</span> <span style=color:#ae81ff>255</span> <span style=color:#ae81ff>1</span> <span style=color:#ae81ff>1500</span>
+</code></pre></div><h5 id=r2>R2</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>router eigrp <span style=color:#ae81ff>100</span>
+ network 10.0.1.0 0.0.0.3
+ network 10.0.3.0 0.0.0.3
+ network 192.168.10.0
+ passive-interface FastEthernet0/0（終端設備介面無須參與路由表的更新）
+</code></pre></div><h5 id=eigrp-default-route-set>EIGRP Default Route Set</h5><p>配置默認路由讓 EIGRP 自動學習，這樣不用透過手動建立多個靜態路由。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e># ip route 0.0.0.0 0.0.0.0 fa 0/0</span>
+<span style=color:#f92672>(</span>config-router<span style=color:#f92672>)</span><span style=color:#75715e># redistribute static metric 100000 1000 255 1 1500</span>
+</code></pre></div><p>路由表如下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do sh ip route</span>
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type <span style=color:#ae81ff>2</span>
+       E1 - OSPF external type 1, E2 - OSPF external type <span style=color:#ae81ff>2</span>
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       + - replicated route, % - next hop override
+
+Gateway of last resort is 10.0.1.2 to network 0.0.0.0
+
+D*EX  0.0.0.0/0 <span style=color:#f92672>[</span>170/2937856<span style=color:#f92672>]</span> via 10.0.1.2, 00:09:37, Serial6/7
+      10.0.0.0/8 is variably subnetted, <span style=color:#ae81ff>5</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        10.0.1.0/30 is directly connected, Serial6/7
+L        10.0.1.1/32 is directly connected, Serial6/7
+D        10.0.2.0/30 <span style=color:#f92672>[</span>90/2681856<span style=color:#f92672>]</span> via 10.0.3.1, 00:09:40, Serial6/5
+                     <span style=color:#f92672>[</span>90/2681856<span style=color:#f92672>]</span> via 10.0.1.2, 00:09:40, Serial6/7
+C        10.0.3.0/30 is directly connected, Serial6/5
+L        10.0.3.2/32 is directly connected, Serial6/5
+      172.16.0.0/30 is subnetted, <span style=color:#ae81ff>1</span> subnets
+D        172.16.1.0 <span style=color:#f92672>[</span>90/2681856<span style=color:#f92672>]</span> via 10.0.1.2, 00:09:40, Serial6/7
+      192.168.10.0/24 is variably subnetted, <span style=color:#ae81ff>2</span> subnets, <span style=color:#ae81ff>2</span> masks
+C        192.168.10.0/24 is directly connected, FastEthernet0/0
+L        192.168.10.254/32 is directly connected, FastEthernet0/0
+
+</code></pre></div><h3 id=hsrp-configuration>HSRP Configuration</h3><p>將 <code>HSRP</code> 配置到 R2、R3</p><h5 id=r2-1>R2</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>interface FastEthernet0/0
+ ip address 192.168.10.254 255.255.255.0
+ standby <span style=color:#ae81ff>1</span> ip 192.168.10.250（定義 interface Group 為 <span style=color:#ae81ff>1</span> 的虛擬 IP address）
+ standby <span style=color:#ae81ff>1</span> priority 120（定義路由器的優先級，默認值為 100）
+ standby <span style=color:#ae81ff>1</span> preempt（強制最高優先級路由器成為 Active 路由器，而不是當前 Active 路由器）
+ standby <span style=color:#ae81ff>1</span> track <span style=color:#ae81ff>10</span> decrement <span style=color:#ae81ff>30</span>
+ duplex half
+</code></pre></div><p>其中 <code>track</code> 是用來當斷線時會將 <code>priority</code> -30，假設 <code>R2</code> 的 <code>priority 120</code>，<code>R3</code> 為預設 <code>100</code>，當 <code>R2</code> 該 Group 的介面 down 時，會將 <code>priority</code> -30，在與 <code>R3</code> 的 <code>preempt</code> 做對應，當 <code>R2</code> <code>priority</code> 低於 <code>R3</code> 時則觸發成為 <code>Activity</code>。</p><p><a href=https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst3560/software/release/12-2_52_se/configuration/guide/3560scg/swhsrp.html#18736>HSRP 預設配置</a></p><p>設定完之後，路由器會顯示此訊息</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R2<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#</span>
+*Apr <span style=color:#ae81ff>19</span> 13:32:06.091: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp <span style=color:#ae81ff>1</span> state Standby -&gt; Active
+</code></pre></div><p>查看 R2 <code>HSRP</code> 狀態</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R2#show standby
+FastEthernet0/0 - Group <span style=color:#ae81ff>1</span>
+  State is Active <span style=color:#f92672>(</span>目前的角色<span style=color:#f92672>)</span>
+    <span style=color:#ae81ff>2</span> state changes, last state change 00:11:51
+  Virtual IP address is 192.168.10.250
+  Active virtual MAC address is 0000.0c07.ac01
+    Local virtual MAC address is 0000.0c07.ac01 <span style=color:#f92672>(</span>v1 default<span style=color:#f92672>)</span>
+  Hello time <span style=color:#ae81ff>3</span> sec, hold time <span style=color:#ae81ff>10</span> sec
+    Next hello sent in 0.640 secs
+  Preemption enabled
+  Active router is local
+  Standby router is 192.168.10.253, priority <span style=color:#ae81ff>100</span> <span style=color:#f92672>(</span>expires in 9.616 sec<span style=color:#f92672>)</span>
+  Priority <span style=color:#ae81ff>120</span> <span style=color:#f92672>(</span>configured 120<span style=color:#f92672>)</span>
+    Track object <span style=color:#ae81ff>10</span> <span style=color:#f92672>(</span>unknown<span style=color:#f92672>)</span>
+  Group name is <span style=color:#e6db74>&#34;hsrp-Fa0/0-1&#34;</span> <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span>
+</code></pre></div><ul><li>State is Active<ul><li>目前的角色</li></ul></li><li>virtual MAC address<ul><li>自行產生，可更改</li></ul></li><li>Hello time 3 sec， hold time 10 sec<ul><li>預設秒數<ul><li>Router 預設每 3 秒會對 Group 裡面的介面做請求，如果 <code>Standby</code> 介面過了 <code>Hold Time</code> 也無法收到 <code>Active</code> 介面的請求，則判斷對方掛掉，會將自己升格為 <code>Active</code>。</li></ul></li><li>可以更改預設值</li></ul></li></ul><h5 id=r3>R3</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>interface FastEthernet0/0
+ ip address 192.168.10.253 255.255.255.0
+ standby <span style=color:#ae81ff>1</span> ip 192.168.10.250
+ standby <span style=color:#ae81ff>1</span> preempt
+ duplex half
+
+</code></pre></div><p>查看 R3 <code>HSRP</code> 狀態</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R3#show standby
+FastEthernet0/0 - Group <span style=color:#ae81ff>1</span>
+  State is Standby
+    <span style=color:#ae81ff>1</span> state change, last state change 00:14:27
+  Virtual IP address is 192.168.10.250
+  Active virtual MAC address is 0000.0c07.ac01
+    Local virtual MAC address is 0000.0c07.ac01 <span style=color:#f92672>(</span>v1 default<span style=color:#f92672>)</span>
+  Hello time <span style=color:#ae81ff>3</span> sec, hold time <span style=color:#ae81ff>10</span> sec
+    Next hello sent in 1.344 secs
+  Preemption enabled
+  Active router is 192.168.10.254, priority <span style=color:#ae81ff>120</span> <span style=color:#f92672>(</span>expires in 9.984 sec<span style=color:#f92672>)</span>
+  Standby router is local
+  Priority <span style=color:#ae81ff>100</span> <span style=color:#f92672>(</span>default 100<span style=color:#f92672>)</span>
+  Group name is <span style=color:#e6db74>&#34;hsrp-Fa0/0-1&#34;</span> <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span>
+</code></pre></div><blockquote><p>充當虛擬路由器的所有路由器必須位於同一 LAN 網段中。</p></blockquote><h3 id=test>Test</h3><p>我們試著將 <code>R2</code> <code>F0/0</code> 介面 down 掉，並觀察 <code>R2</code> 與 <code>PC-1</code>。</p><p>未 Down
+<code>PC-1</code> 反應</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>PC-1&gt; trace 8.8.8.8
+trace to 8.8.8.8, <span style=color:#ae81ff>8</span> hops max, press Ctrl+C to stop
+ <span style=color:#ae81ff>1</span>   192.168.10.254   837.738 ms  9.916 ms  8.508 ms
+ <span style=color:#ae81ff>2</span>   10.0.1.2   825.340 ms  *  24.800 ms
+ <span style=color:#ae81ff>3</span>   172.16.1.2   58.527 ms  33.503 ms  61.034 ms
+ <span style=color:#ae81ff>4</span>   192.168.137.2   110.609 ms  58.531 ms  65.922 ms
+ <span style=color:#ae81ff>5</span>     *  *  *
+ <span style=color:#ae81ff>6</span>     *  *  *
+ <span style=color:#ae81ff>7</span>
+</code></pre></div><p>用 stanby 指令來觀察</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e>#do show stan brief</span>
+                     P indicates configured to preempt.
+                     |
+Interface   Grp  Pri P State   Active          Standby         Virtual IP
+Fa0/0       <span style=color:#ae81ff>1</span>    <span style=color:#ae81ff>120</span> P Active  local           192.168.10.253  192.168.10.250
+
+</code></pre></div><p><code>Down</code> 掉 <code>F0/0</code> 介面
+<code>R2</code> 反應</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R2<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#shutdown</span>
+R2<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#</span>
+*Apr <span style=color:#ae81ff>19</span> 14:17:25.171: %TRACKING-5-STATE: <span style=color:#ae81ff>1</span> interface Fa0/0 line-protocol Up-&gt;Down
+*Apr <span style=color:#ae81ff>19</span> 14:17:25.179: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp <span style=color:#ae81ff>1</span> state Active -&gt; Init
+R2<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#</span>
+*Apr <span style=color:#ae81ff>19</span> 14:17:27.163: %LINK-5-CHANGED: Interface FastEthernet0/0, changed state to administratively down
+*Apr <span style=color:#ae81ff>19</span> 14:17:28.163: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to down
+</code></pre></div><p><code>R3</code> 反應</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R3#
+*Apr <span style=color:#ae81ff>19</span> 14:17:25.423: %HSRP-5-STATECHANGE: FastEthernet0/0 Grp <span style=color:#ae81ff>1</span> state Standby -&gt; Active
+</code></pre></div><p><code>PC-1</code> 反應</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>PC-1&gt; trace 8.8.8.8
+trace to 8.8.8.8, <span style=color:#ae81ff>8</span> hops max, press Ctrl+C to stop
+ <span style=color:#ae81ff>1</span>   192.168.10.253   30.256 ms  14.370 ms  14.348 ms（倒到從 <span style=color:#e6db74>`</span>R3<span style=color:#e6db74>`</span> 路由器）
+ <span style=color:#ae81ff>2</span>   10.0.2.1   29.760 ms  29.760 ms  29.847 ms
+ <span style=color:#ae81ff>3</span>   172.16.1.2   50.592 ms  52.080 ms  50.096 ms
+ <span style=color:#ae81ff>4</span>   192.168.137.2   62.000 ms  62.000 ms  61.007 ms
+ <span style=color:#ae81ff>5</span>     *  *  *
+ <span style=color:#ae81ff>6</span>     *  *
+</code></pre></div><p>那如果將 <code>R2</code> 的 <code>F0/0</code> 重新 UP 起來呢 ? 換誰當 <code>Activite</code> ?
+.
+.
+.
+為 <code>R2</code></p><h3 id=wireshark-observes-hsrp-packets>Wireshark observes HSRP packets</h3><p><img src=https://i.imgur.com/UGMJu5k.png alt></p><ul><li><code>HSRP</code> 是使用 <code>UDP</code> 傳輸，port 為 <code>1985</code></li><li><code>HSRP</code> 用 <code>224.0.0.2</code> 做群播，並定期發送 <code>Hello</code> 發包至 <code>HSRP</code> Group 中</li><li>當 Router 的 <code>HSRP</code> 為 <code>Activity</code>，來源 <code>MAC</code> 是來自虛擬 IP 的，<code>MAC</code> 值為 <code>00:00:0c:07:ac:01</code>，當創建 <code>HSRP</code> 時 <code>MAC</code> 會以 <code>00:00:0c:07:ac:</code> 加上 Group 值作為 <code>MAC</code></li></ul><h2 id=ref>Ref</h2><p><a href=https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst3560/software/release/12-2_52_se/configuration/guide/3560scg/swhsrp.html#31881>cisco-HSRP</a></p><p><a href=https://www.cisco.com/c/en/us/support/docs/ip/enhanced-interior-gateway-routing-protocol-eigrp/200279-Configure-Default-route-in-EIGRP.html>cisco-Default-Route</a></p><p><a href=https://en.wikipedia.org/wiki/Virtual_Router_Redundancy_Protocol>Virtual Router Redundancy Protocol</a></p><p><a href=https://www.jannet.hk/zh-Hant/post/first-hop-redundancy-protocol-fhrp/>Jan-Ho</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-02-23-rai-dirver/ title=掛載雲端硬碟至本機><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-05-21-throughput/ title=throughout><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

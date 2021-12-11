@@ -1,0 +1,181 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>router-on-a-stick</h1><p class=mb-1>January 5, 2020</p><p>&mdash;</p></div><div class=content><h2 id=環境>環境</h2><figure><img src=/images/GNS3/router-on-a-stick.png width=auto height=auto></figure><p>這邊配置一台 L3 交換器、路由器、VM 和 PC。這一次實驗主要是實現單臂路由(router-on-a-stick)，單臂路由簡單來說是用來實現不同 VLAN 間的通訊，其接口需配置 <code>trunk</code> 協定，在藉由一個接口建立每個 <code>VLAN</code> 的網路 <code>gateway</code>。當 <code>VLAN</code> 有設置後，其每個封包都會帶著 <code>VLAN</code> 標籤，而這個標籤會在設定單臂路由的路由器進行解析，這樣就能讓不同 <code>VLAN</code> 可以相互通訊。至於 VLAN 相關操作和原理可查看之前寫的<a href=https://cch0124.github.io/vlan/>內容</a>。</p><h2 id=配置-esw1-交換器與-r1-路由器>配置 ESW1 交換器與 R1 路由器</h2><p>將接口啟動，並使用 <code>hostname</code> 配置 ESW1 的主機名稱。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1#conf t
+ESW1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#hostname IT@L3 </span>
+% Hostname contains one or more illegal characters.
+
+% Hostname <span style=color:#e6db74>&#34;IT@L3&#34;</span> is not a legal LAT node name, Using <span style=color:#e6db74>&#34;CISCO_18F100&#34;</span>
+IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/0</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no shutdown</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/15</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no shutdown</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#exit</span>
+</code></pre></div><p>配置 <code>telnet</code> 相關配置以及交換機上安全設定，有關 <code>telnet</code> 配置可參考之前文章所做的<a href=https://cch0124.github.io/cisco-telnet/>實驗</a>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#username cisco password cisco@123</span>
+IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#line vty 0 4</span>
+IT@L3<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#login local</span>
+IT@L3<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#transport ?</span>
+  input      Define which protocols to use when connecting to the terminal
+             server
+  output     Define which protocols to use <span style=color:#66d9ef>for</span> outgoing connections
+  preferred  Specify the preferred protocol to use
+
+IT@L3<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#transport input ?</span>
+  all      All protocols
+  lapb-ta  LAPB Terminal Adapter
+  lat      DEC LAT protocol
+  none     No protocols
+  pad      X.3 PAD
+  rlogin   Unix rlogin protocol
+  ssh      TCP/IP SSH protocol
+  telnet   TCP/IP Telnet protocol
+  udptn    UDPTN async via UDP protocol
+  v120     Async over ISDN
+IT@L3<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#transport input telnet</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#enable password 12345</span>
+IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#enable secret 123456</span>
+IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#service password-encryption</span>
+IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#banner ?</span>
+  LINE            c banner-text c, where <span style=color:#e6db74>&#39;c&#39;</span> is a delimiting character
+  exec            Set EXEC process creation banner
+  incoming        Set incoming terminal line banner
+  login           Set login banner
+  motd            Set Message of the Day banner
+  prompt-timeout  Set Message <span style=color:#66d9ef>for</span> login authentication timeout
+  slip-ppp        Set Message <span style=color:#66d9ef>for</span> SLIP/PPP
+IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#banner motd #</span>
+Enter TEXT message.  End with the character <span style=color:#e6db74>&#39;#&#39;</span>.
+Unauthorized Access
+<span style=color:#75715e>#</span>
+IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip default-gateway 192.168.245.254</span>
+
+</code></pre></div><p>建立 <code>VLAN 1</code> 的 SVI(Switched Virtual Interface)，藉由此 <code>SVI</code> 可讓我們從 VM 中登入作業。至於為什麼是 <code>VLAN 1</code> 原因就是預設的網路接口都是 <code>VLAN 1</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface vlan1</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#ip address 192.168.245.20 255.255.255.0</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no shutdown</span>
+</code></pre></div><p>設定完上述之後，我們可以嘗試連通，以及 <code>telnet</code> 遠端。</p><p>VM ping <code>vlan1</code> 虛擬接口</p><p><img src=https://i.imgur.com/LiXCQpM.png alt></p><p><code>telnet</code> ESW1</p><p><img src=https://i.imgur.com/KdoVfjO.png alt></p><p>預設情況下都是使用 <code>VLAN 1</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do sh vlan-switch</span>
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+<span style=color:#ae81ff>1</span>    default                          active    Fa1/0, Fa1/1, Fa1/2, Fa1/3
+                                                Fa1/4, Fa1/5, Fa1/6, Fa1/7
+                                                Fa1/8, Fa1/9, Fa1/10, Fa1/11
+                                                Fa1/12, Fa1/13, Fa1/14, Fa1/15
+<span style=color:#ae81ff>1002</span> fddi-default                     active
+<span style=color:#ae81ff>1003</span> token-ring-default               active
+<span style=color:#ae81ff>1004</span> fddinet-default                  active
+<span style=color:#ae81ff>1005</span> trnet-default                    active
+
+VLAN Type  SAID       MTU   Parent RingNo BridgeNo Stp  BrdgMode Trans1 Trans2
+---- ----- ---------- ----- ------ ------ -------- ---- -------- ------ ------
+<span style=color:#ae81ff>1</span>    enet  <span style=color:#ae81ff>100001</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>1002</span>   <span style=color:#ae81ff>1003</span>
+<span style=color:#ae81ff>1002</span> fddi  <span style=color:#ae81ff>101002</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>1</span>      <span style=color:#ae81ff>1003</span>
+<span style=color:#ae81ff>1003</span> tr    <span style=color:#ae81ff>101003</span>     <span style=color:#ae81ff>1500</span>  <span style=color:#ae81ff>1005</span>   <span style=color:#ae81ff>0</span>      -        -    srb      <span style=color:#ae81ff>1</span>      <span style=color:#ae81ff>1002</span>
+<span style=color:#ae81ff>1004</span> fdnet <span style=color:#ae81ff>101004</span>     <span style=color:#ae81ff>1500</span>  -      -      <span style=color:#ae81ff>1</span>        ibm  -        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>
+<span style=color:#ae81ff>1005</span> trnet <span style=color:#ae81ff>101005</span>     <span style=color:#ae81ff>1500</span>  -      -      <span style=color:#ae81ff>1</span>        ibm  -        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>
+</code></pre></div><p>配置 R1 的 f0/0。配置完後，使用 VM 去 ping 該 R1 的 f0/0，預設都在 Vlan 1 又是同一網段因此都是可以互通。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 0/0</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#ip address 192.168.245.254 255.255.255.0</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no shutdown</span>
+</code></pre></div><p>設置 <code>VLAN</code>，本實驗中只有使用 <code>vlan 10</code>，其餘可以不新增。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3#vlan database
+IT@L3<span style=color:#f92672>(</span>vlan<span style=color:#f92672>)</span><span style=color:#75715e>#vlan 10 name IT@L3-VLAN10</span>
+VLAN <span style=color:#ae81ff>10</span> added:
+    Name: IT@L3-VLAN10
+IT@L3<span style=color:#f92672>(</span>vlan<span style=color:#f92672>)</span><span style=color:#75715e>#vlan 20 name IT@L3-VLAN20</span>
+VLAN <span style=color:#ae81ff>20</span> added:
+    Name: IT@L3-VLAN20
+IT@L3<span style=color:#f92672>(</span>vlan<span style=color:#f92672>)</span><span style=color:#75715e>#vlan 100 name IT@L3-VLAN100</span>
+VLAN <span style=color:#ae81ff>100</span> added:
+    Name: IT@L3-VLAN100
+IT@L3<span style=color:#f92672>(</span>vlan<span style=color:#f92672>)</span><span style=color:#75715e>#exit</span>
+APPLY completed.
+Exiting....
+</code></pre></div><p>查看配置的 <code>Vlan</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3#show vlan-switch
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+<span style=color:#ae81ff>1</span>    default                          active    Fa1/0, Fa1/1, Fa1/2, Fa1/3
+                                                Fa1/4, Fa1/5, Fa1/6, Fa1/7
+                                                Fa1/8, Fa1/9, Fa1/10, Fa1/11
+                                                Fa1/12, Fa1/13, Fa1/14, Fa1/15
+<span style=color:#ae81ff>10</span>   IT@L3-VLAN10                     active <span style=color:#75715e># this</span>
+<span style=color:#ae81ff>20</span>   IT@L3-VLAN20                     active <span style=color:#75715e># this</span>
+<span style=color:#ae81ff>100</span>  IT@L3-VLAN100                    active <span style=color:#75715e># this</span>
+<span style=color:#ae81ff>1002</span> fddi-default                     active
+<span style=color:#ae81ff>1003</span> token-ring-default               active
+<span style=color:#ae81ff>1004</span> fddinet-default                  active
+<span style=color:#ae81ff>1005</span> trnet-default                    active
+
+VLAN Type  SAID       MTU   Parent RingNo BridgeNo Stp  BrdgMode Trans1 Trans2
+---- ----- ---------- ----- ------ ------ -------- ---- -------- ------ ------
+<span style=color:#ae81ff>1</span>    enet  <span style=color:#ae81ff>100001</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>1002</span>   <span style=color:#ae81ff>1003</span>
+<span style=color:#ae81ff>10</span>   enet  <span style=color:#ae81ff>100010</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>
+<span style=color:#ae81ff>20</span>   enet  <span style=color:#ae81ff>100020</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>
+<span style=color:#ae81ff>100</span>  enet  <span style=color:#ae81ff>100100</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>
+<span style=color:#ae81ff>1002</span> fddi  <span style=color:#ae81ff>101002</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>1</span>      <span style=color:#ae81ff>1003</span>
+<span style=color:#ae81ff>1003</span> tr    <span style=color:#ae81ff>101003</span>     <span style=color:#ae81ff>1500</span>  <span style=color:#ae81ff>1005</span>   <span style=color:#ae81ff>0</span>      -        -    srb      <span style=color:#ae81ff>1</span>      <span style=color:#ae81ff>1002</span>
+</code></pre></div><p>新增一台 PC1 並配置其 <code>IP</code> 和 <code>gateway</code>，如下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>PC1&gt; ip 192.168.10.10/24 192.168.10.254
+Checking <span style=color:#66d9ef>for</span> duplicate address...
+PC1 : 192.168.10.10 255.255.255.0 gateway 192.168.10.254
+</code></pre></div><p>新增完後將其 PC1 對應到 ESW1 的接口設置到 <code>VLAN 10</code> 進行綁定。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/10</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport mode access</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport access vlan 10</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no shutdown</span>
+</code></pre></div><p>查看是否有被分配。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do sh vlan-swit</span>
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+<span style=color:#ae81ff>1</span>    default                          active    Fa1/1, Fa1/2, Fa1/3, Fa1/4
+                                                Fa1/5, Fa1/6, Fa1/7, Fa1/8
+                                                Fa1/9, Fa1/11, Fa1/12, Fa1/13
+                                                Fa1/15
+<span style=color:#ae81ff>10</span>   IT@L3-VLAN10                     active    Fa1/10 <span style=color:#75715e># this</span>
+<span style=color:#ae81ff>20</span>   IT@L3-VLAN20                     active
+<span style=color:#ae81ff>100</span>  IT@L3-VLAN100                    active
+<span style=color:#ae81ff>1002</span> fddi-default                     active
+<span style=color:#ae81ff>1003</span> token-ring-default               active
+...
+</code></pre></div><p>在 R1 跟 ESW1 接口間，設置 <code>Trunk</code> 這表示所有不同 <code>VLAN</code> 可以透過這條 <code>Trunk</code> 進行通訊。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/0</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport trunk encapsulation dot1q</span>
+IT@L3<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport mode trunk</span>
+</code></pre></div><p>查看 <code>Trunk</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>IT@L3#show interfaces trunk
+
+Port      Mode         Encapsulation  Status        Native vlan
+Fa1/0     on           802.1q         trunking      <span style=color:#ae81ff>1</span>
+
+Port      Vlans allowed on trunk
+Fa1/0     1-1005
+
+Port      Vlans allowed and active in management domain
+Fa1/0     1,10,20,100
+
+Port      Vlans in spanning tree forwarding state and not pruned
+Fa1/0     1,10,20,100
+</code></pre></div><p>在 R1 上設定單臂路由這樣使得所有 <code>VLAN</code> 透過這個設定以達到相互通訊。在連接 ESW1 的接口上個別設定 VLAN ID 的子接口，並將其賦予 VLAN 子網路的 <code>gateway</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 0/0</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no ip address</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#int fa 0/0.1</span>
+R1<span style=color:#f92672>(</span>config-subif<span style=color:#f92672>)</span><span style=color:#75715e>#encapsulation dot1Q 1</span>
+R1<span style=color:#f92672>(</span>config-subif<span style=color:#f92672>)</span><span style=color:#75715e>#ip address 192.168.245.254 255.255.255.0</span>
+
+R1<span style=color:#f92672>(</span>config-subif<span style=color:#f92672>)</span><span style=color:#75715e>#int fa 0/0.10</span>
+R1<span style=color:#f92672>(</span>config-subif<span style=color:#f92672>)</span><span style=color:#75715e>#encapsulation dot1Q 10</span>
+R1<span style=color:#f92672>(</span>config-subif<span style=color:#f92672>)</span><span style=color:#75715e>#ip address 192.168.10.254 255.255.255.0</span>
+
+</code></pre></div><p>查看有無配置</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config-subif<span style=color:#f92672>)</span><span style=color:#75715e>#do sh ip int brief</span>
+Interface                  IP-Address      OK? Method Status                Protocol
+FastEthernet0/0            unassigned      YES manual up                    up
+FastEthernet0/0.1          192.168.245.254 YES manual up                    up
+FastEthernet0/0.10         192.168.10.254  YES manual up                    up
+</code></pre></div><p>查看路由表</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show ip route
+Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type <span style=color:#ae81ff>2</span>
+       E1 - OSPF external type 1, E2 - OSPF external type <span style=color:#ae81ff>2</span>
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route
+
+Gateway of last resort is not set
+
+C    192.168.10.0/24 is directly connected, FastEthernet0/0.10
+C    192.168.245.0/24 is directly connected, FastEthernet0/0.1
+</code></pre></div><p>嘗試 PC1 ping VM 或反過來，此時應該是會通的，如果失敗需查看配置是否有誤。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2020-01-03-meanshift.md/ title=ML-3-meanshift><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2020-02-13-csv-combine/ title="csv combine"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

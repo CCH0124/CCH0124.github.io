@@ -1,0 +1,48 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>SSH</h1><p class=mb-1>March 22, 2017</p><p>&mdash;</p></div><div class=content><h1 id=ssh>SSH</h1><p>OpenSSH 是 1999 年基於免費的 SSH 1.2.12 版本開發的開源項目。
+OpenSSH 實現的 SSH 功能包括服務端和客戶端，還有私鑰管理等。
+SSH protocol 使用加密來保護客戶端和服務器之間的連接。所有用戶身份驗證、命令、輸出和文件傳輸都經過加密，以防止網絡中的攻擊。</p><p><img src=https://i.imgur.com/xouUzb6.png alt></p><h2 id=配置檔案>配置檔案</h2><p><code>/etc/sshd/sshd_config</code> 可做加密選項、身份驗證選項、文件位置、日誌記錄和各種其他參數（port等）</p><h2 id=logging>Logging</h2><p>SSH 服務器使用 <code>syslog</code> 系統進行日誌記錄。默認的日誌檔案放置 <code>/var/log/auth.log</code></p><h2 id=基本使用>基本使用</h2><ol><li></li></ol><pre><code class="language-shell=" data-lang="shell=">$ ssh itachi@192.168.222.132
+</code></pre><ol start=2><li></li></ol><pre><code class="language-shell=" data-lang="shell=">$ ssh -l itachi 192.168.222.132 -p 22
+# -l 指定用戶名
+# -p 指定 port
+</code></pre><p>第一次登入某個終端時，SSH 客戶端會獲取設備的公鑰及其指紋訊息。</p><pre><code class="language-shell=" data-lang="shell=">$ ssh -l lab702 192.168.222.132
+The authenticity of host '192.168.222.132 (192.168.222.132)' can't be established.
+ECDSA key fingerprint is SHA256:TmidBei2XVw7f2lqHuSrjfFHsFRz6riglpwY/tKXlXc.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '192.168.222.132' (ECDSA) to the list of known hosts.
+lab702@192.168.222.132's password:
+</code></pre><p>輸入 <code>yes</code> 後，此訊息會儲存在本機 <code>$HOMW/.ssh/known_hosts</code> 檔案中。之後登入這台設備，SSH 會檢查登錄的設備和第一次登錄的設備是否一致。不一致會拒絕登錄。</p><h2 id=ssh連線偵錯>SSH連線偵錯</h2><ul><li>-v</li></ul><pre><code class="language-shell=" data-lang="shell=">$ ssh -v -l lab702 192.168.222.132
+</code></pre><ul><li>LOG 檔案</li><li>-d
+通常是診斷連接問題時的最後手段。通常，在其輸出中可以清楚地看到身份驗證失敗的原因。</li></ul><h4 id=解決主機檢查密鑰失敗的問題>解決主機檢查密鑰失敗的問題</h4><pre><code class="language-shell=" data-lang="shell=">$ ssh-keygen -R 192.168.222.132 # -R 從 known_hosts 檔案中刪除屬於 hostname 的所有密鑰。
+# Host 192.168.222.132 found: line 1
+/home/cch/.ssh/known_hosts updated.
+Original contents retained as /home/cch/.ssh/known_hosts.old
+cch@DESKTOP-UC7DC96:~/.ssh$ ls
+known_hosts  known_hosts.old
+</code></pre><h2 id=ssh-安全配置>SSH 安全配置</h2><h4 id=disable-root-login>Disable root login</h4><pre><code class="language-shell=" data-lang="shell=">itachi@zabbix-mysql:~$ sudo vim /etc/ssh/sshd_config
+ 32 #PermitRootLogin prohibit-password # 預設不能使用密碼登入，只能使用 ssh key 登入。
+ 33 PermitRootLogin no
+</code></pre><h4 id=disable-password-based-login>Disable password based login</h4><p>使用金鑰登入</p><pre><code class="language-shell=" data-lang="shell=">AuthenticationMethods publickey
+PubkeyAuthentication yes
+</code></pre><h4 id=disable-empty-passwords>Disable Empty Passwords</h4><pre><code class="language-shell=" data-lang="shell=">PermitEmptyPasswords no
+</code></pre><h4 id=change-port>Change Port</h4><pre><code class="language-shell=" data-lang="shell=">itachi@zabbix-mysql:~$ sudo vim /etc/ssh/sshd_config
+ 13 Port 22 # 預設 22 建議更改
+</code></pre><h4 id=change-login-grace-time>Change login grace time</h4><pre><code class="language-shell=" data-lang="shell=">itachi@zabbix-mysql:~$ sudo vim /etc/ssh/sshd_config
+ 31 #LoginGraceTime 2m # 預設是 120 秒後立即中斷遠端連線
+ 32 LoginGraceTime 1m 
+</code></pre><h4 id=restrict-the-interface>Restrict the interface</h4><pre><code class="language-shell=" data-lang="shell=">itachi@zabbix-mysql:~$ sudo vim /etc/ssh/sshd_config
+15 #ListenAddress 0.0.0.0 # 有多張網卡時必須在此設定
+16 #ListenAddress ::
+</code></pre><h4 id=disconnect-ssh-when-no-activity>Disconnect SSH when no activity</h4><pre><code class="language-shell=" data-lang="shell=">itachi@zabbix-mysql:~$ sudo vim /etc/ssh/sshd_config
+101 #ClientAliveInterval 0
+102 #ClientAliveCountMax 3
+103 ClientAliveInterval 600 # 中斷連線秒數，600 為秒
+104 ClientAliveCountMax 5 # 允許超時次數，與上面相依。600*5 為允許超時的秒數
+</code></pre><h4 id=allow-only-specific-users-or-group>Allow only specific users or group</h4><p>需自行添加自配置檔</p><pre><code class="language-shell=" data-lang="shell=">itachi@zabbix-mysql:~$ sudo vim /etc/ssh/sshd_config
+AllowUsers &lt;user1&gt; &lt;user2&gt; #只允許特定 User 登入
+AllowGroup &lt;group&gt; &lt;group&gt; #只允許特定 group 登入
+DenyGroup &lt;group&gt; &lt;group&gt; #只拒絕特定 group 登入
+</code></pre><h2 id=ref>ref</h2><p><a href=https://www.ssh.com/>SSH</a></p><p><a href=https://www.cyberciti.biz/tips/linux-unix-bsd-openssh-server-best-practices.html>SSH</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2017-03-22-multiple-command-/ title=連續的指令><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2017-04-16-lvm/ title="LVM（Logical Volume Manager）"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

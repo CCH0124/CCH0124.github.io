@@ -1,0 +1,83 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day20</h1><p class=mb-1>September 10, 2020</p><p>&mdash;</p></div><div class=content><p>前面章節講過的 <code>Service</code>，提供了一個穩定可讓客戶端取得想要的服務接口，這之間 <code>POD</code> 如何知道某特定服務的 <code>IP</code> 和 <code>Port</code> 呢？這就需要服務發現(Service Discovery) 的幫助。我們也知道在 <code>K8s</code> 環境中，<code>POD</code> 不能依靠網路，當服務重新部署時，會導致 <code>IP</code> 不同，因此需要借助服務發現。服務發現簡單來說就是是弄清楚如何連接到服務的實際過程。</p><h2 id=環境變數的服務發現>環境變數的服務發現</h2><h3 id=service-環境變數>Service 環境變數</h3><p>只要創建 <code>Service</code> 都會使用以下的環境變數，當在同一 <code>namespace</code> 的 <code>POD</code> 會自動擁有這些資訊。可參考<a href=https://kubernetes.io/docs/concepts/containers/container-environment/>官網 container-environment</a></p><ul><li>{SVCNAME}_SERVICE_HOST</li><li>{SVCNAME}_SERVICE_PORT</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec httpd-7765f5994-97hq5 -- printenv
+PATH<span style=color:#f92672>=</span>/usr/local/apache2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOSTNAME<span style=color:#f92672>=</span>httpd-7765f5994-97hq5
+MYAPP_SVC_PORT_80_TCP_ADDR<span style=color:#f92672>=</span>10.8.2.52
+MYAPP_SVC_SERVICE_HOST<span style=color:#f92672>=</span>10.8.2.52 <span style=color:#75715e># this</span>
+KUBERNETES_PORT_443_TCP_ADDR<span style=color:#f92672>=</span>10.8.0.1
+MYAPP_SVC_PORT_80_TCP_PORT<span style=color:#f92672>=</span><span style=color:#ae81ff>80</span>
+KUBERNETES_PORT_443_TCP_PROTO<span style=color:#f92672>=</span>tcp
+KUBERNETES_PORT_443_TCP_PORT<span style=color:#f92672>=</span><span style=color:#ae81ff>443</span>
+MYAPP_SVC_PORT_80_TCP_PROTO<span style=color:#f92672>=</span>tcp
+KUBERNETES_SERVICE_PORT<span style=color:#f92672>=</span><span style=color:#ae81ff>443</span>
+KUBERNETES_SERVICE_PORT_HTTPS<span style=color:#f92672>=</span><span style=color:#ae81ff>443</span>
+KUBERNETES_PORT<span style=color:#f92672>=</span>tcp://10.8.0.1:443
+KUBERNETES_PORT_443_TCP<span style=color:#f92672>=</span>tcp://10.8.0.1:443
+MYAPP_SVC_SERVICE_PORT<span style=color:#f92672>=</span><span style=color:#ae81ff>80</span> <span style=color:#75715e># this</span>
+MYAPP_SVC_PORT<span style=color:#f92672>=</span>tcp://10.8.2.52:80
+MYAPP_SVC_PORT_80_TCP<span style=color:#f92672>=</span>tcp://10.8.2.52:80
+...
+</code></pre></div><h3 id=docker-link-方式環境變數>Docker Link 方式環境變數</h3><p>這邊我在 GCP 上的 <code>Compute Engine</code> 拿一個節點的容器用 <code>docker inspect</code> 觀察。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ docker inspect 203e907bf5ba
+<span style=color:#e6db74>&#34;Env&#34;</span>: <span style=color:#f92672>[</span>
+                <span style=color:#e6db74>&#34;MYAPP_SVC_PORT=tcp://10.8.2.52:80&#34;</span>,
+                <span style=color:#e6db74>&#34;MYAPP_SVC_PORT_80_TCP_PROTO=tcp&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_SERVICE_PORT=443&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_SERVICE_PORT_HTTPS=443&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_PORT=tcp://10.8.0.1:443&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_PORT_443_TCP=tcp://10.8.0.1:443&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_SERVICE_HOST=10.8.0.1&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_PORT_443_TCP_PROTO=tcp&#34;</span>,
+                <span style=color:#e6db74>&#34;MYAPP_SVC_SERVICE_PORT=80&#34;</span>,
+                <span style=color:#e6db74>&#34;MYAPP_SVC_PORT_80_TCP=tcp://10.8.2.52:80&#34;</span>,
+                <span style=color:#e6db74>&#34;MYAPP_SVC_PORT_80_TCP_PORT=80&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_PORT_443_TCP_PORT=443&#34;</span>,
+                <span style=color:#e6db74>&#34;KUBERNETES_PORT_443_TCP_ADDR=10.8.0.1&#34;</span>,
+                <span style=color:#e6db74>&#34;MYAPP_SVC_SERVICE_HOST=10.8.2.52&#34;</span>,
+                <span style=color:#e6db74>&#34;MYAPP_SVC_PORT_80_TCP_ADDR=10.8.2.52&#34;</span>,
+                <span style=color:#e6db74>&#34;PATH=/usr/local/apache2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&#34;</span>,
+                <span style=color:#e6db74>&#34;HTTPD_PREFIX=/usr/local/apache2&#34;</span>,
+                <span style=color:#e6db74>&#34;HTTPD_VERSION=2.4.46&#34;</span>,
+                <span style=color:#e6db74>&#34;HTTPD_SHA256=740eddf6e1c641992b22359cabc66e6325868c3c5e2e3f98faf349b61ecf41ea&#34;</span>,
+                <span style=color:#e6db74>&#34;HTTPD_PATCHES=&#34;</span>
+            <span style=color:#f92672>]</span>,
+</code></pre></div><p>但是，在不同 <code>namespace</code>、或是 <code>POD</code> 與 <code>Service</code> 部署順序不同時，環境變數方式將是一個缺點，然而 <code>DNS</code> 可以解決這個問題。</p><h2 id=dns-服務發現>DNS 服務發現</h2><p><code>Kubernetes</code> 上在安裝環境時，有一個 <code>CoreDNS</code>，是一個非常重要的元件之一，它會負責將 <code>Service</code> 資源等轉成資源紀錄(Resource Record)。在預設下 <code>POD</code> 的資源紀錄也會被自動的配置，當中資源紀錄會包含 <code>namespace</code> 等資訊。下面是從官方<a href=https://github.com/kubernetes/dns/blob/master/docs/specification.md>Kubernetes DNS 規格定義</a>，所節錄。</p><ul><li><code>Service</code> 類型為 <code>ClusterIP</code> 的資源紀錄<ul><li>A Record<ul><li><code>&lt;service>.&lt;ns>.svc.&lt;zone>. &lt;ttl> IN A &lt;cluster-ip></code></li></ul></li><li>SRV Record<ul><li><code>_&lt;port>._&lt;proto>.&lt;service>.&lt;ns>.svc.&lt;zone>. &lt;ttl> IN SRV &lt;weight> &lt;priority> &lt;port-number> &lt;service>.&lt;ns>.svc.&lt;zone></code></li></ul></li><li>PTR Record<ul><li><code>&lt;d>.&lt;c>.&lt;b>.&lt;a>.in-addr.arpa. &lt;ttl> IN PTR &lt;service>.&lt;ns>.svc.&lt;zone></code></li></ul></li></ul></li><li><code>Service</code> 類型為 <code>Headless</code> 的資源紀錄<ul><li>A Record<ul><li><code>&lt;service>.&lt;ns>.svc.&lt;zone>. &lt;ttl> IN A &lt;endpoint-ip></code></li></ul></li><li>SRV Record<ul><li><code>_&lt;port>._&lt;proto>.&lt;service>.&lt;ns>.svc.&lt;zone>. &lt;ttl> IN SRV &lt;weight> &lt;priority> &lt;port-number> &lt;hostname>.&lt;service>.&lt;ns>.svc.&lt;zone></code></li></ul></li><li>PTR Record<ul><li><code>&lt;d>.&lt;c>.&lt;b>.&lt;a>.in-addr.arpa. &lt;ttl> IN PTR &lt;hostname>.&lt;service>.&lt;ns>.svc.&lt;zone></code></li></ul></li></ul></li><li><code>Service</code> 類型為 <code>ExternalName</code> 的資源紀錄<ul><li>CNAME Record<ul><li><code>&lt;service>.&lt;ns>.svc.&lt;zone>. &lt;ttl> IN CNAME &lt;extname></code></li></ul></li></ul></li></ul><blockquote><p>SRV 相較於其它資源類型它記錄了 Port</p></blockquote><p>只要我們創建 <code>Service</code> 資源，<code>DNS</code> 會做服務解析和服務註冊的動作，這樣可讓 <code>POD</code> 使用 <code>DNS</code> 方式去請求 <code>Service</code>。每個 <code>Service</code> 會包含以下兩個資源紀錄。在安裝 <code>K8s</code> 環境時可設定 <code>DNS</code> 相關資訊，否則默認把 <code>cluster.local.</code> 和主機所在的域名做為本地用。</p><ul><li>{SVCNAME}.{NAMESPACE}.{CLUSTER_DOMAIN}</li><li>{SVCNAME}.{NAMESPACE}.svc.{CLUSTER_DOMAIN}</li></ul><p>這邊觀察 GKE 上部署的一個 <code>POD</code> 它的 <code>DNS</code> 相關設置。也就是說服務的查詢都會導向該 <code>CoreDNS</code> 的 <code>Service</code> 上。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec hello-kubernetes-5b89dbbc4b-t7bvr -- cat /etc/resolv.conf
+nameserver 10.8.0.10 
+search default.svc.cluster.local svc.cluster.local cluster.local us-central1-c.c.sunny-catwalk-286908.internal c.sunny-catwalk-286908.internal google.internal
+options ndots:5
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get svc -n kube-system <span style=color:#75715e># 系統上的 DNS 系統 </span>
+NAME                   TYPE        CLUSTER-IP    EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>         AGE
+...
+kube-dns               ClusterIP   10.8.0.10     &lt;none&gt;        53/UDP,53/TCP   18d
+...
+</code></pre></div><ul><li>nameserver<ul><li>為 <code>kube-dns</code> 的 <code>Service</code> 資源</li></ul></li><li>default.svc.cluster.local<ul><li>{NAMESPACE}.svc.{CLUSTER_DOMAIN}</li></ul></li><li>svc.cluster.local<ul><li>svc.{CLUSTER_DOMAIN}</li></ul></li></ul><p>我們進到一個可交互的 <code>POD</code> 並使用 <code>nslookup</code> 查詢 <code>myapp-svc</code> 的域名 <code>myapp-svc.default.svc.cluster.local</code>，發現解析出來的就是該 <code>Service</code> 的 <code>IP</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec -it hello-kubernetes-5b89dbbc4b-t7bvr /bin/sh
+~ $ nslookup myapp-svc.default.svc.cluster.local
+Server:         10.8.0.10
+Address:        10.8.0.10:53
+
+Name:   myapp-svc.default.svc.cluster.local
+Address: 10.8.2.52
+$ kubectl get svc myapp-svc
+NAME        TYPE        CLUSTER-IP   EXTERNAL-IP   PORT<span style=color:#f92672>(</span>S<span style=color:#f92672>)</span>   AGE
+myapp-svc   ClusterIP   10.8.2.52    &lt;none&gt;        80/TCP    2d1h
+</code></pre></div><p>這是基於 <code>SRV</code> 做查詢格式為 <code>_PORT-NAME._PROTOCOL.SERVICE-NAME.NAMESPACE.svc.cluster.local</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ nslookup _http._tcp.myapp-svc.default.svc.cluster.local
+Server:         10.8.0.10
+Address:        10.8.0.10:53
+
+_http._tcp.myapp-svc.default.svc.cluster.local  canonical name <span style=color:#f92672>=</span> myapp-svc.default.svc.cluster.local
+Name:   myapp-svc.default.svc.cluster.local
+Address: 10.8.2.52
+</code></pre></div><p>對於 <code>POD</code> 解析格式為 <code>POD-IP-ADDRESS.NAMESPACE.pod.cluster.loscal</code>，這邊是看<a href=https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-records-1>官網</a>一些用法都在裡面</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ nslookup 10-4-2-53.default.pod.cluster.local
+Server:         10.8.0.10
+Address:        10.8.0.10:53
+
+
+Name:   10-4-2-53.default.pod.cluster.local
+Address: 10.4.2.53
+</code></pre></div><h2 id=pod-dns>POD DNS</h2><p>因為 <code>POD</code> 對於 <code>DNS</code> 可能有不同的需求，因此也提供設定方式，這邊可直接參考<a href=https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy>官方</a>。</p><ul><li>Default<ul><li>不需設定，同步於節點的 <code>nameserver</code></li></ul></li><li>ClusterFirst<ul><li>預設值</li><li>使用 cluster DNS 做為設定，資訊如下</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl exec hello-kubernetes-5b89dbbc4b-t7bvr -- cat /etc/resolv.conf
+nameserver 10.8.0.10 
+search default.svc.cluster.local svc.cluster.local cluster.local us-central1-c.c.sunny-catwalk-286908.internal c.sunny-catwalk-286908.internal google.internal
+options ndots:5
+</code></pre></div><ul><li>ClusterFirstWithHostNet<ul><li><code>hostNetwork</code> 為與主機的網路 <code>namespace</code> 共享時，又想使用 cluster DNS 做為設定</li></ul></li><li>None<ul><li>不設定 <code>DNS</code> 相關資訊</li><li>需使用 <code>dnsConfig</code> 字段來設定 <code>DNS</code> 相關資訊</li></ul></li></ul><h2 id=參考資源>參考資源</h2><ul><li><a href=https://platform9.com/blog/kubernetes-service-discovery-principles-in-practice/>platform9 - kubernetes-service-discovery-principles-in-practice</a></li><li><a href="https://cloud.google.com/kubernetes-engine/docs/concepts/service-discovery?hl=zh-tw">GKE - service-discovery</a></li><li><a href=https://jimmysong.io/kubernetes-handbook/practice/service-discovery-and-loadbalancing.html>jimmysong - service discovery and loadbalancing</a></li><li><a href=https://www.cloudflare.com/learning/dns/dns-records/dns-srv-record/>SRV</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-09-service-ingress-part3/ title="kubernetes - day19"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-11-volume/ title="kubernetes - day21"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

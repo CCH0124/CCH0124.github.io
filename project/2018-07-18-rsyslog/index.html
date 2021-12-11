@@ -1,0 +1,107 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>rsyslog 應用</h1><p class=mb-1>July 18, 2018</p><p>&mdash;</p></div><div class=content><p><code>rsyslog</code> 服務為 <code>Client/Server</code> 服務，可同時實現兩種角色。</p><ol><li><p>它可以作為服務器運行並收集網路中其他設備傳輸的所有日誌。</p></li><li><p>可以將所有記錄到遠程終端系統 <code>syslog server</code> 的 <em>internal system events</em> 發送到 Client 運行。  </p></li></ol><p><strong>environment</strong>  </p><ul><li>Ubuntu 14.04 Rsyslog Server</li><li>Ubuntu 14.04 Client</li><li>D-link</li></ul><h2 id=installation-and-configuration>Installation and configuration</h2><p>預設上，只要安裝好 <code>Ubuntu</code> 都會有 <code>rsyslog</code></p><h5 id=verify>verify</h5><ul><li><code>dpkg --list</code> 查看已安裝的套件</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ dpkg --list | grep rsyslog
+ii  rsyslog                            7.4.4-1ubuntu2.6                 amd64        reliable system and kernel logging daemon
+</code></pre></div><ul><li><code>rsyslogd -v</code> 查看版本</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ rsyslogd -v
+rsyslogd 7.4.4, compiled with:
+        FEATURE_REGEXP:                         Yes
+        FEATURE_LARGEFILE:                      No
+        GSSAPI Kerberos <span style=color:#ae81ff>5</span> support:              Yes
+        FEATURE_DEBUG <span style=color:#f92672>(</span>debug build, slow code<span style=color:#f92672>)</span>: No
+        32bit Atomic operations supported:      Yes
+        64bit Atomic operations supported:      Yes
+        Runtime Instrumentation <span style=color:#f92672>(</span>slow code<span style=color:#f92672>)</span>:    No
+        uuid support:                           Yes
+
+See http://www.rsyslog.com <span style=color:#66d9ef>for</span> more information.
+
+</code></pre></div><h5 id=configuration>configuration</h5><ul><li>配置檔所在位置</li></ul><p><strong><code>rsyslog.d/</code> 是被 <code>include</code> 到 <code>rsyslog.conf</code></strong></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ ll /etc/ | grep syslog
+-rw-r--r--  <span style=color:#ae81ff>1</span> root root    <span style=color:#ae81ff>1318</span> Oct <span style=color:#ae81ff>24</span> 11:20 rsyslog.conf
+drwxr-xr-x  <span style=color:#ae81ff>2</span> root root    <span style=color:#ae81ff>4096</span> Oct <span style=color:#ae81ff>24</span> 10:50 rsyslog.d/
+</code></pre></div><ul><li>編輯 <code>.conf</code> 檔</li></ul><p><strong><code>514 Port</code> 向 <code>Rsyslog server</code> 提供 <code>UDP</code> <code>TCP</code> 傳輸和接收。 <code>UDP</code> 是由 <code>Rsyslog</code> 用於 <code>log</code> 傳輸的標準協定</strong><br><code>UDP</code> 傳輸會比 <code>TCP</code> 要來的快，但 <code>UDP</code> 不能保證傳輸數據的可靠性。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo vi /etc/rsyslog.conf
+<span style=color:#75715e># 找到下四行取消註解</span>
+...
+<span style=color:#75715e># provides UDP syslog reception</span>
+$ModLoad imudp
+$UDPServerRun <span style=color:#ae81ff>514</span>
+
+<span style=color:#75715e># provides TCP syslog reception</span>
+$ModLoad imtcp
+$InputTCPServerRun <span style=color:#ae81ff>514</span>
+
+...
+</code></pre></div><ul><li>查看 <code>514 Port</code> 有無開啟</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo netstat -tulpn | grep rsyslog
+tcp        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> 0.0.0.0:514             0.0.0.0:*               LISTEN      1907/rsyslogd
+tcp6       <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> :::514                  :::*                    LISTEN      1907/rsyslogd
+udp        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> 0.0.0.0:514             0.0.0.0:*                           1907/rsyslogd
+udp6       <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> :::514                  :::*                                1907/rsyslogd
+</code></pre></div><h5 id=define-template-for-the-logs>Define template for the logs</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo vim /etc/rsyslog.conf
+...
+<span style=color:#75715e># 新增以下三行</span>
+$template RemoteLogs,<span style=color:#e6db74>&#34;/var/log/%HOSTNAME%/%PROGRAMNAME%.log&#34;</span> *
+*.* ?RemoteLogs
+&amp; ~
+<span style=color:#75715e># provides TCP syslog reception</span>
+$ModLoad imtcp
+$InputTCPServerRun <span style=color:#ae81ff>514</span>
+
+<span style=color:#75715e># Enable non-kernel facility klog messages</span>
+$KLogPermitNonKernelFacility on
+
+<span style=color:#75715e>###########################</span>
+<span style=color:#75715e>#### GLOBAL DIRECTIVES ####</span>
+<span style=color:#75715e>###########################</span>
+...
+</code></pre></div><p><strong>參數介紹</strong></p><ul><li>RemoteLogs<ul><li>template　name</li></ul></li><li>HOSTNAME<ul><li>client machine name</li></ul></li><li>PROGRAMNAME<ul><li>client machine application</li></ul></li><li>*.*<ul><li>. ：代表比後面還要嚴重的等級（含該等級）都被記錄下來。</li><li>.=：代表所需要的等級就是後面接的等級而已， 其他的不要。</li><li>.!：即是低於這個等級的才會被紀錄的意思。</li><li>*：表示所有等級（<code>priority</code> or <code>facility</code>）。</li></ul></li><li>& ~<ul><li>redirect rule(停止較舊的日誌記錄並啟用此新的日誌記錄)。</li></ul></li></ul><h5 id=服務重啟>服務重啟</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo service rsyslog restart
+rsyslog stop/waiting
+rsyslog start/running, process <span style=color:#ae81ff>1907</span>
+</code></pre></div><h2 id=application>Application</h2><h3 id=d-link>D-link</h3><p>在 <code>D-link</code> 下設定 <code>rsyslog</code>，輸入 <code>rsyslog Server IP</code></p><h3 id=client>Client</h3><p>修改 <code>Hostname</code>，為了好辨識。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@logClient:~$ sudo vi /etc/hosts
+127.0.0.1       localhost
+127.0.1.1       logClient
+
+<span style=color:#75715e># The following lines are desirable for IPv6 capable hosts</span>
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+itachi@logClient:~$ sudo vi /etc/hostname
+logClient
+</code></pre></div><p>系統 reboot。</p><ul><li>新增 <code>remoteIP</code></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@logClient:~$ sudo vim /etc/rsyslog.conf
+*: * @192.168.7.137:514 <span style=color:#75715e>#新增此行</span>
+</code></pre></div><p>必須重啟服務</p><h3 id=rsyslog-server>rsyslog Server</h3><ul><li>驗證（無 <code>template</code>）</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:/var/log$ tail -f /var/log/syslog
+</code></pre></div><ul><li>驗證（有 <code>template</code>）</li></ul><p>其中 擁有者和群組權限為 <code>syslog</code>，是以 <code>/etc/rsyslog.conf</code> 設定如下：</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>beladmin@Rsyslog:/var/log$ cat /etc/rsyslog.conf
+$FileOwner syslog
+$FileGroup adm
+$FileCreateMode <span style=color:#ae81ff>0640</span>
+$DirCreateMode <span style=color:#ae81ff>0755</span>
+$Umask <span style=color:#ae81ff>0022</span>
+$PrivDropToUser syslog
+$PrivDropToGroup syslog
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>beladmin@Rsyslog:~$ cd /var/log/
+beladmin@Rsyslog:/var/log$ ls -lt
+...
+drwx------ <span style=color:#ae81ff>2</span> syslog    syslog   <span style=color:#ae81ff>4096</span> Nov <span style=color:#ae81ff>27</span> 12:01 192.168.7.12 <span style=color:#75715e># 以 Client Hostname 命名的資料夾，亦即存放 ESXi Log 資料夾</span>
+drwx------ <span style=color:#ae81ff>2</span> syslog    syslog   <span style=color:#ae81ff>4096</span> Nov <span style=color:#ae81ff>27</span> 11:54 192.168.7.1 <span style=color:#75715e># 以 Client Hostname 命名的資料夾，亦即存放 DHCP Log 資料夾</span>
+...
+</code></pre></div><h3 id=esxi>ESXi</h3><h5 id=setting>setting</h5><p>主機 > 組態 > 進階設定 > syslog > global，填入遠端<em>rsyslog Server Host</em>。</p><p><code>Syslog.global.logHost</code> 設置 <code>udp://192.168.7.19:514</code></p><h5 id=checking>checking</h5><p>查看 <code>loghost</code> 是否有遠端</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=color:#f92672>[</span>root@localhost:~<span style=color:#f92672>]</span> cat /etc/vmsyslog.conf
+<span style=color:#f92672>[</span>DEFAULT<span style=color:#f92672>]</span>
+rotate <span style=color:#f92672>=</span> <span style=color:#ae81ff>8</span>
+check_ssl_certs <span style=color:#f92672>=</span> true
+logdir <span style=color:#f92672>=</span> &lt;none&gt;
+default_timeout <span style=color:#f92672>=</span> <span style=color:#ae81ff>180</span>
+drop_log_rotate <span style=color:#f92672>=</span> <span style=color:#ae81ff>10</span>
+queue_drop_mark <span style=color:#f92672>=</span> <span style=color:#ae81ff>90</span>
+size <span style=color:#f92672>=</span> <span style=color:#ae81ff>1024</span>
+logdir_unique <span style=color:#f92672>=</span> false
+loghost <span style=color:#f92672>=</span> &lt;none&gt;
+drop_log_size_kb <span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>
+
+<span style=color:#f92672>[</span>vmsyslog<span style=color:#f92672>]</span>
+rotate <span style=color:#f92672>=</span> <span style=color:#ae81ff>8</span>
+size <span style=color:#f92672>=</span> <span style=color:#ae81ff>1024</span>
+logdir_unique <span style=color:#f92672>=</span> false
+loghost <span style=color:#f92672>=</span> udp://192.168.7.19:514
+
+</code></pre></div><p>參考資訊，<a href=https://docs.vmware.com/tw/VMware-vSphere/6.5/com.vmware.vsphere.monitoring.doc/GUID-9F67DB52-F469-451F-B6C8-DAE8D95976E7.html>ESXi 主機設定 syslog</a></p><h2 id=額外資訊>額外資訊</h2><h3 id=facility>facility</h3><ul><li>auth = messages generated by authentication processes (login)  </li><li>cron= messages generated by scheduled processes (crontab)  </li><li>daemon = messages generated by daemons (internal services)  </li><li>kernel = messages generated by the Linux Kernel itself</li><li>mail = messages generated by a mail server  </li><li>syslog = messages generated by the rsyslog daemon itself  </li><li>lpr = messages generated by local printers or a print server  </li><li>local0 – local7 = custom messages defined by an administrator (local7 is usually assigned for Cisco or Windows)  </li></ul><p><a href=http://www.netadmin.com.tw/images/news/NP150108000415010817170304.png>Log 類型</a></p><h3 id=priority>priority</h3><ul><li>emerg = Emergency – 0</li><li>alert = Alerts – 1</li><li>err = Errors – 3</li><li>warn = Warnings – 4</li><li>notice = Notification – 5</li><li>info = Information – 6</li><li>debug = Debugging – 7</li></ul><p><em>Special Rsyslog keywords</em>:</p><ul><li>* = all facilities or priorities  </li><li>none = the facilities have no given priorities Eg: mail.none</li></ul><p><a href=http://www.netadmin.com.tw/images/news/NP150108000415010817170305.png>Log 嚴重程度</a></p><p><a href=http://linux.vbird.org/linux_basic/0570syslog.php#syslogd title=鳥哥參考>鳥哥</a></p><h2 id=資料參考>資料參考</h2><p>URL：https://www.wikiwand.com/en/Syslog</p><p><a href="http://www.netadmin.com.tw/article_content.aspx?sn=1501080004&jump=1">網管人</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/project/2018-07-06-dhcp/ title="DHCP 使用"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/project/2018-07-14-nas-esxi/ title="NAS 與 ESXi"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

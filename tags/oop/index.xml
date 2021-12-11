@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>OOP on</title><link>https://cch0124.github.io/tags/oop/</link><description>Recent content in OOP on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 17 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/oop/index.xml" rel="self" type="application/rss+xml"/><item><title>物件導向 01 - extends</title><link>https://cch0124.github.io/code/2020-12-17-oop-extends/</link><pubDate>Thu, 17 Dec 2020 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/code/2020-12-17-oop-extends/</guid><description>繼承(extends) 好處是減少代碼冗余、增加覆用性、便於功能的擴展、多態性。子類繼承父類後，子類會獲取父類的結構、屬性、方法，如果為 private，因為封裝性影響，子類不能直接調用父類結構，需透過 getter 和 setter 進行操作。
+子類繼承之後可以聲名自己持有的屬性和方法，實現功能擴展。在 JAVA 只支持單繼承和多層繼承，無多重繼承。一個類能被多個子類繼承，一個類只能有一個父類。
+所有 java 類（除 java.lang.Object）直接會間接繼承 java.lang.Object 類
+覆寫 (override) 回傳類型、方法名和參數個數需一致 回傳類型可以是該類型的子類 同名同參數方法要是非 static 實現重寫，否則為非重寫 子類重寫的方法權限修飾不小於父類被重寫的方法的權限 子類拋出的異常範圍不能大於父類 以繼承來說 B 繼承 A，只要 B 有覆寫 A 的相關方法，則建立物件時取得的是 B 的覆寫，否則就是 A 的。
+super 用來調用以下
+屬性
+法
+建構方法
+在子類的方法或建構方法中，透過使用 super.屬性或 super.方法的方式，顯示的調用父類中聲明的屬性或方法，通常都省略
+當子類和父類中定義同名屬性時，要從子類調用父類的屬性，則必須使用 super.屬性或 super.方法
+在建構方法中使用 super(參數列表)
+需再首行</description></item><item><title>物件導向 01 - 類的成員</title><link>https://cch0124.github.io/code/2020-12-17-oop-class/</link><pubDate>Thu, 17 Dec 2020 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/code/2020-12-17-oop-class/</guid><description>OOP 學習 JAVA 的 Class 與 Class 中的成員 屬性 方法 建構方法 區塊 內部類 以下特徵 封裝 繼承 多態 抽象 Class 與 Object Class 為對事物的描述，一種抽象概念。Object 實際存在的個體，也稱實例(instance)。
+以下為 Class 範例，當中會包含屬性與行為
+class Person { // 屬性 String name; int age; // 行為 public void eat() { System.out.println(&amp;#34;吃飯&amp;#34;); } public void sleep() { System.out.println(&amp;#34;睡覺&amp;#34;); } public void say(String language) { System.out.println(&amp;#34;我使用&amp;#34; + language + &amp;#34;說話&amp;#34;); } } 當把人這抽象的事物給描述好後，要建立一個實際的實例。</description></item><item><title>物件導向 03 - Interface</title><link>https://cch0124.github.io/code/2020-12-17-oop/</link><pubDate>Thu, 17 Dec 2020 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/code/2020-12-17-oop/</guid><description>static 編寫一個類時，只有透過 new 關鍵字才會產生出物件，此時系統才會分配記憶體空間給該物件，這樣才能供外部調用。但某些特定數據在記憶體空間只有一份。台灣是個國家名稱，每一個台灣人都共享此國家名稱，不必每一個人的實例都分配一個代表國家名稱的變量。
+static 修飾的變量是共享的 因為 class 只會加載一次，則 static 變量在記憶體中也只會存在一份，存在方法區的靜態域 靜態方法中，只能調用靜態的方法或屬性，非靜態方法，既可調用非靜態的方法或屬性，也可以調用靜態的方法或屬性 在靜態方法內，不能使用 this、super 關鍵字，生命週期 操作靜態屬性的方法，通常設置為 static 工具類中的方法，習慣聲名為 static 靜態變數隨著類加載而加載，因此早於物件的建立 代碼塊 用來初始類和對象 有修飾的話只能用 static 比較 靜態代碼塊 內部可以有輸出句 隨著類加載而執行，且只執行一次 初始化類的訊息 如果一個類中定義了多個靜態代碼塊，則按照宣告先後順序執行 靜態代碼塊的執行要優先於非靜態代碼塊的執行 靜態代碼塊內只調用靜態的屬性、靜態的方法，不能調用非靜態的結構 非靜態代碼塊 內部可以有輸出句 隨著物件的創見而執行 每創建一個物件，就執行一次非靜態代碼塊 可以在創建對象時，隊對象的屬性等進行初始化 如果一個類中定義了多個非靜態代碼塊，則按照宣告先後順序執行 非靜態代碼塊內只調用靜態的屬性、靜態的方法，也能調用非靜態的結構 public class Person { String name; int age; static String des = &amp;#34;Hello&amp;#34;; public Person() { } public Person(String name, int age) { this.</description></item></channel></rss>

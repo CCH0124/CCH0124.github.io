@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>data on</title><link>https://cch0124.github.io/tags/data/</link><description>Recent content in data on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Mon, 17 Aug 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/data/index.xml" rel="self" type="application/rss+xml"/><item><title>30 天學習歷程-day01</title><link>https://cch0124.github.io/blog/2020-08-17-know-data/</link><pubDate>Mon, 17 Aug 2020 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/blog/2020-08-17-know-data/</guid><description>了解你的資料 在這兩年的碩士班中，我將利用 30 天將我學習到的知識進行分享。如果有錯誤歡迎指教。
+有許多的資料都可以進行資料探勘，如：串流資料、時間序列資料、文字資料等。而透過資料探勘方式我們可以從該資料提取知識，也就是從資料中找到有意義的知識。在進行資料探勘時，資料的處裡也是相對重要，資料處裡過程有許多流程如下
+Data Cleaning 刪除聲噪和刪除不一致數據 Data integration 多種數據源可以組合一起 Data Selection 從資料庫中提取與分析任務相關的數據 Data transformation 透過匯總或聚集操作，把數據變換和統一成適合挖掘形式 Data mining 使用智能方法提取數據模式 Pattern evaluation 數據某種興趣度度量，識別代表知識的真正有趣模式 Knowledge presentation 使用可視化和知識表示技術，向用戶提供挖掘知識 from &amp;ldquo;Data Mining. Concepts and Techniques, 3rd Edition&amp;rdquo;
+第一天要講的主題是了解你的資料。當不了解資料，做探勘的意義就不大，其被找出來的知識將會讓人疑惑 ?
+一個資料的集合是由許多資料實體組成，以網路流量來說，流量可能被儲存至資料庫或是 Hadoop 等數據儲存方案，當中的實體可能是一個 TCP 流量、網路流量等。再以儲存方式來看，一列為一個實體，一欄為一個屬性。
+屬性 屬性簡單來說就是代表資料實體的特徵或變數等。一個資料實體的屬性集合，可稱它為特徵向量，該特徵向量描述了該實體。
+接下來的介紹將會參考&amp;quot;Data Mining. Concepts and Techniques, 3rd Edition&amp;quot;。</description></item></channel></rss>

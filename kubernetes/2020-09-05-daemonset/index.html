@@ -1,0 +1,191 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day15</h1><p class=mb-1>September 5, 2020</p><p>&mdash;</p></div><div class=content><p><code>DaemonSet</code> 簡稱 <code>ds</code> 也是一個 <code>POD</code> 控制器，用於實現在集群中每個節點運行一份 <code>POD</code>，即使是後續加入的節點，而移除節點則會進行 <code>POD</code> 的回收。假設只需針對某一些節點上進行部署，則可以使用節點的選擇器或是以標籤方式做限制。<code>DaemonSet</code> 使用場景可能有以下</p><ul><li>Log 搜集器</li><li>集群類型的儲存</li><li>資源監控相關</li></ul><p>下圖為 <code>Kubernetes in action</code> 一書，比較 <code>ReplicaSet</code> 和 <code>DaemonSet</code> 差異
+<img src=https://i.imgur.com/UTcPpOl.png alt></p><p>實驗環境是使用 <code>GKE</code> 我們可以查看預設下有哪些原件是使用 <code>DaemonSet</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get ds -n kube-system -l name!<span style=color:#f92672>=</span>filebeat
+NAME                       DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR                                                              AGE
+fluentd-gcp-v3.1.1         <span style=color:#ae81ff>4</span>         <span style=color:#ae81ff>4</span>         <span style=color:#ae81ff>4</span>       <span style=color:#ae81ff>4</span>            <span style=color:#ae81ff>4</span>           beta.kubernetes.io/fluentd-ds-ready<span style=color:#f92672>=</span>true,beta.kubernetes.io/os<span style=color:#f92672>=</span>linux       14d
+metadata-proxy-v0.1        <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>0</span>            <span style=color:#ae81ff>0</span>           beta.kubernetes.io/metadata-proxy-ready<span style=color:#f92672>=</span>true,beta.kubernetes.io/os<span style=color:#f92672>=</span>linux   14d
+nvidia-gpu-device-plugin   <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>         <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>0</span>            <span style=color:#ae81ff>0</span>           &lt;none&gt;                                                                     14d
+prometheus-to-sd           <span style=color:#ae81ff>4</span>         <span style=color:#ae81ff>4</span>         <span style=color:#ae81ff>4</span>       <span style=color:#ae81ff>4</span>            <span style=color:#ae81ff>4</span>           beta.kubernetes.io/os<span style=color:#f92672>=</span>linux                                                14d
+</code></pre></div><h2 id=建立-daemonset>建立 DaemonSet</h2><p>我們這邊以 <code>filebeat</code> 軟體作為本實驗，其作用是蒐集 <code>Log</code>，這邊會將其部署在每個節點上蒐集節點上的 <code>POD</code> 日誌訊息。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#75715e># ds-filebeat-demo.yaml</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>DaemonSet</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>filebeat-ds</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>kube-system</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>filebeat-logging</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>name</span>: <span style=color:#ae81ff>filebeat</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>name</span>: <span style=color:#ae81ff>filebeat</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>filebeat</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>docker.elastic.co/beats/filebeat:7.9.1</span>
+        <span style=color:#f92672>resources</span>:
+          <span style=color:#f92672>limits</span>:
+            <span style=color:#f92672>memory</span>: <span style=color:#ae81ff>300Mi</span>
+          <span style=color:#f92672>requests</span>:
+            <span style=color:#f92672>cpu</span>: <span style=color:#ae81ff>500m</span>
+            <span style=color:#f92672>memory</span>: <span style=color:#ae81ff>300Mi</span>
+</code></pre></div><p>使用 apply 進行部署</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -f ds-filebeat-demo.yaml
+</code></pre></div><p>使用 <code>describe</code> 查看詳細資訊，<code>Node-Selector</code> 為空沒有指定特別的節點標籤，因此代表需要在每一個節點上運行。我們在 <code>GKE</code> 上有三個節點因此 <code>Desired Number of Nodes Scheduled</code> 為 3，從 <code>Number of Nodes Scheduled with Available Pods</code> 中也已經部署 3 個可用的 <code>POD</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe ds filebeat-ds -n kube-system
+Name:           filebeat-ds
+Selector:       name<span style=color:#f92672>=</span>filebeat
+Node-Selector:  &lt;none&gt;
+Labels:         app<span style=color:#f92672>=</span>filebeat-logging
+Annotations:    deprecated.daemonset.template.generation: <span style=color:#ae81ff>1</span>
+Desired Number of Nodes Scheduled: <span style=color:#ae81ff>3</span>
+Current Number of Nodes Scheduled: <span style=color:#ae81ff>3</span>
+Number of Nodes Scheduled with Up-to-date Pods: <span style=color:#ae81ff>3</span>
+Number of Nodes Scheduled with Available Pods: <span style=color:#ae81ff>3</span>
+Number of Nodes Misscheduled: <span style=color:#ae81ff>0</span>
+Pods Status:  <span style=color:#ae81ff>3</span> Running / <span style=color:#ae81ff>0</span> Waiting / <span style=color:#ae81ff>0</span> Succeeded / <span style=color:#ae81ff>0</span> Failed
+Pod Template:
+  Labels:  name<span style=color:#f92672>=</span>filebeat
+  Containers:
+   filebeat:
+    Image:      docker.elastic.co/beats/filebeat:7.9.1
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Limits:
+      memory:  300Mi
+    Requests:
+      cpu:        500m
+      memory:     300Mi
+    Environment:  &lt;none&gt;
+    Mounts:       &lt;none&gt;
+  Volumes:        &lt;none&gt;
+Events:
+  Type    Reason            Age   From                  Message
+  ----    ------            ----  ----                  -------
+  Normal  SuccessfulCreate  62s   daemonset-controller  Created pod: filebeat-ds-jcfzv
+  Normal  SuccessfulCreate  62s   daemonset-controller  Created pod: filebeat-ds-4lh6c
+  Normal  SuccessfulCreate  62s   daemonset-controller  Created pod: filebeat-ds-gmq69
+</code></pre></div><p>驗證其部署在每個節點上</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud compute instances list <span style=color:#75715e># GKE 上部署的節點</span>
+NAME                                      ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
+gke-cluster-1-default-pool-7dc8b11b-cxs1  us-central1-c  e2-medium                  10.128.0.21  34.67.164.169  RUNNING
+gke-cluster-1-default-pool-7dc8b11b-r7rg  us-central1-c  e2-medium                  10.128.0.23  34.72.35.109   RUNNING
+gke-cluster-1-default-pool-7dc8b11b-z2gx  us-central1-c  e2-medium                  10.128.0.20  35.202.103.6   RUNNING
+$ kubectl get pods -n kube-system -l name<span style=color:#f92672>=</span>filebeat -o custom-columns<span style=color:#f92672>=</span>NAME:metadata.name,NODE:spec.nodeName
+NAME                NODE
+filebeat-ds-4lh6c   gke-cluster-1-default-pool-7dc8b11b-r7rg
+filebeat-ds-gmq69   gke-cluster-1-default-pool-7dc8b11b-z2gx
+filebeat-ds-jcfzv   gke-cluster-1-default-pool-7dc8b11b-cxs1
+</code></pre></div><p>如果對於 <code>DaemonSet</code> 部署在節點上有硬體資源需求的話，可在 <code>spec</code> 中定義 <code>nodeSelector</code> 讓其部署能夠針對選擇的節點部署。</p><h2 id=新增節點>新增節點</h2><p><code>DaemonSet</code> 在沒有設定 <code>nodeSelector</code> 下，每新增一個節點該節點就會部署 <code>DaemonSet</code> 的資源。</p><p>以下是在 <code>GCP</code> 的操作</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud container node-pools list --cluster cluster-1 --zone<span style=color:#f92672>=</span>us-central1-c
+NAME          MACHINE_TYPE  DISK_SIZE_GB  NODE_VERSION
+default-pool  e2-medium     <span style=color:#ae81ff>100</span>           1.15.12-gke.2
+$ gcloud container clusters resize cluster-1 --node-pool default-pool --num-nodes <span style=color:#ae81ff>4</span> --zone<span style=color:#f92672>=</span>us-central1-c
+Pool <span style=color:#f92672>[</span>default-pool<span style=color:#f92672>]</span> <span style=color:#66d9ef>for</span> <span style=color:#f92672>[</span>cluster-1<span style=color:#f92672>]</span> will be resized to 4.
+</code></pre></div><p>驗證</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ gcloud compute instances list
+NAME                                      ZONE           MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP     STATUS
+gke-cluster-1-default-pool-7dc8b11b-8kvr  us-central1-c  e2-medium                  10.128.0.24  35.238.113.123  RUNNING
+gke-cluster-1-default-pool-7dc8b11b-cxs1  us-central1-c  e2-medium                  10.128.0.21  34.67.164.169   RUNNING
+gke-cluster-1-default-pool-7dc8b11b-r7rg  us-central1-c  e2-medium                  10.128.0.23  34.72.35.109    RUNNING
+gke-cluster-1-default-pool-7dc8b11b-z2gx  us-central1-c  e2-medium                  10.128.0.20  35.202.103.6    RUNNING
+$ kubectl get pods -n kube-system -l name<span style=color:#f92672>=</span>filebeat -o custom-columns<span style=color:#f92672>=</span>NAME:metadata.name,NODE:spec.nodeName
+NAME                NODE
+filebeat-ds-4lh6c   gke-cluster-1-default-pool-7dc8b11b-r7rg
+filebeat-ds-gmq69   gke-cluster-1-default-pool-7dc8b11b-z2gx
+filebeat-ds-jcfzv   gke-cluster-1-default-pool-7dc8b11b-cxs1
+filebeat-ds-v8tl7   gke-cluster-1-default-pool-7dc8b11b-8kvr
+</code></pre></div><h2 id=更新-daemonset>更新 DaemonSet</h2><p><code>DaemonSet</code> 同樣也有更新的機制，透過 <code>explain</code> 查看，不同於 <code>Deployment</code> 的是 <code>OnDelete</code> 用於刪除更新也就是刪除相應節點上的 <code>POD</code> 後以新版本重建該 <code>POD</code>，同樣的 <code>RollingUpdate</code> 是預設值運作與 <code>Deployment</code> 類似。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl explain daemonSet.spec.updateStrategy
+KIND:     DaemonSet
+VERSION:  extensions/v1beta1
+
+RESOURCE: updateStrategy &lt;Object&gt;
+
+DESCRIPTION:
+     An update strategy to replace existing DaemonSet pods with new pods.
+
+FIELDS:
+   rollingUpdate        &lt;Object&gt;
+     Rolling update config params. Present only <span style=color:#66d9ef>if</span> type <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;RollingUpdate&#34;</span>.
+
+   type &lt;string&gt;
+     Type of daemon set update. Can be <span style=color:#e6db74>&#34;RollingUpdate&#34;</span> or <span style=color:#e6db74>&#34;OnDelete&#34;</span>. Default is
+     OnDelete.
+</code></pre></div><p>這邊同樣的使用 <code>set image</code> 方式去更新</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl -n kube-system set image ds filebeat-ds filebeat<span style=color:#f92672>=</span>docker.elastic.co/beats/filebeat:6.8.12
+$ kubectl get pods -n kube-system -l name<span style=color:#f92672>=</span>filebeat -w <span style=color:#75715e># 查看更新過程，先刪除一個節點上 POD，再創建新版 POD，不斷重複</span>
+NAME                READY   STATUS             RESTARTS   AGE
+filebeat-ds-4lh6c   1/1     Running            <span style=color:#ae81ff>0</span>          79m
+filebeat-ds-gmq69   1/1     Running            <span style=color:#ae81ff>0</span>          79m
+filebeat-ds-kfw6b   0/1     ImagePullBackOff   <span style=color:#ae81ff>0</span>          74s
+filebeat-ds-v8tl7   1/1     Running            <span style=color:#ae81ff>0</span>          48m
+filebeat-ds-kfw6b   0/1     Terminating        <span style=color:#ae81ff>0</span>          104s
+filebeat-ds-kfw6b   0/1     Terminating        <span style=color:#ae81ff>0</span>          104s
+filebeat-ds-kfw6b   0/1     Terminating        <span style=color:#ae81ff>0</span>          105s
+filebeat-ds-kfw6b   0/1     Terminating        <span style=color:#ae81ff>0</span>          105s
+filebeat-ds-tzmm9   0/1     Pending            <span style=color:#ae81ff>0</span>          0s
+filebeat-ds-tzmm9   0/1     Pending            <span style=color:#ae81ff>0</span>          0s
+filebeat-ds-tzmm9   0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          0s
+...
+$ kubectl describe -n kube-system daemonsets filebeat-ds <span style=color:#75715e># 透過 describe 觀察</span>
+...
+Events:
+  Type    Reason            Age    From                  Message
+  ----    ------            ----   ----                  -------
+  Normal  SuccessfulCreate  51m    daemonset-controller  Created pod: filebeat-ds-v8tl7
+  Normal  SuccessfulDelete  4m8s   daemonset-controller  Deleted pod: filebeat-ds-jcfzv
+  Normal  SuccessfulCreate  4m1s   daemonset-controller  Created pod: filebeat-ds-kfw6b
+  Normal  SuccessfulDelete  2m17s  daemonset-controller  Deleted pod: filebeat-ds-kfw6b
+  Normal  SuccessfulCreate  2m16s  daemonset-controller  Created pod: filebeat-ds-tzmm9
+  Normal  SuccessfulDelete  2m10s  daemonset-controller  Deleted pod: filebeat-ds-gmq69
+  Normal  SuccessfulCreate  2m8s   daemonset-controller  Created pod: filebeat-ds-hqwln
+  Normal  SuccessfulDelete  2m3s   daemonset-controller  Deleted pod: filebeat-ds-4lh6c
+  Normal  SuccessfulCreate  114s   daemonset-controller  Created pod: filebeat-ds-v5l28
+  Normal  SuccessfulDelete  108s   daemonset-controller  Deleted pod: filebeat-ds-v8tl7
+  Normal  SuccessfulCreate  103s   daemonset-controller  Created pod: filebeat-ds-ddkk9
+</code></pre></div><p>而 <code>DaemonSet</code> 也可以設定 <code>minReadySeconds</code>、<code>pause</code> 和 <code>resume</code> 等操作，同樣的也有<em>回滾機制</em>。</p><h2 id=回滾>回滾</h2><p>用法與 <code>Deployment</code> 是相同的。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl -n kube-system rollout history ds filebeat-ds
+daemonset.extensions/filebeat-ds
+REVISION  CHANGE-CAUSE
+<span style=color:#ae81ff>1</span>         &lt;none&gt;
+<span style=color:#ae81ff>2</span>         &lt;none&gt;
+<span style=color:#ae81ff>3</span>         &lt;none&gt;
+$ kubectl -n kube-system rollout undo ds filebeat-ds --to-revision<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> <span style=color:#75715e># 回滾</span>
+daemonset.extensions/filebeat-ds rolled back
+</code></pre></div><p>驗證，從 <code>6.8.12</code> 回滾至 <code>7.9.1</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -n kube-system -l name<span style=color:#f92672>=</span>filebeat -o custom-columns<span style=color:#f92672>=</span>Name:metadata.name,Image:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image
+Name                Image
+filebeat-ds-77sfr   docker.elastic.co/beats/filebeat:7.9.1
+filebeat-ds-kfc2f   docker.elastic.co/beats/filebeat:7.9.1
+filebeat-ds-kj5cx   docker.elastic.co/beats/filebeat:7.9.1 
+filebeat-ds-phktj   docker.elastic.co/beats/filebeat:7.9.1
+</code></pre></div><blockquote><p>CHANGE-CAUSE 為 是因為沒設定 &ndash;recode 原因</p></blockquote><h2 id=節點選擇>節點選擇</h2><p>我們有四個節點，我們將兩個打上 <code>ssd</code> 標籤，假設我們因為需求需要 <code>ssd</code> 支援。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get node
+NAME                                       STATUS   ROLES    AGE     VERSION
+gke-cluster-1-default-pool-7dc8b11b-8kvr   Ready    &lt;none&gt;   68m     v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-cxs1   Ready    &lt;none&gt;   14d     v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-r7rg   Ready    &lt;none&gt;   2d12h   v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-z2gx   Ready    &lt;none&gt;   14d     v1.15.12-gke.2
+$ kubectl label node gke-cluster-1-default-pool-7dc8b11b-cxs1 disk<span style=color:#f92672>=</span>ssd
+node/gke-cluster-1-default-pool-7dc8b11b-cxs1 labeled
+$ kubectl label node gke-cluster-1-default-pool-7dc8b11b-z2gx disk<span style=color:#f92672>=</span>ssd
+$ kubectl get ds -n kube-system filebeat-ds -o wide <span style=color:#75715e># 獲取 DaemonSet 部署資訊</span>
+NAME          DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE    CONTAINERS   IMAGES                                   SELECTOR
+filebeat-ds   <span style=color:#ae81ff>4</span>         <span style=color:#ae81ff>4</span>         <span style=color:#ae81ff>4</span>       <span style=color:#ae81ff>4</span>            <span style=color:#ae81ff>4</span>           &lt;none&gt;          116m   filebeat     docker.elastic.co/beats/filebeat:7.9.1   name<span style=color:#f92672>=</span>filebeat
+</code></pre></div><p>使用 <code>apply</code> 方式更新 <code>DaemonSet</code> 資源，編輯原 <code>yaml</code> 檔案並增加 <code>nodeSelector</code>，如下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml>...
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>nodeSelector</span>:
+        <span style=color:#f92672>disk</span>: <span style=color:#ae81ff>ssd</span>
+      <span style=color:#f92672>containers</span>:
+...
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -f ds-filebeat-demo.yaml
+$ kubectl get pods -n kube-system -l name<span style=color:#f92672>=</span>filebeat -o custom-columns<span style=color:#f92672>=</span>NAME:metadata.name,NODE:spec.nodeName -w  <span style=color:#75715e># 變成兩個</span>
+NAME                NODE
+filebeat-ds-5mfn7   gke-cluster-1-default-pool-7dc8b11b-cxs1
+filebeat-ds-hlrbr   gke-cluster-1-default-pool-7dc8b11b-z2gx
+
+$ kubectl get node -l disk<span style=color:#f92672>=</span>ssd -L disk  <span style=color:#75715e># 驗證了部署到指定標籤的節點上</span>
+NAME                                       STATUS   ROLES    AGE   VERSION          DISK
+gke-cluster-1-default-pool-7dc8b11b-cxs1   Ready    &lt;none&gt;   14d   v1.15.12-gke.2   ssd
+gke-cluster-1-default-pool-7dc8b11b-z2gx   Ready    &lt;none&gt;   14d   v1.15.12-gke.2   ssd
+$ kubectl get ds filebeat-ds -n kube-system <span style=color:#75715e># 從 NODE SELECTOR 也明確知道選擇的節點標籤</span>
+NAME          DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+filebeat-ds   <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>2</span>       <span style=color:#ae81ff>2</span>            <span style=color:#ae81ff>2</span>           disk<span style=color:#f92672>=</span>ssd        125m
+</code></pre></div><p>最後用下面的圖表示</p><figure><img src=/images/k8s/K8s-ds.jpg width=auto height=auto></figure><h2 id=參考資源>參考資源</h2><ul><li><a href=https://medium.com/kubernetes-tutorials/a-guide-to-kubernetes-daemonsets-6db7920ad140>guide-to-kubernetes-daemonsets</a></li><li>Kubernetes in action</li><li><a href=https://kubernetes.io/zh/docs/concepts/workloads/controllers/daemonset/>官方 DaemonSet</a></li><li><a href=https://kubernetes.io/docs/tasks/manage-daemon/rollback-daemon-set/>官方 rollback-daemon-set</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-04-deployment/ title="kubernetes - day14"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-06-job-cronjob/ title="kubernetes - day16"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

@@ -1,0 +1,202 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Network Troubleshotting</h1><p class=mb-1>January 28, 2018</p><p>&mdash;</p></div><div class=content><p>通常如果實體設備能正常工作，接下來會藉由一些網路相關的指令或工具進行網路上的除錯。像是確認 A 能否抵達 B 等。下面描述的是一些除錯的指令與工具。</p><h2 id=ping>ping</h2><p><a href=https://cch0124.github.io/ping/>先前有提到過</a>，這邊就不提了</p><h2 id=dsn-troubleshotting>DSN Troubleshotting</h2><h3 id=dig>dig</h3><p>dig 驗證 DNS 主機地址、MX 記錄和所有其他 DNS 記錄，方便了解 DNS 部署情況。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ dig www.nkust.edu.tw
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Ubuntu &lt;&lt;&gt;&gt; www.nkust.edu.tw
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style=color:#e6db74>&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style=color:#ae81ff>462</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: <span style=color:#ae81ff>1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; MBZ: <span style=color:#ae81ff>0005</span> , udp: <span style=color:#ae81ff>1280</span>
+;; QUESTION SECTION:
+;www.nkust.edu.tw.              IN      A
+
+;; ANSWER SECTION:
+www.nkust.edu.tw.       <span style=color:#ae81ff>5</span>       IN      A       140.133.78.31
+
+;; Query time: <span style=color:#ae81ff>220</span> msec
+;; SERVER: 192.168.137.2#53<span style=color:#f92672>(</span>192.168.137.2<span style=color:#f92672>)</span>
+;; WHEN: Sat Sep <span style=color:#ae81ff>07</span> 09:52:09 CST <span style=color:#ae81ff>2019</span>
+;; MSG SIZE  rcvd: <span style=color:#ae81ff>61</span>
+</code></pre></div><p>針對 MX 紀錄</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ dig MX www.nkust.edu.tw
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Ubuntu &lt;&lt;&gt;&gt; MX www.nkust.edu.tw
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style=color:#e6db74>&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style=color:#ae81ff>41967</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: <span style=color:#ae81ff>1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; MBZ: <span style=color:#ae81ff>0005</span> , udp: <span style=color:#ae81ff>1280</span>
+;; QUESTION SECTION:
+;www.nkust.edu.tw.              IN      MX
+
+;; AUTHORITY SECTION:
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      SOA     ns1.nkust.edu.tw. hostmaster. <span style=color:#ae81ff>876</span> <span style=color:#ae81ff>900</span> <span style=color:#ae81ff>600</span> <span style=color:#ae81ff>86400</span> <span style=color:#ae81ff>3600</span>
+
+;; Query time: <span style=color:#ae81ff>49</span> msec
+;; SERVER: 192.168.137.2#53<span style=color:#f92672>(</span>192.168.137.2<span style=color:#f92672>)</span>
+;; WHEN: Sat Sep <span style=color:#ae81ff>07</span> 09:52:34 CST <span style=color:#ae81ff>2019</span>
+;; MSG SIZE  rcvd: <span style=color:#ae81ff>95</span>
+</code></pre></div><p>所有紀錄</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ dig ANY nkust.edu.tw
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Ubuntu &lt;&lt;&gt;&gt; ANY nkust.edu.tw
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style=color:#e6db74>&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style=color:#ae81ff>34785</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 9, AUTHORITY: 0, ADDITIONAL: <span style=color:#ae81ff>1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; MBZ: <span style=color:#ae81ff>0005</span> , udp: <span style=color:#ae81ff>1280</span>
+;; QUESTION SECTION:
+;nkust.edu.tw.                  IN      ANY
+
+;; ANSWER SECTION:
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns4.nkust.edu.tw.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns3.nkust.edu.tw.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns2.nkust.edu.tw.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns1.nkust.edu.tw.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>10</span> ALT3.ASPMX.L.GOOGLE.COM.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>1</span> ASPMX.L.GOOGLE.COM.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>5</span> ALT1.ASPMX.L.GOOGLE.COM.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>5</span> ALT2.ASPMX.L.GOOGLE.COM.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>10</span> ALT4.ASPMX.L.GOOGLE.COM.
+
+;; Query time: <span style=color:#ae81ff>46</span> msec
+;; SERVER: 192.168.137.2#53<span style=color:#f92672>(</span>192.168.137.2<span style=color:#f92672>)</span>
+;; WHEN: Sat Sep <span style=color:#ae81ff>07</span> 09:53:21 CST <span style=color:#ae81ff>2019</span>
+;; MSG SIZE  rcvd: <span style=color:#ae81ff>231</span>
+</code></pre></div><p>反向搜尋獲取 DNS 資訊</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ dig -x 8.8.8.8
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Ubuntu &lt;&lt;&gt;&gt; -x 8.8.8.8
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style=color:#e6db74>&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style=color:#ae81ff>44451</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: <span style=color:#ae81ff>1</span>
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; MBZ: <span style=color:#ae81ff>0005</span> , udp: <span style=color:#ae81ff>1280</span>
+;; QUESTION SECTION:
+;8.8.8.8.in-addr.arpa.          IN      PTR
+
+;; ANSWER SECTION:
+8.8.8.8.in-addr.arpa.   <span style=color:#ae81ff>5</span>       IN      PTR     dns.google.
+
+;; Query time: <span style=color:#ae81ff>31</span> msec
+;; SERVER: 192.168.137.2#53<span style=color:#f92672>(</span>192.168.137.2<span style=color:#f92672>)</span>
+;; WHEN: Sat Sep <span style=color:#ae81ff>07</span> 09:54:44 CST <span style=color:#ae81ff>2019</span>
+;; MSG SIZE  rcvd: <span style=color:#ae81ff>73</span>
+</code></pre></div><p>dig 利用 <code>/etc/resolv.conf</code> 中列出的 server 進行查詢。</p><h3 id=host>host</h3><p>很像 dig 的指令，可以用來針對 DNS 偵錯。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ host -a nkust.edu.tw
+Trying <span style=color:#e6db74>&#34;nkust.edu.tw&#34;</span>
+;; -&gt;&gt;HEADER<span style=color:#e6db74>&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style=color:#ae81ff>12012</span>
+;; flags: qr rd ra; QUERY: 1, ANSWER: 12, AUTHORITY: 0, ADDITIONAL: <span style=color:#ae81ff>0</span>
+
+;; QUESTION SECTION:
+;nkust.edu.tw.                  IN      ANY
+
+;; ANSWER SECTION:
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      TXT     <span style=color:#e6db74>&#34;v=spf1 ip4:140.127.113.0/24 ip4:140.133.78.0/24 ip4:163.18.1.10 ip4:120.119.140.0/24 ipv4:61.216.112.118 ip4:163.18.2.113 include:_spf.google.com ~all&#34;</span>
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      TXT     <span style=color:#e6db74>&#34;google-site-verification=OhgxCcOmuGjTkMf_11whQSN4SYxrcEVJkbm6WFLDMZY&#34;</span>
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>10</span> alt4.aspmx.l.google.com.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>1</span> aspmx.l.google.com.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>5</span> alt1.aspmx.l.google.com.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>5</span> alt2.aspmx.l.google.com.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      MX      <span style=color:#ae81ff>10</span> alt3.aspmx.l.google.com.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      SOA     ns1.nkust.edu.tw. hostmaster. <span style=color:#ae81ff>876</span> <span style=color:#ae81ff>900</span> <span style=color:#ae81ff>600</span> <span style=color:#ae81ff>86400</span> <span style=color:#ae81ff>3600</span>
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns2.nkust.edu.tw.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns1.nkust.edu.tw.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns4.nkust.edu.tw.
+nkust.edu.tw.           <span style=color:#ae81ff>5</span>       IN      NS      ns3.nkust.edu.tw.
+
+Received <span style=color:#ae81ff>510</span> bytes from 192.168.137.2#53 in <span style=color:#ae81ff>50</span> ms
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ host 8.8.8.8
+8.8.8.8.in-addr.arpa domain name pointer dns.google.
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ host -T stu.edu.tw
+stu.edu.tw has address 120.119.28.13
+stu.edu.tw has address 120.119.28.14
+stu.edu.tw has address 172.30.0.84
+stu.edu.tw has IPv6 address 2001:e10:c41:1::13
+stu.edu.tw has IPv6 address 2001:e10:c41:1::14
+stu.edu.tw mail is handled by <span style=color:#ae81ff>5</span> alt2.aspmx.l.google.com.
+stu.edu.tw mail is handled by <span style=color:#ae81ff>1</span> aspmx.l.google.com.
+stu.edu.tw mail is handled by <span style=color:#ae81ff>10</span> aspmx2.googlemail.com.
+stu.edu.tw mail is handled by <span style=color:#ae81ff>10</span> aspmx3.googlemail.com.
+stu.edu.tw mail is handled by <span style=color:#ae81ff>30</span> aspmx4.googlemail.com.
+stu.edu.tw mail is handled by <span style=color:#ae81ff>30</span> aspmx5.googlemail.com.
+stu.edu.tw mail is handled by <span style=color:#ae81ff>5</span> alt1.aspmx.l.google.com.
+</code></pre></div><h2 id=traceroute>traceroute</h2><p>可以從此指令得知本地到目標要經過多少 hop。訊息中可以得知每一 hop 的設備名稱和標示甚至可以知道該延遲來自哪個設備。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ traceroute www.google.com 
+<span style=color:#75715e># -n 可避免 DNS 反查</span>
+<span style=color:#75715e># -I 傳 ICMP Packet</span>
+traceroute to www.google.com <span style=color:#f92672>(</span>216.58.200.228<span style=color:#f92672>)</span>, <span style=color:#ae81ff>30</span> hops max, <span style=color:#ae81ff>60</span> byte packets
+ <span style=color:#ae81ff>1</span>  192.168.137.2 <span style=color:#f92672>(</span>192.168.137.2<span style=color:#f92672>)</span>  0.416 ms  0.773 ms  0.640 ms
+ <span style=color:#ae81ff>2</span>  * * *
+ <span style=color:#ae81ff>3</span>  * * *
+ <span style=color:#ae81ff>4</span>  * * *
+ <span style=color:#ae81ff>5</span>  * * *
+ <span style=color:#ae81ff>6</span>  * * *
+ <span style=color:#ae81ff>7</span>  *^C
+</code></pre></div><h2 id=mtr>mtr</h2><p>算是比 traceroute 更先進，在預設中 ubuntu 並無 traceroute。有著即時的數據。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ mtr www.nkust.edu.tw
+</code></pre></div><h2 id=ss>ss</h2><p>socket statistics 命令 <code>ss</code> 是 <code>netstat</code> 的取代未來可能會將 <code>netstat</code> 移除，它比 <code>netstat</code> 更快，並提供更多訊息。</p><p>ss 直接從 kernel 獲取其訊息，不是像 netstat 依賴 <code>/proc</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Netid  State      Recv-Q Send-Q Local Address:Port                 Peer Address:Port
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>19250</span>                 * <span style=color:#ae81ff>19251</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>22575</span>                 * <span style=color:#ae81ff>22571</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15802</span>                 * <span style=color:#ae81ff>15803</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15803</span>                 * <span style=color:#ae81ff>15802</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>15935</span>                 * <span style=color:#ae81ff>15868</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15512</span>                 * <span style=color:#ae81ff>15514</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>22571</span>                 * <span style=color:#ae81ff>22575</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>15936</span>                 * <span style=color:#ae81ff>15930</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>12423</span>                 * <span style=color:#ae81ff>13118</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>19603</span>                 * <span style=color:#ae81ff>19604</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15930</span>                 * <span style=color:#ae81ff>15936</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>13118</span>                 * <span style=color:#ae81ff>12423</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>17241</span>                 * <span style=color:#ae81ff>17240</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>15514</span>                 * <span style=color:#ae81ff>15512</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15868</span>                 * <span style=color:#ae81ff>15935</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>17640</span>                 * <span style=color:#ae81ff>17461</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/containerd/containerd.sock <span style=color:#ae81ff>19604</span>                 * <span style=color:#ae81ff>19603</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>17240</span>                 * <span style=color:#ae81ff>17241</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>13120</span>                 * <span style=color:#ae81ff>12543</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>16127</span>                 * <span style=color:#ae81ff>16130</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>16130</span>                 * <span style=color:#ae81ff>16127</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>19251</span>                 * <span style=color:#ae81ff>19250</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15448</span>                 * <span style=color:#ae81ff>15450</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>15450</span>                 * <span style=color:#ae81ff>15448</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>12543</span>                 * <span style=color:#ae81ff>13120</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>14588</span>                 * <span style=color:#ae81ff>14619</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>15754</span>                 * <span style=color:#ae81ff>15734</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>16129</span>                 * <span style=color:#ae81ff>16066</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>16066</span>                 * <span style=color:#ae81ff>16129</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15734</span>                 * <span style=color:#ae81ff>15754</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>15741</span>                 * <span style=color:#ae81ff>15804</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>      /run/systemd/journal/stdout <span style=color:#ae81ff>17834</span>                 * <span style=color:#ae81ff>17819</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>19599</span>                 * <span style=color:#ae81ff>19600</span>
+u_str  ESTAB      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>       * <span style=color:#ae81ff>19410</span>                 * <span style=color:#ae81ff>19411</span>
+:
+</code></pre></div><p>顯示 TCP sockets 使用 <code>-t</code>，UPD 使用 <code>-u</code>，unix socket 使用 <code>-x</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ss -at
+State       Recv-Q Send-Q                                                     Local Address:Port                                                                      Peer Address:Port
+LISTEN      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>128</span>                                                                    *:ssh                                                                                  *:*
+LISTEN      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>128</span>                                                            127.0.0.1:mysql                                                                                *:*
+LISTEN      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>128</span>                                                                    *:http                                                                                 *:*
+ESTAB       <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>                                                        192.168.137.142:ssh                                                                      192.168.137.1:11326
+LISTEN      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>128</span>                                                                   :::ssh                                                                                 :::*
+LISTEN      <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>128</span>                                                                   :::http                                                                                :::*
+</code></pre></div><p>查看已建立的 TCP socket</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$  ss -t4 state established
+Recv-Q Send-Q                                                          Local Address:Port                                                                           Peer Address:Port
+<span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>308</span>                                                           192.168.137.142:ssh                                                                           192.168.137.1:11326
+</code></pre></div><h2 id=arp>arp</h2><p>IP 位址對應的 MAC 位址，稱為 ARP table。如果連接到 IP 位址，路由器將檢查 MAC 位址。如果已被緩存，則不使用 ARP table。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ arp -n
+Address                  HWtype  HWaddress           Flags Mask            Iface
+192.168.137.2            ether   00:50:56:ef:e2:19   C                     ens33
+192.168.137.254          ether   00:50:56:ef:fe:84   C                     ens33
+192.168.137.1            ether   00:50:56:c0:00:08   C                     ens33
+</code></pre></div><h2 id=tcpdump>tcpdump</h2><p>可用來蒐集流量並分析，但功能似乎沒 wireshark 齊全。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ tcpdump -i &lt;Iface&gt;
+$ tcpdump -i &lt;Iface&gt; tcp <span style=color:#75715e># 針對 TCP 蒐集</span>
+$ tcpdump -i &lt;Iface&gt; port <span style=color:#ae81ff>80</span> <span style=color:#75715e># 針對 port 80 蒐集</span>
+$ tcpdump -i &lt;Iface&gt; src &lt;IP&gt; <span style=color:#75715e># 針對來源 IP 抓取</span>
+$ tcpdump -c &lt;Num&gt; -i &lt;Iface&gt; <span style=color:#75715e># -c 表示要抓取的 packet 數量</span>
+$ tcpdump -w <span style=color:#f92672>[</span>PATH<span style=color:#f92672>]</span> -i &lt;Iface&gt;  <span style=color:#75715e># -w 存檔</span>
+$ tcpdump -r <span style=color:#f92672>[</span>PATH<span style=color:#f92672>]</span> <span style=color:#75715e># -r 讀檔</span>
+</code></pre></div></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2018-01-24-shell-text-background-color/ title=人所習慣的視覺化><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2018-03-29-docker-compose-command/ title="basic command of docker-compose"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

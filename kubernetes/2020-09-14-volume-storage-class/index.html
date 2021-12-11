@@ -1,0 +1,185 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day24</h1><p class=mb-1>September 14, 2020</p><p>&mdash;</p></div><div class=content><p>在 <code>K8s</code> 中 <code>StorageClass</code> 對象的目的，就是不去創建 <code>PV</code> 而是透過 <code>PVC</code> 需求去建立 <code>PV</code>，這表示不必要再去管理 <code>PV</code> 資源，相較於 <code>PVC</code> 請求 <code>PV</code> 方式帶來更高的靈活性。</p><p>在創建 <code>StorageClass</code> 對象時，<code>name</code> 的定義一樣是重要的，<code>PVC</code> 在調用時會使用 <code>storageClassName</code> 去對應該 <code>StorageClass</code> 對象的 <code>name</code>，創建時還需定義以下通用字段</p><ul><li>provisioner<ul><li>提供儲存的儲存系統，也就是供應商</li></ul></li><li>parameter<ul><li>會依照 <code>provisioner</code> 的不同而有不同的參數</li></ul></li><li>reclaimPolicy<ul><li><code>PV</code> 回收策略，預設是 <code>Delete</code> 否則可定義 <code>Retain</code></li></ul></li><li>volumeBindingMode<ul><li>定義讓 <code>PVC</code> 完成提供和綁定資源</li></ul></li></ul><h2 id=gke-上-storageclass-實作>GKE 上 StorageClass 實作</h2><p>我們以 Nginx 為例，為它建立一個 <code>StorageClass</code>。我們會定義以下的 <code>yaml</code>。<code>volumeBindingMode</code> 字段可參考<a href=https://kubernetes.io/zh/docs/concepts/storage/storage-classes/#%E5%8D%B7%E7%BB%91%E5%AE%9A%E6%A8%A1%E5%BC%8F>官方</a>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>storage.k8s.io/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>StorageClass</span> <span style=color:#75715e>#  定義 StorageClass</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>standard-us-centrall-a-b-c</span>
+<span style=color:#f92672>provisioner</span>: <span style=color:#ae81ff>kubernetes.io/gce-pd</span> <span style=color:#75715e># 提供儲存的地方</span>
+<span style=color:#f92672>parameters</span>:
+  <span style=color:#f92672>type</span>: <span style=color:#ae81ff>pd-standard</span> <span style=color:#75715e># 使用一般類型硬碟</span>
+<span style=color:#f92672>reclaimPolicy</span>: <span style=color:#ae81ff>Delete</span> <span style=color:#75715e># 刪除後自動清除相關資源</span>
+<span style=color:#f92672>volumeBindingMode</span>: <span style=color:#ae81ff>WaitForFirstConsumer </span>
+<span style=color:#f92672>allowedTopologies</span>: <span style=color:#75715e># 這邊是設定儲存建立的區域</span>
+- <span style=color:#f92672>matchLabelExpressions</span>:
+  - <span style=color:#f92672>key</span>: <span style=color:#ae81ff>failure-domain.beta.kubernetes.io/zone</span>
+    <span style=color:#f92672>values</span>: <span style=color:#75715e># 建立區域有以下</span>
+    - <span style=color:#ae81ff>us-central1-a</span>
+    - <span style=color:#ae81ff>us-central1-b</span>
+    - <span style=color:#ae81ff>us-central1-c</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>PersistentVolumeClaim</span> <span style=color:#75715e># 建立 PVC</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx-pvc</span> <span style=color:#75715e># 名稱</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx</span>
+    <span style=color:#f92672>role</span>: <span style=color:#ae81ff>backend</span>
+<span style=color:#f92672>spec</span>: <span style=color:#75715e># 下面字段都說明過</span>
+  <span style=color:#f92672>accessModes</span>:
+    - <span style=color:#ae81ff>ReadOnlyMany</span>
+  <span style=color:#f92672>resources</span>:
+    <span style=color:#f92672>requests</span>:
+      <span style=color:#f92672>storage</span>: <span style=color:#ae81ff>8Gi</span>
+  <span style=color:#f92672>storageClassName</span>: <span style=color:#ae81ff>standard-us-centrall-a-b-c</span> <span style=color:#75715e># 這邊要對應 StorageClass 對象定義的 name</span>
+</code></pre></div><p>定義 Nginx 的 <code>POD</code>，控制器使用 <code>Deployment</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx-deploy</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>1</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+        - <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+          <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx</span>
+          <span style=color:#f92672>ports</span>:
+            - <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+              <span style=color:#f92672>name</span>: <span style=color:#e6db74>&#34;http-server&#34;</span>
+          <span style=color:#f92672>volumeMounts</span>:
+            - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx-persistent-storage</span>
+              <span style=color:#f92672>mountPath</span>: <span style=color:#ae81ff>/usr/share/nginx/html</span>
+      <span style=color:#f92672>volumes</span>:
+        - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx-persistent-storage</span>
+          <span style=color:#f92672>persistentVolumeClaim</span>: <span style=color:#75715e># PVC</span>
+            <span style=color:#f92672>claimName</span>: <span style=color:#ae81ff>nginx-pvc</span> <span style=color:#75715e># PVC 的 name 字段</span>
+</code></pre></div><p>當上面檔案都建立後，使用 <code>apply</code> 方式布署。布署完後先查看 <code>StorageClass</code> 是否被建立，結果如下有被建立。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get storageclass
+NAME                         PROVISIONER            AGE
+standard <span style=color:#f92672>(</span>default<span style=color:#f92672>)</span>           kubernetes.io/gce-pd   20d
+standard-us-centrall-a-b-c   kubernetes.io/gce-pd   88s
+</code></pre></div><p>接著查看 <code>PVC</code> 是否有綁定到 <code>StorageClass</code> 所建立的 <code>PV</code>，從下面結果看是有的，<code>STATUS</code> 為 <code>Bound</code>，用 <code>describe</code> 觀察 <code>Events</code> 也是可以觀察到成功的綁定。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pvc
+NAME        STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                 AGE
+nginx-pvc   Bound    pvc-dfb99470-421f-44ca-aa2c-7f47806f0037   8Gi        ROX            standard-us-centrall-a-b-c   109s
+
+$ kubectl describe pvc nginx-pvc
+Name:          nginx-pvc
+Namespace:     default
+StorageClass:  standard-us-centrall-a-b-c
+Status:        Bound
+Volume:        pvc-dfb99470-421f-44ca-aa2c-7f47806f0037
+Labels:        app<span style=color:#f92672>=</span>nginx
+               role<span style=color:#f92672>=</span>backend
+Annotations:   pv.kubernetes.io/bind-completed: yes
+               pv.kubernetes.io/bound-by-controller: yes
+               volume.beta.kubernetes.io/storage-provisioner: kubernetes.io/gce-pd
+               volume.kubernetes.io/selected-node: gke-cluster-1-default-pool-7dc8b11b-r7rg
+Finalizers:    <span style=color:#f92672>[</span>kubernetes.io/pvc-protection<span style=color:#f92672>]</span>
+Capacity:      8Gi
+Access Modes:  ROX
+VolumeMode:    Filesystem
+Mounted By:    nginx-deploy-56fc578995-xhf52 <span style=color:#75715e># 由我們建立的 POD 綁定</span>
+Events:
+  Type     Reason                 Age                  From                         Message
+  ----     ------                 ----                 ----                         -------
+  Warning  ProvisioningFailed     2m15s                persistentvolume-controller  storageclass.storage.k8s.io <span style=color:#e6db74>&#34;standard-us-centrall-a-b-c&#34;</span> not found
+  Normal   WaitForFirstConsumer   73s <span style=color:#f92672>(</span>x5 over 2m13s<span style=color:#f92672>)</span>  persistentvolume-controller  waiting <span style=color:#66d9ef>for</span> first consumer to be created before binding
+  Normal   ProvisioningSucceeded  65s                  persistentvolume-controller  Successfully provisioned volume pvc-dfb99470-421f-44ca-aa2c-7f47806f0037 using kubernetes.io/gce-pd
+</code></pre></div><p>這邊是觀察 <code>POD</code> 部分，使用 <code>describe</code> 觀察 <code>Volumes</code> 部分在 <code>ClaimName</code> 下確實有綁定到 <code>PVC</code>，在觀察 <code>Events</code> 同樣有成功綁定訊息。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe pods nginx-deploy-56fc578995-xhf52
+Name:           nginx-deploy-56fc578995-xhf52
+Namespace:      default
+...
+    Ready:          True
+    Restart Count:  <span style=color:#ae81ff>0</span>
+    Requests:
+      cpu:        100m
+    Environment:  &lt;none&gt;
+    Mounts:
+      /usr/share/nginx/html from nginx-persistent-storage <span style=color:#f92672>(</span>rw<span style=color:#f92672>)</span>
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-nnghk <span style=color:#f92672>(</span>ro<span style=color:#f92672>)</span>
+...
+Volumes:
+  nginx-persistent-storage:
+    Type:       PersistentVolumeClaim <span style=color:#f92672>(</span>a reference to a PersistentVolumeClaim in the same namespace<span style=color:#f92672>)</span>
+    ClaimName:  nginx-pvc
+    ReadOnly:   false
+  default-token-nnghk:
+...
+Events:
+  Type    Reason                  Age    From                                               Message
+  ----    ------                  ----   ----                                               -------
+  Normal  Scheduled               2m24s  default-scheduler                                  Successfully assigned default/nginx-deploy-56fc578995-xhf52 to gke-cluster-1-default-pool-7dc8b11b-r7rg
+  Normal  SuccessfulAttachVolume  2m19s  attachdetach-controller                            AttachVolume.Attach succeeded <span style=color:#66d9ef>for</span> volume <span style=color:#e6db74>&#34;pvc-dfb99470-421f-44ca-aa2c-7f47806f0037&#34;</span>
+...
+</code></pre></div><p>查看 <code>StroageClass</code> 所建立的 <code>PV</code>，建立 <code>CAPACITY</code> 為設定的 8Gi，表示說這樣的使用方式可以避免空間浪費的可能。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM               STORAGECLASS                 REASON   AGE
+pvc-dfb99470-421f-44ca-aa2c-7f47806f0037   8Gi        ROX            Delete           Bound    default/nginx-pvc   standard-us-centrall-a-b-c            4m4s
+$ kubectl describe pv pvc-dfb99470-421f-44ca-aa2c-7f47806f0037
+Name:              pvc-dfb99470-421f-44ca-aa2c-7f47806f0037
+Labels:            failure-domain.beta.kubernetes.io/region<span style=color:#f92672>=</span>us-central1
+                   failure-domain.beta.kubernetes.io/zone<span style=color:#f92672>=</span>us-central1-c
+Annotations:       kubernetes.io/createdby: gce-pd-dynamic-provisioner
+                   pv.kubernetes.io/bound-by-controller: yes
+                   pv.kubernetes.io/provisioned-by: kubernetes.io/gce-pd
+Finalizers:        <span style=color:#f92672>[</span>kubernetes.io/pv-protection<span style=color:#f92672>]</span>
+StorageClass:      standard-us-centrall-a-b-c
+Status:            Bound
+Claim:             default/nginx-pvc
+Reclaim Policy:    Delete
+Access Modes:      ROX
+VolumeMode:        Filesystem
+Capacity:          8Gi
+Node Affinity:
+  Required Terms:
+    Term 0:        failure-domain.beta.kubernetes.io/zone in <span style=color:#f92672>[</span>us-central1-c<span style=color:#f92672>]</span>
+                   failure-domain.beta.kubernetes.io/region in <span style=color:#f92672>[</span>us-central1<span style=color:#f92672>]</span>
+Message:
+Source:
+    Type:       GCEPersistentDisk <span style=color:#f92672>(</span>a Persistent Disk resource in Google Compute Engine<span style=color:#f92672>)</span>
+    PDName:     gke-cluster-1-1d54e52c-pvc-dfb99470-421f-44ca-aa2c-7f47806f0037
+    FSType:     ext4
+    Partition:  <span style=color:#ae81ff>0</span>
+    ReadOnly:   false
+Events:         &lt;none&gt;
+</code></pre></div><p>下面兩張圖是在 <code>GKE</code> 上的呈現。Google 有一個<a href=https://github.com/CCH0124/qwiklab/blob/master/Kubernetes%20Solutions/Using%20Kubernetes%20Engine%20to%20Deploy%20Apps%20with%20Regional%20Persistent%20Disks.md>qwiklab</a> 也是針對於 <code>StorageClass</code> 進行實驗，有興趣的可以參考。</p><p><img src=https://i.imgur.com/5oFyuov.png alt></p><p><img src=https://i.imgur.com/4SyPfYG.png alt></p><h2 id=other>Other</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods
+NAME                                READY   STATUS              RESTARTS   AGE
+...
+nginx-deploy-56fc578995-bsr8b       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          3m54s
+nginx-deploy-56fc578995-svwc5       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          3m54s
+nginx-deploy-56fc578995-xhf52       1/1     Running             <span style=color:#ae81ff>0</span>          11m
+...
+$ kubectl describe pod nginx-deploy-56fc578995-bsr8b
+...
+Events:
+  Type     Reason              Age                 From                     Message
+  ----     ------              ----                ----                     -------
+  Normal   Scheduled           117s                default-scheduler        Successfully assigned default/nginx-deploy-56fc578995-bsr8b to gke-cluster-1-default-pool-7dc8b11b-cxs1
+  Warning  FailedAttachVolume  13s <span style=color:#f92672>(</span>x8 over 111s<span style=color:#f92672>)</span>  attachdetach-controller  AttachVolume.Attach failed <span style=color:#66d9ef>for</span> volume <span style=color:#e6db74>&#34;pvc-dfb99470-421f-44ca-aa2c-7f47806f0037&#34;</span> : googleapi: Error 400: RESOURCE_IN_USE_BY_ANOTHER_RESOURCE - The disk resource <span style=color:#e6db74>&#39;projects/sunny-catwalk-286908/zones/us-central1-c/disks/gke-cluster-1-1d54e52c-pvc-dfb99470-421f-44ca-aa2c-7f47806f0037&#39;</span> is already being used by <span style=color:#e6db74>&#39;projects/sunny-catwalk-286908/zones/us-central1-c/instances/gke-cluster-1-default-pool-7dc8b11b-r7rg&#39;</span>
+</code></pre></div><p>以 <code>ReplicaSet</code> 來看在定義 <code>POD</code> 時需要讓它關聯至一個 <code>PVC</code>，而有多個副本時都會共享這個 <code>PVC</code>，因此都會綁定到相同的 <code>PV</code>。從結果來看不能針對每個 <code>POD</code> 去建立獨立的 <code>PV</code>，也就是說不能用 <code>ReplicaSet</code> 來分配每個 <code>POD</code> 一個獨立 <code>PV</code>，上面的錯誤就是這種情況。但是，透過手動創建 <code>POD</code>、一個 <code>POD</code> 對應一個 <code>ReplicaSet</code> 然後定義每個 <code>POD</code> 的 <code>PVC</code> 或是將共享的 <code>PV</code> 中利用目錄方式去建立每個 <code>POD</code> 的存取目錄，不過這些方式有點繁瑣，加上重新調度問題，這些還會再延伸出問題。在 <code>K8s</code> 中有一個 <code>StatefulSet</code> 的控制器可以將每個應用程式都分配一個專屬資源，這在後面章節在提。</p><p>如果上面的 <code>ReplicaSet</code> 資源要共享 <code>PV</code> 時，在 <code>POD</code> 中 <code>containers</code> 的 <code>VolumeMounts</code> 字段中將 <code>readOnly</code> 設置為 true。</p><blockquote><p>readOnly 設置結果：Mounted read-only if true, read-write otherwise (false or unspecified). Defaults to false.</p></blockquote><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl edit deploy nginx-deploy <span style=color:#75715e># 修改 replicas 個數</span>
+$ kubectl get pods
+NAME                                READY   STATUS              RESTARTS   AGE
+nginx-deploy-6f4c7bf454-58xtd       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          11m
+nginx-deploy-6f4c7bf454-6l7vs       1/1     Running             <span style=color:#ae81ff>0</span>          23m
+nginx-deploy-6f4c7bf454-8blj5       1/1     Running             <span style=color:#ae81ff>0</span>          23m
+nginx-deploy-6f4c7bf454-9wdzp       1/1     Running             <span style=color:#ae81ff>0</span>          23m
+nginx-deploy-6f4c7bf454-c24p9       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          11m
+nginx-deploy-6f4c7bf454-j8dcb       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          11m
+nginx-deploy-6f4c7bf454-ksdxh       1/1     Running             <span style=color:#ae81ff>0</span>          11m <span style=color:#75715e># 成功</span>
+nginx-deploy-6f4c7bf454-ps7ps       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          11m
+nginx-deploy-6f4c7bf454-wzd64       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          11m
+nginx-deploy-6f4c7bf454-ztgnr       0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          11m
+</code></pre></div><p>以下從檔案更新個數在 <code>apply</code> 也是相同錯誤結果。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>Events:
+  Type     Reason              Age                   From                                               Message
+  ----     ------              ----                  ----                                               -------
+  Normal   Scheduled           9m55s                 default-scheduler                                  Successfully assigned default/nginx-deploy-6f4c7bf454-c24p9 to gke-cluster-1-default-pool-7dc8b11b-8kvr
+  Warning  FailedMount         66s <span style=color:#f92672>(</span>x4 over 7m52s<span style=color:#f92672>)</span>   kubelet, gke-cluster-1-default-pool-7dc8b11b-8kvr  Unable to mount volumes <span style=color:#66d9ef>for</span> pod <span style=color:#e6db74>&#34;nginx-deploy-6f4c7bf454-c24p9_default(618dce42-0312-481c-a2ad-17edf2c9a9fd)&#34;</span>: timeout expired waiting <span style=color:#66d9ef>for</span> volumes to attach or mount <span style=color:#66d9ef>for</span> pod <span style=color:#e6db74>&#34;default&#34;</span>/<span style=color:#e6db74>&#34;nginx-deploy-6f4c7bf454-c24p9&#34;</span>. list of unmounted volumes<span style=color:#f92672>=[</span>nginx-persistent-storage<span style=color:#f92672>]</span>. list of unattached volumes<span style=color:#f92672>=[</span>nginx-persistent-storage default-token-nnghk<span style=color:#f92672>]</span>
+  Warning  FailedAttachVolume  43s <span style=color:#f92672>(</span>x12 over 9m50s<span style=color:#f92672>)</span>  attachdetach-controller                            AttachVolume.Attach failed <span style=color:#66d9ef>for</span> volume <span style=color:#e6db74>&#34;pvc-451989b4-ecc8-4571-89ba-2de8c76181c5&#34;</span> : googleapi: Error 400: RESOURCE_IN_USE_BY_ANOTHER_RESOURCE - The disk resource <span style=color:#e6db74>&#39;projects/sunny-catwalk-286908/zones/us-central1-c/disks/gke-cluster-1-1d54e52c-pvc-451989b4-ecc8-4571-89ba-2de8c76181c5&#39;</span> is already being used by <span style=color:#e6db74>&#39;projects/sunny-catwalk-286908/zones/us-central1-c/instances/gke-cluster-1-default-pool-7dc8b11b-r7rg&#39;</span>
+</code></pre></div><p>這邊的錯誤結果有待在釐清一下。</p><h2 id=pv-與-pvc-生命週期>PV 與 PVC 生命週期</h2><ol><li>提供儲存</li></ol><ul><li>靜態提供<ul><li>需要定義 <code>PV</code>，並由 <code>PVC</code> 匹配</li></ul></li><li>動態提供<ul><li><code>PVC</code> 去建立 <code>PV</code></li></ul></li></ul><ol start=2><li>儲存綁定</li></ol><p><code>PVC</code> 找到符合的 <code>PV</code> 後建立關聯。當 <code>PVC</code> 無法有符合 <code>PV</code> 時，會等待到有符合的 <code>PV</code> 為止，只不過狀態並非是綁定。這邊提到說一個正在使用的 <code>PVC</code> 被刪除的話，並非是立即的，會直到無任何資源使用時才會刪除。</p><ol start=3><li>儲存回收</li></ol><p>就是前面說的 <code>Retained</code>、<code>Recycled</code> 和 <code>Deleted</code>。</p><ol start=4><li>擴展 PVC</li></ol><p>簡單來說是擴充容量大小，這功能並非所有儲存方案都有，詳細可看<a href=https://kubernetes.io/docs/concepts/storage/persistent-volumes/#lifecycle-of-a-volume-and-claim>官方</a></p><h2 id=參考資源>參考資源</h2><ul><li><a href=https://kubernetes.io/docs/concepts/storage/storage-classes/>官方 storage-classes</a></li><li><a href="https://cloud.google.com/kubernetes-engine/docs/concepts/persistent-volumes?hl=zh-tw">GKE persistent-volumes</a></li><li><a href=https://kubernetes.io/docs/concepts/storage/persistent-volumes/#lifecycle-of-a-volume-and-claim>PV 和 PVC 生命週期</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-13-persistent-volume/ title="kubernetes - day23"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-15-configmap-secret/ title="kubernetes - day25"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

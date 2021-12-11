@@ -1,0 +1,113 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day09</h1><p class=mb-1>August 30, 2020</p><p>&mdash;</p></div><div class=content><p>這一章節承接第 8 天的文章，此篇文章要分享的是<em>標籤</em>和<em>標籤選擇器</em>的應用。</p><p>在一個 <code>Kubernetes</code> 環境下，當 <code>POD</code> 數量越來越多，分類和管理將會變得重要，因為這樣才能提升管理的效率，而在 <code>K8s</code> 中有一個 <code>Label</code> 的字段，它可用來定義資源而外的訊息像是測試環境、開發環境、前端等，往後在藉由標籤選擇器進行過濾完成想要的目標和任務。</p><h2 id=標籤>標籤</h2><p>標籤可以依附在每個 K8s 資源對象之上，一個對象可有不止一個標籤，而同一個標籤可被新增到多個資源上。如上述所講，它可以靈活的進行資源對象的分類進行管理，標籤可用版本、環境、分層架構等方式進行貼標籤動作。下圖為 &ldquo;Kubernetes in action&rdquo; 書中圖片</p><p><img src=https://i.imgur.com/9yonwLu.png alt></p><blockquote><p>相較於 <code>annotations</code>，<code>annotations</code> 無法用來挑選資源對象，僅提供"原數據"，類似註解</p></blockquote><h2 id=管理標籤>管理標籤</h2><p>K8s 中標籤字段定義在 <code>metadata</code> 上，以下面為範例，定義兩個標籤分別是 <code>app</code> 和 <code>tier</code>，值分別是 <code>myapp</code> 和 <code>backend</code>。</p><pre><code class="language-yaml=" data-lang="yaml="># pod-demo.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-label-demo
+  namespace: default
+  labels:
+    app: myapp
+    tier: backend
+spec:
+  containers:
+  - name: myapp
+    image: nginx:1.18
+</code></pre><p>如果上面的 <code>yaml</code> 檔部署完成後，可用 <code>--show-labels</code> 的選項，讓列出 <code>POD</code> 資源時帶有定義的標籤。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pod --show-labels
+NAME             READY   STATUS    RESTARTS   AGE     LABELS
+pod-label-demo   1/1     Running   <span style=color:#ae81ff>0</span>          10s     app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>=</span>backend
+</code></pre></div><p>假設標籤給很多時，使用 <code>-L key1,key2...</code>，可指定要看的標籤訊息。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pod -L tier
+NAME             READY   STATUS    RESTARTS   AGE     TIER
+envar-demo       1/1     Running   <span style=color:#ae81ff>0</span>          3d20h
+pod-demo         2/2     Running   <span style=color:#ae81ff>93</span>         3d21h   frontend
+pod-label-demo   1/1     Running   <span style=color:#ae81ff>0</span>          2m48s   backend <span style=color:#75715e># this</span>
+pod-ports-demo   2/2     Running   <span style=color:#ae81ff>92</span>         3d20h   frontend
+$ kubectl get pods -L tier --show-labels
+NAME             READY   STATUS    RESTARTS   AGE     TIER       LABELS
+envar-demo       1/1     Running   <span style=color:#ae81ff>0</span>          3d20h              purpose<span style=color:#f92672>=</span>demonstrate-envars
+pod-demo         2/2     Running   <span style=color:#ae81ff>93</span>         3d21h   frontend   app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>=</span>frontend
+pod-label-demo   1/1     Running   <span style=color:#ae81ff>0</span>          4m43s   backend    app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>=</span>backend
+pod-ports-demo   2/2     Running   <span style=color:#ae81ff>92</span>         3d20h   frontend   app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>=</span>frontend
+</code></pre></div><p>在 K8s 操作中，也提供用 <code>kubectl label</code> 方式打標籤</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl label pods pod-demo release<span style=color:#f92672>=</span>canary
+pod/pod-demo labeled
+$ kubectl get pod -l release --show-labels
+NAME       READY   STATUS    RESTARTS   AGE     LABELS
+pod-demo   2/2     Running   <span style=color:#ae81ff>93</span>         3d21h   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>canary,tier<span style=color:#f92672>=</span>frontend
+
+<span style=color:#75715e># 當要更正已存在標籤則要使用 --overwrite</span>
+
+$ kubectl label pods pod-demo release<span style=color:#f92672>=</span>stable --overwrite
+pod/pod-demo labeled
+$ kubectl get pod -l release --show-labels
+NAME       READY   STATUS    RESTARTS   AGE     LABELS
+pod-demo   2/2     Running   <span style=color:#ae81ff>93</span>         3d21h   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>stable,tier<span style=color:#f92672>=</span>frontend
+</code></pre></div><h2 id=標籤選擇器>標籤選擇器</h2><p>如果客戶端想針對某個特定標籤下執行特定動作(刪除、查看)，這需要使用標籤選擇器。使用標籤選擇器須注意以下</p><ol><li>同時指定的多個選則器之間的邏輯關係為 &ldquo;AND&rdquo; 操作</li><li>使用空值的標籤選擇器表示每個資源對象都被選擇</li><li>空的標籤選擇器無法選擇任何資源</li></ol><p>進行標籤選擇時可使用以下方式</p><ul><li>等值關係<ul><li><code>=</code></li><li><code>==</code></li><li><code>!=</code></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e># 此範例為選擇 release 標籤且值為 stable</span>
+$ kubectl get pods -l release<span style=color:#f92672>=</span>stable --show-labels
+NAME       READY   STATUS    RESTARTS   AGE     LABELS
+pod-demo   2/2     Running   <span style=color:#ae81ff>93</span>         3d21h   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>stable,tier<span style=color:#f92672>=</span>frontend
+<span style=color:#75715e># 此範例為選擇 app 標籤且值為 myapp 和  tier 標籤且值為 backend</span>
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>==</span>backend --show-labels
+NAME             READY   STATUS    RESTARTS   AGE   LABELS
+pod-label-demo   1/1     Running   <span style=color:#ae81ff>0</span>          13m   app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>=</span>backend
+<span style=color:#75715e># 此範例為選擇 app 標籤且值為 myapp 和  tier 標籤且值不為 backend</span>
+$ kubectl get pods -l app<span style=color:#f92672>=</span>myapp,tier!<span style=color:#f92672>=</span>backend -L tier --show-labels
+NAME             READY   STATUS    RESTARTS   AGE     TIER       LABELS
+pod-demo         2/2     Running   <span style=color:#ae81ff>93</span>         3d21h   frontend   app<span style=color:#f92672>=</span>myapp,release<span style=color:#f92672>=</span>stable,tier<span style=color:#f92672>=</span>frontend
+pod-ports-demo   2/2     Running   <span style=color:#ae81ff>92</span>         3d20h   frontend   app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>=</span>frontend
+</code></pre></div><ul><li>集合關係<ul><li>key <code>in</code></li><li>key <code>notin</code></li><li>key</li><li>!key</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -l <span style=color:#e6db74>&#34;tier in (backend)&#34;</span> -L tier --show-labels
+NAME             READY   STATUS    RESTARTS   AGE   TIER      LABELS
+pod-label-demo   1/1     Running   <span style=color:#ae81ff>0</span>          18m   backend   app<span style=color:#f92672>=</span>myapp,tier<span style=color:#f92672>=</span>backend
+</code></pre></div><p>K8s 資源中必須以標籤選擇器方式關連到相關的 <code>POD</code> 資源，像是 <code>Service</code>、<code>Deployment</code> 和 <code>ReplicaSet</code> 等資源。這些資源會透過在 <code>spec</code> 中定義 <code>selector</code> 字段，並使用 <code>matchLabels</code> 指定標籤選擇器，或者有些資源可用 <code>matchExpressions</code> 帶有表達式方式去做篩選機制。</p><ul><li>matchLabels<ul><li>給定鍵值來指定標籤選擇器</li></ul></li><li>matchExpressions<ul><li>基於表達式方式指定標籤選擇器</li><li><a href=https://kubernetes.io/zh/docs/concepts/overview/working-with-objects/labels/>官方介紹</a></li></ul></li></ul><h2 id=pod-選擇節點>POD 選擇節點</h2><p>指定讓 <code>POD</code> 在某個節點上運行，假設只有某節點有 <code>SSD</code>、<code>GPU</code> 等資源時， 讓<code>scheduler</code> 用標籤和標籤選擇器讓 <code>POD</code> 選擇匹配的節點。正常的來說 <code>POD</code> 部署會藉由 <code>scheduler</code> 挑選節點上資源允許的節點部署。</p><p>在 <code>POD</code> 的 <code>spec</code> 中的 <code>nodeSelector</code> 可用來選擇想要的節點，前提下節點需設置好標籤。</p><p>使用 <code>kubectl label node</code> 將節點打標籤。在預設上節點上是有標籤可透過 <code>kubectl get node --show-labels</code> 觀察。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl label node gke-cluster-1-default-pool-7dc8b11b-z2gx disk<span style=color:#f92672>=</span>ssd device<span style=color:#f92672>=</span>gpu
+node/gke-cluster-1-default-pool-7dc8b11b-z2gx labeled
+$ kubectl get node -L disk,device 
+NAME                                       STATUS   ROLES    AGE    VERSION          DISK   DEVICE
+gke-cluster-1-default-pool-7dc8b11b-cxs1   Ready    &lt;none&gt;   7d2h   v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-r7rg   Ready    &lt;none&gt;   7d2h   v1.15.12-gke.2
+gke-cluster-1-default-pool-7dc8b11b-z2gx   Ready    &lt;none&gt;   7d2h   v1.15.12-gke.2   ssd    gpu
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-nodeselector-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>backend</span>
+    <span style=color:#f92672>node</span>: <span style=color:#ae81ff>ssd</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+  <span style=color:#f92672>nodeSelector</span>:
+    <span style=color:#f92672>disk</span>: <span style=color:#ae81ff>ssd</span>
+</code></pre></div><p>部署完上面 <code>yaml</code> 時</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe pod pod-nodeselector-demo 
+....
+Events:
+  Type    Reason     Age   From                                               Message
+  ----    ------     ----  ----                                               -------
+  Normal  Scheduled  6s    default-scheduler                                  Successfully assigned default/pod-nodeselector-demo to gke-cluster-1-default-pool-7dc8b11b-z2gx
+  Normal  Pulled     5s    kubelet, gke-cluster-1-default-pool-7dc8b11b-z2gx  Container image <span style=color:#e6db74>&#34;nginx:1.18&#34;</span> already present on machine
+  Normal  Created    5s    kubelet, gke-cluster-1-default-pool-7dc8b11b-z2gx  Created container myapp
+  Normal  Started    5s    kubelet, gke-cluster-1-default-pool-7dc8b11b-z2gx  Started container myapp
+</code></pre></div><p>對於這種綁定還有一種類型叫 <code>nodeName</code>，它直接指定目標節點。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-nodename-demo</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>backend</span>
+    <span style=color:#f92672>node</span>: <span style=color:#ae81ff>ssd</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>:
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+  <span style=color:#f92672>nodeName</span>: <span style=color:#e6db74>&#34;gke-cluster-1-default-pool-7dc8b11b-r7rg&#34;</span>
+</code></pre></div><p>部署完後用下面進行部署節點位置觀察。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pod -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP          NODE                                       NOMINATED NODE   READINESS GATES
+...
+pod-nodename-demo       1/1     Running   <span style=color:#ae81ff>0</span>          43s     10.4.2.9    gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;
+pod-nodeselector-demo   1/1     Running   <span style=color:#ae81ff>0</span>          5m8s    10.4.0.11   
+...
+</code></pre></div><h2 id=資源註釋>資源註釋</h2><p>與標籤類似，但它的描述內容不受字元大小限制，它可用來添加一些而外訊息。可使用 <code>kubectl describe pods</code> 去查看 <code>POD</code> 資源的 <code>Annotations</code>。</p><p>在 <code>yaml</code> 中則是在 <code>metadata</code> 中使用 <code>annotations</code> 去定義，否則也可使用 <code>kubectl annotate pods</code> 方式。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-08-29-management-pod/ title="kubernetes - day08"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-08-31-pod-lifecycle/ title="kubernetes - day10"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

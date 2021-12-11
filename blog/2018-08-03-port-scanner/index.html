@@ -1,0 +1,145 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>port scanner</h1><p class=mb-1>January 1, 0001</p><p>&mdash;</p></div><div class=content><h1 id=scapy-安裝及實作程式碼介紹>Scapy 安裝及實作程式碼介紹</h1><h2 id=env>env</h2><ul><li>ubuntu<ul><li>scapy 套件</li><li>python3</li></ul></li></ul><h3 id=scapy-套件安裝>scapy 套件安裝</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>git clone https://github.com/secdev/scapy
+cd scapy
+sudo python3 setup.py install
+</code></pre></div><blockquote><p>因為 windows 沒 fork 功能，所以只能在 unix 環境執行</p></blockquote><p><a href=http://scapy.readthedocs.io/en/latest/installation.html>scapy install</a></p><h2 id=執行與驗證>執行與驗證</h2><h4 id=執行>執行</h4><pre><code class="language-python=" data-lang="python=">itachi@swarm-master:~/python$ sudo python3 PortScanner.py
+[sudo] password for itachi:
+[*] Enter Target IP Address: 127.0.0.1
+[*] Enter Minumum Port Number: 10
+[*] Enter Maximum Port Number: 90
+
+[*] Target is Up, Beginning Scan...
+[*] Scanning Started at 10:54:30!
+
+Port 22: Open
+Port 80: Open
+
+[*] Scanning Finished!
+[*] Total Scan Duration: 0:00:07.653668
+</code></pre><h4 id=驗證>驗證</h4><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>$ netstat -ta
+Active Internet connections <span style=color:#f92672>(</span>servers and established<span style=color:#f92672>)</span>
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> *:ssh                   *:*                     LISTEN
+tcp        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>1</span> 192.168.15.129:39212    192.168.15.130:2377     SYN_SENT
+tcp        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> 192.168.15.129:ssh      192.168.15.1:62492      ESTABLISHED
+tcp6       <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:2377               <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:*                  LISTEN
+tcp6       <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:http               <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:*                  LISTEN
+tcp6       <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span> <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:ssh                <span style=color:#f92672>[</span>::<span style=color:#f92672>]</span>:*                  LISTEN
+</code></pre></div><h2 id=scapy-介紹>scapy 介紹</h2><h4 id=列出所有協議>列出所有協議</h4><pre><code class="language-python=" data-lang="python=">ls()
+</code></pre><h4 id=針對-tcp-列出此協議選項>針對 TCP 列出此協議選項</h4><pre><code class="language-python=" data-lang="python=">ls(TCP)
+</code></pre><h4 id=獲取所有命令>獲取所有命令</h4><pre><code class="language-python=" data-lang="python=">lsc()
+</code></pre><h3 id=發送數據包>發送數據包</h3><h4 id=ping>ping</h4><pre><code class="language-python=" data-lang="python=">send(IP(dst=&quot;127.0.0.1&quot;)/ICMP())
+</code></pre><ul><li>send（）在第3層（IP）上發送</li><li>sendp（）在layer2（以太網）上發送</li></ul><h4 id=layer-3-發送-packet-並等待響應>Layer 3 發送 packet 並等待響應</h4><pre><code class="language-python=" data-lang="python=">(resp, unans) = sr(IP(dst=&quot;192.168.1.1&quot;)/ICMP(), timeout=3)
+</code></pre><h2 id=tcp-three-way-handshake>TCP Three-Way Handshake</h2><p>與TCP建立連接時，Server 和 Client 之間會發生 Three-Way Handshake。有許多標記可以在 TCP Packet 中標記。
+<img src=https://d3ojx0qwvsjea2.cloudfront.net/wp-content/uploads/2016/12/24160105/Three-way-Handshake-ex2.png alt="Three-Way Handshake"></p><h2 id=隱形掃描>隱形掃描</h2><p>隱形掃描中，攻擊者向 Server 發送SYN 標誌。Server 然後用一組SYN和ACK標誌或一組RST和ACK標誌作出回應。如果服務器使用RST和ACK進行回應，則該端口關閉。但是如果 Server 回應SYN和ACK，則端口是開放的。攻擊者然後用RST標誌作出回應，在連接完全建立之前終止連接。
+<img src=https://mk0resourcesinfm536w.kinstacdn.com/wp-content/uploads/101613_1123_PortScannin4.jpg alt="TCP stealth scan"></p><h2 id=程式>程式</h2><h3 id=main>main</h3><pre><code class="language-python=" data-lang="python="># TCP flag
+SYNACK = 0x12 
+RSTACK = 0x14
+</code></pre><pre><code class="language-python=" data-lang="python=">startTime = getTime() # 掃描開始時間
+try:
+    targetIP = input(&quot;[*] Enter Target IP Address: &quot;)
+    minPort = input(&quot;[*] Enter Minumum Port Number: &quot;)
+    maxPort = input(&quot;[*] Enter Maximum Port Number: &quot;)
+    ports = checkPort(minPort, maxPort) # 檢查輸入的 port ，Port 範圍 0 ~ 65536
+except KeyboardInterrupt:
+    print(&quot;\n[*] User Requested Shutdown...&quot;)
+    print(&quot;[*] Exiting...&quot;)
+    sys.exit(1)
+
+#ports = range(int(minPort), int(maxPort)+1)
+
+checkHost(targetIP) # 確認輸入 IP 使否能 ping 
+scanStart() 
+
+scanningPrintOpenPort(ports) # 掃描使用者輸入的 Port
+
+endTime = getTime() # 掃描結束時間
+
+print(&quot;\n[*] Scanning Finished!&quot;)
+
+totalTime(startTime,endTime) # 總共花費時間
+</code></pre><h3 id=module>module</h3><pre><code class="language-python=" data-lang="python=">def checkPort(minPort, maxPort) :
+    try:
+        if int(int(minPort) &gt;= 0 and int(maxPort) &gt;= 0 and int(maxPort) &gt;= int(minPort)):
+
+            ports = range(int(minPort), int(maxPort) + 1) # 定義掃描 port 範圍
+            return ports
+        else:
+            print(&quot;\n Range of Ports. Error&quot;)
+            print(&quot;[!] Exiting...&quot;)
+            sys.exit(1)
+    except Exception:
+         print(&quot;\n Range of Ports. Error&quot;)
+         print(&quot;[!] Exiting...&quot;)
+         sys.exit(1)
+</code></pre><pre><code class="language-python=" data-lang="python=">def checkHost(targetIP):
+    conf.L3socket = L3RawSocket # 是為了讓 lookback 能夠運行
+    conf.verb = False # 書初步顯示
+    try:
+        ping = sr1(IP(dst = targetIP)/ICMP(),timeout=1) # 定義 ping 的封包
+        print(&quot;\n[*] Target is Up, Beginning Scan...&quot;)
+    except Exception:
+        print(&quot;\n[!] Couldn't Resolve Target&quot;)
+        print(&quot;[!] Exiting...&quot;)
+        traceback.print_exc()
+        sys.exit(1)
+</code></pre><pre><code class="language-python=" data-lang="python=">def scanport(port):
+    conf.L3socket = L3RawSocket
+    try:
+        srcPort = RandShort() # Client 端隨機產生 port 
+        conf.verb = False
+        SYN_ACK_Packet = sr1(IP(dst = targetIP)/TCP(sport = srcPort, dport = port, flags = &quot;S&quot;),timeout=3) # 定義 TCP SYN/ACK 封包
+        packetFlags = SYN_ACK_Packet.getlayer(TCP).flags # 取得 flag
+        return isFlags(packetFlags)
+        RSTpkt = IP(dst = targetIP)/TCP(sport = srcPort, dport = port, flags = &quot;R&quot;) # 定義 TCP　RST 封包
+        send(RSTpkt) # 第三層（網路層），發送
+    except KeyboardInterrupt:
+        RSTpkt = IP(dst = target)/TCP(sport = srcPort, dport = port, flags = &quot;R&quot;)
+        send(RSTpkt)
+        print(&quot;\n[*] User Requested Shutdown...&quot;)
+        print(&quot;[*] Exiting...&quot;)
+        sys.exit(1)
+
+</code></pre><pre><code class="language-python=" data-lang="python=">def isFlags(packetFlags): # 比對回應的 TCP flag
+    if packetFlags == SYNACK:
+        return True
+    else:
+        return False
+        
+def getTime():
+    return datetime.now() # 取得時間
+
+def totalTime(startTime, endTime):
+    print(&quot;[*] Total Scan Duration: &quot; + str(endTime - startTime)) # 起始時間跟結束時間，耗費多久
+
+def scanStart():
+    print(&quot;[*] Scanning Started at &quot; + strftime(&quot;%H:%M:%S&quot;) + &quot;!\n&quot;)
+
+def scanningPrintOpenPort(ports): # 掃描 port 
+    for port in ports:
+        status = scanport(port)
+        isPortOpen(status, port)
+
+def isPortOpen(status, port): # 檢測 port 是否開啟
+    if status == True:
+        print(&quot;Port &quot; + str(port) + &quot;: Open&quot;)
+</code></pre><p><a href=https://github.com/CCH0124/STU_Homework/blob/master/python/PortScanner/PortScanner.py>本人的實作</a></p><h2 id=問題解決>問題解決</h2><h3 id=warning-message>Warning Message</h3><p>導入 scapy 時刪除 <code>找不到IPv6目標的路由</code> 錯誤</p><pre><code class="language-python=" data-lang="python=">import logging
+logging.getLogger(&quot;scapy.runtime&quot;).setLevel(logging.ERROR)
+from scapy.all import *
+import sys 
+from datetime import datetime
+from time import strftime
+</code></pre><h3 id=得不到回應>得不到回應</h3><pre><code class="language-python=" data-lang="python=">ping = sr1(IP(dst = &quot;127.0.0.1&quot;)/ICMP(),timeout=3)
+print(ping)
+Begin emission:
+.Finished sending 1 packets.
+..............................................................................
+Received 79 packets, got 0 answers, remaining 1 packets
+None
+</code></pre><p>一整個沒回應，新增如下即可</p><pre><code class="language-python=" data-lang="python=">conf.L3socket = L3RawSocket
+</code></pre><h3 id=未知問題>未知問題</h3><p>掃描本機端是可行的，但是針對外面的主機進行掃描，有時掃到某個 port(99、105、2001) 會噴錯，錯誤目前未知。</p><h2 id=參考資料>參考資料</h2><p><a href=https://null-byte.wonderhowto.com/how-to/build-stealth-port-scanner-with-scapy-and-python-0164779/>PortScanner</a>
+<a href=https://resources.infosecinstitute.com/port-scanning-using-scapy/#gref>PortScanner</a>
+<a href="https://scapy.readthedocs.io/en/latest/troubleshooting.html?highlight=L3socket">L3socket</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-10-13-static-nat/ title="Static NAT"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-10-12-nat-dynamic/ title=NAT><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

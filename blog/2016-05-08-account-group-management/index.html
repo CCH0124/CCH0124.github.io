@@ -1,0 +1,84 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Ubuntu 上的帳號和群組管理</h1><p class=mb-1>May 8, 2016</p><p>&mdash;</p></div><div class=content><h2 id=帳號命名原則>帳號命名原則</h2><p>管理者總是讓帳號有一定的統一規則。如：</p><ul><li>魯夫就 roof 或 luff</li><li>組織單位的分層 itachi_jp</li><li>區域分層 zoro_mis
+等。</li></ul><p>這些都是為了維護和管理阿!!</p><h2 id=account-帳號>Account 帳號</h2><p>在 ubuntu 中，每個使用者都有獨立的 UID（ID Number），系統對帳號的識別以 UID 為準，<strong>帳號的名稱僅用在登錄系統上</strong>。UID 就像身分證一樣必須唯一（UID 0 以外），有著一對一關係。</p><ul><li>UID 為 0 表示為最高權限（root）。</li><li>服務帳號會自動建立，<strong>UID 通常介於 1~99</strong></li><li>手動定義 UID 建議以 1000 開始</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e># 系統的設定</span>
+$ grep UID /etc/login.defs
+UID_MIN                  <span style=color:#ae81ff>1000</span>
+UID_MAX                 <span style=color:#ae81ff>60000</span>
+<span style=color:#75715e>#SYS_UID_MIN              100</span>
+<span style=color:#75715e>#SYS_UID_MAX              999</span>
+</code></pre></div><ul><li>使用者的名稱和 UID 存在 <code>/etc/passwd</code></li><li>使用者會有<strong>家目錄</strong></li><li>該使用者無適當的權限，則無法讀寫甚至執行檔案</li></ul><h2 id=group-群組>Group 群組</h2><p>帳號與群組類似，簡稱 GID（Group ID）。</p><ul><li>GID 和群組名稱必須唯一（GID 0 例外）</li><li>GID 儲存在 <code>/etc/passwd</code> 第四欄位；<code>/etc/group</code> 是第三欄位</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ cat /etc/passwd | tail -n <span style=color:#ae81ff>5</span>
+cch:x:1000:1000:cch,,,:/home/cch:/bin/bash
+naruto:x:1001:1001:Test Account:/home/naruto:/bin/bash
+itahi:x:1002:1002:Test Account:/home/itahi:/bin/bash
+madara:x:1003:1004::/home/madara:/sbin/nologin
+brouto:x:1004:1006::/home/brouto:/sbin/nologin
+</code></pre></div><pre><code>$ cat /etc/group | tail -n 5
+itahi:x:1002:
+ftpgroup:x:1003:naruto,madara
+madara:x:1004:
+ftpgroup2:x:1005:brouto
+brouto:x:1006:naruto
+</code></pre><h2 id=root>root</h2><p>一定是存在系統的，權限為最高的帳號。在 ubuntu 不允許預設 <code>root</code> 登入，須以一般帳號登入再提權。<code>root</code> 的 <code>UID</code> 為 <code>0</code>，帳號 <code>UID</code> 改為 <code>0</code>，則權限與 root 是畫上等號的。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ id root
+uid<span style=color:#f92672>=</span>0<span style=color:#f92672>(</span>root<span style=color:#f92672>)</span> gid<span style=color:#f92672>=</span>0<span style=color:#f92672>(</span>root<span style=color:#f92672>)</span> groups<span style=color:#f92672>=</span>0<span style=color:#f92672>(</span>root<span style=color:#f92672>)</span>
+</code></pre></div><h2 id=帳號管理相關目錄與介紹>帳號管理相關目錄與介紹</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ /etc/passwd <span style=color:#75715e># 紀錄系統帳號資訊</span>
+$ /etc/group <span style=color:#75715e># 紀錄群組帳號的資訊檔</span>
+$ /etc/shadow <span style=color:#75715e># 記錄密碼相關的資訊紀錄</span>
+</code></pre></div><h3 id=passwd-檔案>passwd 檔案</h3><p>格式為 <code>帳號:密碼:UID:GID:註解:家目錄:shell</code></p><ul><li>帳號<ul><li>系統帳號名稱</li></ul></li><li>密碼<ul><li>hash 過的欄位，在 <code>shadow</code> 檔為欄位 <code>x</code></li></ul></li><li>UID<ul><li>帳號識別碼</li></ul></li><li>GID<ul><li>群組碼，對應於 group 檔案</li></ul></li><li>註解<ul><li>備註或介紹等資訊</li></ul></li><li>家目錄<ul><li>帳號家目錄的位置</li></ul></li><li>shell<ul><li>登入時所使用的指令有以下<ul><li>sh</li><li>csh</li><li>bash</li><li>zsh</li><li>/sbin/nologin 無法登入，可應用在 <code>sftp</code></li></ul></li></ul></li></ul><h3 id=group-檔案>group 檔案</h3><p>格式 <code>群組名稱:密碼:GID:帳號列表</code>。可用 <code>groupadd</code>、<code>gpasswd</code> 或 <code>groupdel</code> 處裡該檔案，並不會直接修改。</p><ul><li>群組名稱<ul><li>取的名字</li></ul></li><li>密碼<ul><li>hash 過的欄位，也是以 <code>x</code> 顯示</li></ul></li><li>GID<ul><li>群組的 ID</li></ul></li><li>帳號列表<ul><li>列出該群組的使用者</li></ul></li></ul><h3 id=shadow-檔案>shadow 檔案</h3><p><img src=https://i.imgur.com/5GKMako.png alt></p><ul><li>帳號<ul><li>登入系統的名稱</li></ul></li><li>加密密碼<ul><li>第一字元為 <code>!</code>，表示已經被鎖定，該帳號無法登入</li></ul></li><li>上次密碼變更日期<ul><li>0 表示下次登入要更改密碼</li></ul></li><li>密碼最短使用期限<ul><li>0 表示關閉此功能</li></ul></li><li>密碼最長使用期限<ul><li>為空值表示關閉此功能</li></ul></li><li>密碼失效前多少日提醒警告<ul><li>0 表示關閉此功能</li></ul></li><li>密碼失效前多少日停用帳號<ul><li>密碼過期，還有幾天寬限時間更改</li><li>為空值表示關閉此功能</li></ul></li><li>帳號過期時間<ul><li>為空值表示不會過期</li></ul></li></ul><h2 id=帳號和群組相關指令>帳號和群組相關指令</h2><ul><li>passwd<ul><li>設定密碼
+<img src=https://i.imgur.com/1z9DOBn.png alt></li></ul></li><li>useradd<ul><li>新增帳號
+<img src=https://i.imgur.com/XNsgPE3.png alt>
+<img src=https://i.imgur.com/zt5oudF.png alt></li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e># 範例</span>
+$ sudo useradd -d /home/roof -u <span style=color:#ae81ff>5000</span> -s /bin/bash roof
+$ id roof
+uid<span style=color:#f92672>=</span>5000<span style=color:#f92672>(</span>roof<span style=color:#f92672>)</span> gid<span style=color:#f92672>=</span>5000<span style=color:#f92672>(</span>roof<span style=color:#f92672>)</span> groups<span style=color:#f92672>=</span>5000<span style=color:#f92672>(</span>roof<span style=color:#f92672>)</span>
+</code></pre></div><ul><li>usermod<ul><li>修改帳號資訊
+<img src=https://i.imgur.com/NQozKCs.png alt></li></ul></li><li>userdel<ul><li>刪除帳號</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo userdel roof <span style=color:#75715e># 加上 -r 參數表示連同家目錄一並刪除</span>
+$ id roof
+id: ‘roof’: no such user
+</code></pre></div><ul><li>groupadd<ul><li>新增群組</li></ul></li><li>gpasswd<ul><li>管理群組成員</li></ul></li><li>groupdel<ul><li>刪除群組</li></ul></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo useradd student100
+$ sudo useradd student101
+$ sudo useradd student102
+$ sudo groupadd -g <span style=color:#ae81ff>800</span> stustaff <span style=color:#75715e># -g 給予 GID</span>
+$ sudo groupadd -g <span style=color:#ae81ff>900</span> ta
+$ sudo gpasswd -a student100 stustaff <span style=color:#75715e># -a 附加要新增的帳號到群組 stustaff；-d 則表示刪除</span>
+Adding user student100 to group stustaff
+ sudo gpasswd -a student101 ta
+Adding user student101 to group ta
+$ sudo gpasswd -a student102 ta
+Adding user student102 to group ta
+$ sudo cat /etc/group | grep -E <span style=color:#e6db74>&#34;(stustaff)|(ta)&#34;</span>
+tape:x:26:
+www-data:x:33:
+staff:x:50:
+crontab:x:107:
+itahi:x:1002:
+stustaff:x:800:student100 <span style=color:#75715e>##</span>
+ta:x:900:student101,student102 <span style=color:#75715e>##</span>
+$ id student101
+uid<span style=color:#f92672>=</span>1006<span style=color:#f92672>(</span>student101<span style=color:#f92672>)</span> gid<span style=color:#f92672>=</span>1008<span style=color:#f92672>(</span>student101<span style=color:#f92672>)</span> groups<span style=color:#f92672>=</span>1008<span style=color:#f92672>(</span>student101<span style=color:#f92672>)</span>,900<span style=color:#f92672>(</span>ta<span style=color:#f92672>)</span>
+$ sudo groupdel ta <span style=color:#75715e># 刪除群組</span>
+$ id student101
+uid<span style=color:#f92672>=</span>1006<span style=color:#f92672>(</span>student101<span style=color:#f92672>)</span> gid<span style=color:#f92672>=</span>1008<span style=color:#f92672>(</span>student101<span style=color:#f92672>)</span> groups<span style=color:#f92672>=</span>1008<span style=color:#f92672>(</span>student101<span style=color:#f92672>)</span>
+$ sudo groupdel stustaff
+</code></pre></div><ul><li>chage<ul><li>設定密碼
+<img src=https://i.imgur.com/uy1NA0V.png alt></li></ul></li></ul><h2 id=帳號預設設定>帳號預設設定</h2><ul><li>會從 <code>/etc/default/useradd</code> 與 <code>/etc/login.defs</code> 的檔案做處裡</li><li>將 <code>/etc/skel/.bashrc</code> 複製到帳號的根目錄，因此帳號會有 <code>.bash_profile</code> 和 <code>.bashrc</code> 檔案</li></ul><h3 id=useradd-檔案基本的設定值>useradd 檔案基本的設定值</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>GROUP<span style=color:#f92672>=</span><span style=color:#ae81ff>500</span> <span style=color:#75715e># 帳號預設 GID</span>
+HOME<span style=color:#f92672>=</span>/home <span style=color:#75715e># 目錄位置</span>
+INACTIVE<span style=color:#f92672>=</span>-1 <span style=color:#75715e># 是否停用，-1 表啟用</span>
+EXPIRE<span style=color:#f92672>=</span> <span style=color:#75715e># 失效日期</span>
+SHELL<span style=color:#f92672>=</span>/bin/sh <span style=color:#75715e># 使用 shell</span>
+SKEL<span style=color:#f92672>=</span>/etc/skel <span style=color:#75715e># 套用 SKEL 設定值</span>
+</code></pre></div><h3 id=logindefs-帳號詳細資訊>login.defs 帳號詳細資訊</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>MAIL_DIR                /var/main <span style=color:#75715e># 帳號郵件存放目錄</span>
+MAIL_FILE               .mail   
+FAILLOG_ENAB            yes <span style=color:#75715e># 紀錄和顯示 /var/log/faillog 紀錄資訊</span>
+LOG_UNKFAIL_ENAB        no <span style=color:#75715e># 登入錯誤被記錄時，允許顯示不知名帳戶</span>
+LOG_OK_LOGINS           no <span style=color:#75715e># 開啟正確登入紀錄</span>
+SYSLOG_SU_ENAB          yes <span style=color:#75715e># 開啟切換用戶紀錄</span>
+SYSLOG_SG_ENAB          yes <span style=color:#75715e># 開啟切換用戶紀錄</span>
+...
+PASS_MAX_DAYS           <span style=color:#ae81ff>99999</span> <span style=color:#75715e># 密碼可使用天數</span>
+PASS_MIN_DAYS           <span style=color:#ae81ff>0</span>   <span style=color:#75715e># 密碼多少日不得變更</span>
+PASS_WARN_AGE           <span style=color:#ae81ff>7</span>   <span style=color:#75715e># 密碼失效前多少日提供警告</span>
+...
+</code></pre></div><h2 id=結論>結論</h2><p>透過 <code>useradd</code> 新增使用者，透過 <code>grouadd</code> 新增使用者至某個群組，這樣算是可以較清楚的管理系統的使用者了。當然這樣還不夠，適當地將這些 UID、GID 應用在不論是檔案權限的劃分或者服務使用的權限這才是最好的配置。</p><p>以上是從學校學到的資訊。如有問題可留言回覆。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2016-04-12-ip-routing/ title="IP Routing"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2016-05-09-permission/ title="permission setting"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

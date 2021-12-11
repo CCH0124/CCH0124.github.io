@@ -1,0 +1,186 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day26</h1><p class=mb-1>September 16, 2020</p><p>&mdash;</p></div><div class=content><p><code>StatefulSet</code> 簡單來說就是管理有狀態的應用程式，它使得每個應用程式都有不可替換的資源個體，其每個 <code>POD</code> 都有固定的 <code>hostname</code> 和專屬 <code>volume</code>，即時重新調度也不影響。</p><h2 id=stateful-和-stateless>Stateful 和 Stateless</h2><p>一個應用程式是否要紀錄前一次或多次連線中的內容訊息做為下一次連線的資訊，而該連線的對象可能是設備、用戶端或其它應用程式等。透過是否紀錄來分辨有狀態與無狀態，前者為需要記錄動作，後者則不用。</p><h2 id=statefulset-與-replicaset>StatefulSet 與 ReplicaSet</h2><p><code>StatefulSet</code> 在文章開頭大致上將它的重點說明了。但我們可以比較它和 <code>ReplicaSet</code>。<code>ReplicaSet</code> 隨著被資源調度就會被新的資源所取代，因為其網路等資源被改變，<code>StatefulSet</code> 則是就算被重新調度，其源個體都會有著相同的資源。同樣的 <code>StatefulSet</code> 有 <code>ReplicaSet</code> 的 <code>replicas</code> 功能，但和 <code>ReplicaSet</code> 生成的 <code>POD</code> 副本卻是不一樣的，<code>StatefulSet</code> 中的 <code>POD</code> 會有獨立的 <code>PV</code> 也就是儲存空間，另一個是 <code>POD</code> 名稱，它會使用編號方式去命名，而 <code>StatefulSet</code> 也支持滾動更新，基於這些功能 <code>StatefulSet</code> 都會講求順序，在後面範例就會明白。</p><h2 id=statefulset-特性>StatefulSet 特性</h2><h3 id=網路標識>網路標識</h3><p>通常一個 <code>StatefulSet</code> 會在建立一個 <code>headless</code> Service 資源，用來記錄每個 <code>POD</code> 的網路標識，就像先前文章講的，每一個 <code>POD</code> 都會有一個獨立的 <code>DNS</code> 紀錄，使得客戶端能夠透過 <code>hostname</code> 去找到服務。</p><h3 id=資源調度>資源調度</h3><p>當 <code>StatefulSet</code> 下的 <code>POD</code> 發生故障時，會像 <code>ReplicaSet</code> 一樣將其重新建立，但是不一樣的是 <code>StatefulSet</code> 會讓該新 <code>POD</code> 擁有之前 <code>POD</code> 的 <code>hostname</code> 等，因此透過該 <code>hostname</code> 進行訪問時還是會存取到一樣的 <code>POD</code> 資源。</p><h3 id=擴展>擴展</h3><p>前面有提到說 <code>StatefulSet</code> 的 <code>POD</code> 會有順序編號，該順序編號使得擴展能夠被預知。以 <code>ResplicaSet</code> 進行縮減的話則是以隨機方式，無法預知哪個 <code>POD</code> 會被終止。</p><h3 id=個人儲存>個人儲存</h3><p>竟然資源調度時網路標識能夠相同，那儲存想必也要。在定義 <code>StatefulSet</code> 的資源清單時，它可以定義多個 <code>volumeClaimTemplates</code>，而建立的儲存會在創建 <code>POD</code> 之前被建立，最後在綁定至 <code>POD</code>。因為 <code>StatefulSet</code> 可以像 <code>ReplicaSet</code> 一樣的去擴展，如果以縮減 <code>POD</code> 來看，並不會刪除儲存的部分，對於 <code>StatefulSet</code> 來說它是一個有狀態的應用，如果將其儲存刪除將會是一個災難，因此手動刪除確認是最好的。也因為不會刪除 <code>PVC</code> 的資源，在誤刪時在將縮減後的 <code>POD</code> 在擴展時 <code>PV</code> 會綁定在相同宣告的儲存上。</p><h2 id=建立-statefulset>建立 StatefulSet</h2><p>這邊使用 <code>GKE</code> 進行實驗。</p><p>定義 <code>StorageClass</code> 資源</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>storage.k8s.io/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>StorageClass</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>standard-us-centrall-a-b-c</span>
+<span style=color:#f92672>provisioner</span>: <span style=color:#ae81ff>kubernetes.io/gce-pd</span>
+<span style=color:#f92672>parameters</span>:
+  <span style=color:#f92672>type</span>: <span style=color:#ae81ff>pd-standard</span>
+<span style=color:#f92672>reclaimPolicy</span>: <span style=color:#ae81ff>Delete</span>
+<span style=color:#f92672>volumeBindingMode</span>: <span style=color:#ae81ff>WaitForFirstConsumer</span>
+<span style=color:#f92672>allowedTopologies</span>:
+- <span style=color:#f92672>matchLabelExpressions</span>:
+  - <span style=color:#f92672>key</span>: <span style=color:#ae81ff>failure-domain.beta.kubernetes.io/zone</span>
+    <span style=color:#f92672>values</span>:
+    - <span style=color:#ae81ff>us-central1-a</span>
+    - <span style=color:#ae81ff>us-central1-b</span>
+    - <span style=color:#ae81ff>us-central1-c</span>
+</code></pre></div><p>定義 <code>StatefulSet</code> 和 <code>headless</code> 資源，<code>StatefulSet</code> 重要字段大致上是 <code>serviceName</code> 和 <code>volumeClaimTemplates</code>。而 <code>volumeClaimTemplates</code> 就像是定義 <code>POD</code> 的模板一樣(template)，因此他才能針對每個 <code>POD</code> 去做一個獨立的 <code>PV</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Service</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>sts-svc</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>sts-svc</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>clusterIP</span>: <span style=color:#ae81ff>None</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx-pod</span>
+  <span style=color:#f92672>ports</span>:
+  - <span style=color:#f92672>port</span>: <span style=color:#ae81ff>80</span>
+    <span style=color:#f92672>name</span>: <span style=color:#ae81ff>web</span>
+---
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>StatefulSet</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx-sts</span>
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>serviceName</span>: <span style=color:#ae81ff>sts-svc</span>
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>3</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx-pod</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx-pod</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+        - <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+          <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx</span>
+          <span style=color:#f92672>ports</span>:
+            - <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+              <span style=color:#f92672>name</span>: <span style=color:#ae81ff>web</span>
+          <span style=color:#f92672>volumeMounts</span>:
+            - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx-persistent-storage</span>
+              <span style=color:#f92672>mountPath</span>: <span style=color:#ae81ff>/usr/share/nginx/html</span>
+  <span style=color:#f92672>volumeClaimTemplates</span>:
+  - <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx-persistent-storage</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>accessModes</span>: [<span style=color:#e6db74>&#34;ReadWriteOnce&#34;</span>]
+      <span style=color:#f92672>storageClassName</span>: <span style=color:#ae81ff>standard-us-centrall-a-b-c</span> <span style=color:#75715e># 關聯著我們定義的 StorageClass</span>
+      <span style=color:#f92672>resources</span>:
+        <span style=color:#f92672>requests</span>:
+          <span style=color:#f92672>storage</span>: <span style=color:#ae81ff>10Gi</span>
+</code></pre></div><p>使用 <code>apply</code> 布署，並使用 <code>-w</code> 觀察 <code>POD</code>，如下它們都是按照順序去建立 <code>POD</code>，並非像 <code>ReplicaSet</code> 可以並行，這種現象並非只有創建 <code>POD</code> 在刪除或是滾動更新都是呈現這模式。如果要使用並行需在 <code>spec</code> 下定義 <code>podManagementPolicy</code> 為 <code>Parallel</code>，預設效果就是下面結果。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -w
+NAME                                READY   STATUS    RESTARTS   AGE
+...
+nginx-sts-0                         0/1     Pending   <span style=color:#ae81ff>0</span>          0s
+nginx-sts-0                         0/1     Pending   <span style=color:#ae81ff>0</span>          3s
+nginx-sts-0                         0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          3s
+nginx-sts-0                         1/1     Running             <span style=color:#ae81ff>0</span>          14s
+nginx-sts-1                         0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+nginx-sts-1                         0/1     Pending             <span style=color:#ae81ff>0</span>          3s
+nginx-sts-1                         0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          3s
+nginx-sts-1                         1/1     Running             <span style=color:#ae81ff>0</span>          14s
+nginx-sts-2                         0/1     Pending             <span style=color:#ae81ff>0</span>          0s
+nginx-sts-2                         0/1     Pending             <span style=color:#ae81ff>0</span>          3s
+nginx-sts-2                         0/1     ContainerCreating   <span style=color:#ae81ff>0</span>          3s
+nginx-sts-2                         1/1     Running             <span style=color:#ae81ff>0</span>          23s
+</code></pre></div><p>查看 <code>StatefulSet</code> 資源</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get sts -o wide
+NAME        READY   AGE     CONTAINERS   IMAGES
+nginx-sts   3/3     7m57s   nginx        nginx:1.18
+</code></pre></div><p>詳細查看某個 <code>StatefulSet</code> 資源訊息</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe sts nginx-sts
+</code></pre></div><p>查看建立的 <code>PVC</code> 與 <code>PV</code>，結果都是 <code>Bound</code> 狀態。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pvc
+NAME                                   STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                 AGE
+nginx-persistent-storage-nginx-sts-0   Bound    pvc-4c81312a-38d3-4e0e-bd6b-9dcc9ff93ccb   10Gi       RWO            standard-us-centrall-a-b-c   12m
+nginx-persistent-storage-nginx-sts-1   Bound    pvc-a9d9b751-dc74-4d00-ae87-1a878aec9c09   10Gi       RWO            standard-us-centrall-a-b-c   11m
+nginx-persistent-storage-nginx-sts-2   Bound    pvc-fa583a17-5ca5-4634-87c4-52f85d211fb4   10Gi       RWO            standard-us-centrall-a-b-c   11m
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                          STORAGECLASS                 REASON   AGE
+pvc-4c81312a-38d3-4e0e-bd6b-9dcc9ff93ccb   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-0   standard-us-centrall-a-b-c            12m
+pvc-a9d9b751-dc74-4d00-ae87-1a878aec9c09   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-1   standard-us-centrall-a-b-c            12m
+pvc-fa583a17-5ca5-4634-87c4-52f85d211fb4   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-2   standard-us-centrall-a-b-c            11m
+</code></pre></div><p>這邊觀察其 <code>POD</code> 中 <code>hostname</code> 與外部 <code>POD</code> 名稱相同，想像一下在 <code>ReplicaSet</code> 情況下它並非是以順序編號，而是隨機亂數。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ <span style=color:#66d9ef>for</span> i in <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>1</span> 2; <span style=color:#66d9ef>do</span> kubectl exec nginx-sts-$i --  sh -c <span style=color:#e6db74>&#39;hostname&#39;</span>; <span style=color:#66d9ef>done</span>
+nginx-sts-0
+nginx-sts-1
+nginx-sts-2
+</code></pre></div><h3 id=驗證有狀態的-pod-是否會關聯同一個-pv>驗證有狀態的 POD 是否會關聯同一個 PV</h3><p>從以下結果來看，沒有改變其原先對應的儲存。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete pod nginx-sts-1 nginx-sts-0 <span style=color:#75715e># 刪除 POD </span>
+$ kubectl describe pod nginx-sts-0 <span style=color:#75715e># 觀察 ClaimName，並和 get pv 中的 RECLAIM 進行比對</span>
+...
+Volumes:
+  nginx-persistent-storage:
+    Type:       PersistentVolumeClaim <span style=color:#f92672>(</span>a reference to a PersistentVolumeClaim in the same namespace<span style=color:#f92672>)</span>
+    ClaimName:  nginx-persistent-storage-nginx-sts-0
+...
+</code></pre></div><p>更清楚的演示，寫入檔案至掛載目錄下，並使用另一個 <code>POD</code> 或任一節點使用 <code>curl</code> 驗證。這邊就不再演示了。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ <span style=color:#66d9ef>for</span> i in <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>1</span> 2; <span style=color:#66d9ef>do</span> kubectl exec nginx-sts-$i -- sh -c <span style=color:#e6db74>&#39;echo $(date), Hostname: $(hostname) &gt; /usr/share/nginx/html/index.html&#39;</span>; <span style=color:#66d9ef>done</span>
+</code></pre></div><h3 id=擴展與縮減>擴展與縮減</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl edit sts nginx-sts <span style=color:#75715e># 修改 replicas 成 5</span>
+$ kubectl get pv <span style=color:#75715e># 新增兩個</span>
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                          STORAGECLASS                 REASON   AGE
+pvc-1d3ecb25-891d-4d6d-9708-2498148bcd92   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-3   standard-us-centrall-a-b-c            96s
+pvc-4ae8113a-08f6-4d51-a01e-601a349b87e3   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-4   standard-us-centrall-a-b-c            73s
+pvc-4c81312a-38d3-4e0e-bd6b-9dcc9ff93ccb   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-0   standard-us-centrall-a-b-c            43m
+pvc-a9d9b751-dc74-4d00-ae87-1a878aec9c09   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-1   standard-us-centrall-a-b-c            43m
+pvc-fa583a17-5ca5-4634-87c4-52f85d211fb4   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-2   standard-us-centrall-a-b-c            42m
+
+$ kubectl edit sts nginx-sts <span style=color:#75715e># 修改 replicas 成 2</span>
+$ kubectl get pv <span style=color:#75715e># 依舊保留</span>
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                                          STORAGECLASS                 REASON   AGE
+pvc-1d3ecb25-891d-4d6d-9708-2498148bcd92   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-3   standard-us-centrall-a-b-c            3m36s
+pvc-4ae8113a-08f6-4d51-a01e-601a349b87e3   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-4   standard-us-centrall-a-b-c            3m13s
+pvc-4c81312a-38d3-4e0e-bd6b-9dcc9ff93ccb   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-0   standard-us-centrall-a-b-c            45m
+pvc-a9d9b751-dc74-4d00-ae87-1a878aec9c09   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-1   standard-us-centrall-a-b-c            45m
+pvc-fa583a17-5ca5-4634-87c4-52f85d211fb4   10Gi       RWO            Delete           Bound    default/nginx-persistent-storage-nginx-sts-2   standard-us-centrall-a-b-c            44m
+cchong0124@cloudshell:~/sc <span style=color:#f92672>(</span>sunny-catwalk-286908<span style=color:#f92672>)</span>$
+</code></pre></div><h3 id=滾動更新>滾動更新</h3><p>編輯 <code>yaml</code> 檔並將其 nginx 版本變為 1.15，接著從新 <code>apply</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl rollout status sts nginx-sts
+Waiting <span style=color:#66d9ef>for</span> <span style=color:#ae81ff>1</span> pods to be ready...
+partitioned roll out complete: <span style=color:#ae81ff>3</span> new pods have been updated...
+$ kubectl get pods -l app<span style=color:#f92672>=</span>nginx-pod -o custom-columns<span style=color:#f92672>=</span>NAME:metadata.name,IMAGE:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image
+NAME          IMAGE
+nginx-sts-0   nginx:1.15
+nginx-sts-1   nginx:1.15
+nginx-sts-2   nginx:1.15
+$ kubectl rollout history sts nginx-sts
+statefulset.apps/nginx-sts
+REVISION
+<span style=color:#ae81ff>1</span>
+<span style=color:#ae81ff>2</span>
+</code></pre></div><p>回滾，以下實驗可以透過 <code>get pod -w</code> 方式觀察 <code>POD</code> 的變動是否是按順序。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl rollout undo  sts nginx-sts
+statefulset.apps/nginx-sts rolled back
+$ kubectl rollout status sts nginx-sts
+Waiting <span style=color:#66d9ef>for</span> <span style=color:#ae81ff>1</span> pods to be ready...
+Waiting <span style=color:#66d9ef>for</span> partitioned roll out to finish: <span style=color:#ae81ff>1</span> out of <span style=color:#ae81ff>3</span> new pods have been updated...
+Waiting <span style=color:#66d9ef>for</span> <span style=color:#ae81ff>1</span> pods to be ready...
+Waiting <span style=color:#66d9ef>for</span> <span style=color:#ae81ff>1</span> pods to be ready...
+Waiting <span style=color:#66d9ef>for</span> partitioned roll out to finish: <span style=color:#ae81ff>2</span> out of <span style=color:#ae81ff>3</span> new pods have been updated...
+Waiting <span style=color:#66d9ef>for</span> <span style=color:#ae81ff>1</span> pods to be ready...
+Waiting <span style=color:#66d9ef>for</span> <span style=color:#ae81ff>1</span> pods to be ready...
+partitioned roll out complete: <span style=color:#ae81ff>3</span> new pods have been updated...
+$ kubectl get pods -l app<span style=color:#f92672>=</span>nginx-pod -o custom-columns<span style=color:#f92672>=</span>NAME:metadata.name,IMAGE:spec.containers<span style=color:#f92672>[</span>0<span style=color:#f92672>]</span>.image
+NAME          IMAGE
+nginx-sts-0   nginx:1.18
+nginx-sts-1   nginx:1.18
+nginx-sts-2   nginx:1.18
+</code></pre></div><h3 id=dns>DNS</h3><p>這邊大致演示 DNS 部可搭配，前面擴縮來驗證是否會綁定。下面 <code>ANSWER SECTION</code> 顯示三個指向 headless service SRV 的資源紀錄，<code>ADDITIONAL SECTION</code> 部分則顯示每個 <code>POD</code> 的資源紀錄，沒有排序是正常的，因為它有著相同的優先權。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl run -it srvlookup --image<span style=color:#f92672>=</span>tutum/dnsutils --rm --restart<span style=color:#f92672>=</span>Never -- dig SRV sts-svc.default.svc.cluster.local
+
+; &lt;&lt;&gt;&gt; DiG 9.9.5-3ubuntu0.2-Ubuntu &lt;&lt;&gt;&gt; SRV sts-svc.default.svc.cluster.local
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER<span style=color:#e6db74>&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style=color:#ae81ff>10672</span>
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: <span style=color:#ae81ff>3</span>
+
+;; QUESTION SECTION:
+;sts-svc.default.svc.cluster.local. IN  SRV
+
+;; ANSWER SECTION:
+sts-svc.default.svc.cluster.local. <span style=color:#ae81ff>30</span> IN SRV    <span style=color:#ae81ff>10</span> <span style=color:#ae81ff>33</span> <span style=color:#ae81ff>0</span> nginx-sts-1.sts-svc.default.svc.cluster.local.
+sts-svc.default.svc.cluster.local. <span style=color:#ae81ff>30</span> IN SRV    <span style=color:#ae81ff>10</span> <span style=color:#ae81ff>33</span> <span style=color:#ae81ff>0</span> nginx-sts-0.sts-svc.default.svc.cluster.local.
+sts-svc.default.svc.cluster.local. <span style=color:#ae81ff>30</span> IN SRV    <span style=color:#ae81ff>10</span> <span style=color:#ae81ff>33</span> <span style=color:#ae81ff>0</span> nginx-sts-2.sts-svc.default.svc.cluster.local.
+
+;; ADDITIONAL SECTION:
+nginx-sts-1.sts-svc.default.svc.cluster.local. <span style=color:#ae81ff>30</span> IN A 10.4.1.45 
+nginx-sts-0.sts-svc.default.svc.cluster.local. <span style=color:#ae81ff>30</span> IN A 10.4.2.84
+nginx-sts-2.sts-svc.default.svc.cluster.local. <span style=color:#ae81ff>30</span> IN A 10.4.3.124
+
+;; Query time: <span style=color:#ae81ff>71</span> msec
+;; SERVER: 10.8.0.10#53<span style=color:#f92672>(</span>10.8.0.10<span style=color:#f92672>)</span>
+;; WHEN: Tue Sep <span style=color:#ae81ff>22</span> 09:46:06 UTC <span style=color:#ae81ff>2020</span>
+;; MSG SIZE  rcvd: <span style=color:#ae81ff>294</span>
+
+pod <span style=color:#e6db74>&#34;srvlookup&#34;</span> deleted
+</code></pre></div><h2 id=結論>結論</h2><p>了解了 <code>statefulSet</code> 與 <code>ReplicaSet</code> 的差異像是回滾、PV 等。也明白 <code>statefulSet</code> 透過 <code>DNS</code> 方式來保持客戶端可見性。</p><h2 id=參考資源>參考資源</h2><ul><li><a href=https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/>官方 statefulset</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-15-configmap-secret/ title="kubernetes - day25"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-09-17-etcd/ title="kubernetes - day27"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

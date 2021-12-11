@@ -1,0 +1,101 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>30 天學習歷程-day07</h1><p class=mb-1>August 25, 2020</p><p>&mdash;</p></div><div class=content><p>回歸模型（線性或非線性）被廣泛應用於數值預測，比如薪水，銷售額等等。如果說自變數（independent variable）是時間，那麼我們是在預測未來的數值；反之我們的模型在預測當前未知的數值。</p><p>簡單線性回歸，由自變量 $X$ 來預測因變量 $Y$ 的方法，假設這兩個變量是相關的線性，可嘗試尋找依據特徵($x$)的線性函數來擬合並預測($y$)。</p><p><img src=https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Linear_regression.svg/330px-Linear_regression.svg.png alt></p><p>from wiki</p><p>上圖中，紅線可以用 $y=ax+b$ 求得，且該紅線是能代表該資料的一條線，其 $a$ 為<em>斜率</em>；$b$ 為<em>y截距</em>。$y$ 為應變數 ，$x$ 為自變數。然而為了找到最佳擬合的線，會使<em>最小平方法</em>，該方法盡可能的讓預測值與實際值的誤差為最小。其公式如下，並對應下圖，$y_i$ 為實際值；$y_p$ 為預測值。</p><p>$$min{SUM(y_i-y_p)^2}$$</p><figure><img src=/images/ml/LinearRegression.jpg width=auto height=auto></figure><p>當誤差越大表示無法反映現實情況。我們以下使用 <code>keras</code> 和 <code>sklearn</code> 進行實驗。</p><h2 id=程式碼>程式碼</h2><h3 id=sklearn>sklearn</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> tensorflow.keras.datasets <span style=color:#f92672>import</span> boston_housing
+(x_train, y_train), (x_test, y_test) <span style=color:#f92672>=</span> boston_housing<span style=color:#f92672>.</span>load_data()
+<span style=color:#75715e># 正規化</span>
+mean_feature_train <span style=color:#f92672>=</span> x_train<span style=color:#f92672>.</span>mean(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+std_feature_train <span style=color:#f92672>=</span> x_train<span style=color:#f92672>.</span>std(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+
+mean_feature_test <span style=color:#f92672>=</span> x_test<span style=color:#f92672>.</span>mean(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+std_feature_test <span style=color:#f92672>=</span> x_test<span style=color:#f92672>.</span>std(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+
+x_train <span style=color:#f92672>=</span> (x_train<span style=color:#f92672>-</span>mean_feature_train)<span style=color:#f92672>/</span>std_feature_train
+x_test <span style=color:#f92672>=</span> (x_test<span style=color:#f92672>-</span>mean_feature_test)<span style=color:#f92672>/</span>std_feature_test
+
+<span style=color:#75715e># 導入線性回歸模型</span>
+<span style=color:#f92672>from</span> sklearn.linear_model <span style=color:#f92672>import</span> LinearRegression
+regression <span style=color:#f92672>=</span> LinearRegression()
+regression <span style=color:#f92672>=</span> regression<span style=color:#f92672>.</span>fit(x_train, y_train)
+<span style=color:#75715e># 預測</span>
+Y_pre <span style=color:#f92672>=</span> regression<span style=color:#f92672>.</span>predict(x_test)
+<span style=color:#66d9ef>print</span>(Y_pre)
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>array([ 5.55451294, 20.00731644, 20.55665365, 32.82302446, 25.64697477,
+</span><span style=color:#e6db74>       19.45968834, 29.28312483, 25.38391555, 18.77010357, 21.69493081,
+</span><span style=color:#e6db74>       18.90073817, 17.19404589, 14.76462193, 35.36471844, 16.94182469,
+</span><span style=color:#e6db74>       20.19279347, 24.81663854, 21.40019897, 18.73374643, 21.50058781,
+</span><span style=color:#e6db74>        9.01360171, 14.22493901, 21.76783427, 13.19477724, 22.92466903,
+</span><span style=color:#e6db74>       22.95855583, 32.30713014, 26.99577554, 10.29743999, 21.23053674,
+</span><span style=color:#e6db74>       22.74987751, 16.53696011, 35.95251346, 23.61151789, 16.90051536,
+</span><span style=color:#e6db74>        1.47956779, 11.91196969, 21.84417768, 14.98432038, 28.78391568,
+</span><span style=color:#e6db74>       23.44723764, 28.43262246, 15.54312803, 34.89119042, 30.93811614,
+</span><span style=color:#e6db74>       24.03029827, 30.94630116, 17.31001806, 21.29586521, 23.85376225,
+</span><span style=color:#e6db74>       32.55122546, 18.85538009,  7.39134469, 12.50987673, 35.31802235,
+</span><span style=color:#e6db74>       27.58130985, 15.22470224, 40.22803819, 37.31630734, 24.68154074,
+</span><span style=color:#e6db74>       24.58704989, 18.47862137, 17.33356639, 20.33194398, 24.51156031,
+</span><span style=color:#e6db74>       25.44348413, 15.17899598, 27.98967896,  1.61585283,  7.79000193,
+</span><span style=color:#e6db74>       21.99030399, 25.19471673, 22.64422388,  6.58951295, 29.16926758,
+</span><span style=color:#e6db74>       21.24881594, 20.91593148, 24.45613791, 34.58678744,  3.31253496,
+</span><span style=color:#e6db74>       24.01003208, 36.60015237, 16.62435866, 15.77682186, 19.8823582 ,
+</span><span style=color:#e6db74>       18.7739659 , 20.10582024, 24.41995009, 22.4085753 , 28.25894098,
+</span><span style=color:#e6db74>       17.1408851 , 17.99213613, 27.42088419, 29.91688329, 35.52379739,
+</span><span style=color:#e6db74>       18.55880041, 35.9671986 , 37.01310323, 25.17154407, 40.6431914 ,
+</span><span style=color:#e6db74>       33.44709717, 24.26252215])
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+<span style=color:#75715e># 實際結果</span>
+<span style=color:#66d9ef>print</span>(y_test)
+
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>array([ 7.2, 18.8, 19. , 27. , 22.2, 24.5, 31.2, 22.9, 20.5, 23.2, 18.6,
+</span><span style=color:#e6db74>       14.5, 17.8, 50. , 20.8, 24.3, 24.2, 19.8, 19.1, 22.7, 12. , 10.2,
+</span><span style=color:#e6db74>       20. , 18.5, 20.9, 23. , 27.5, 30.1,  9.5, 22. , 21.2, 14.1, 33.1,
+</span><span style=color:#e6db74>       23.4, 20.1,  7.4, 15.4, 23.8, 20.1, 24.5, 33. , 28.4, 14.1, 46.7,
+</span><span style=color:#e6db74>       32.5, 29.6, 28.4, 19.8, 20.2, 25. , 35.4, 20.3,  9.7, 14.5, 34.9,
+</span><span style=color:#e6db74>       26.6,  7.2, 50. , 32.4, 21.6, 29.8, 13.1, 27.5, 21.2, 23.1, 21.9,
+</span><span style=color:#e6db74>       13. , 23.2,  8.1,  5.6, 21.7, 29.6, 19.6,  7. , 26.4, 18.9, 20.9,
+</span><span style=color:#e6db74>       28.1, 35.4, 10.2, 24.3, 43.1, 17.6, 15.4, 16.2, 27.1, 21.4, 21.5,
+</span><span style=color:#e6db74>       22.4, 25. , 16.6, 18.6, 22. , 42.8, 35.1, 21.5, 36. , 21.9, 24.1,
+</span><span style=color:#e6db74>       50. , 26.7, 25. ])
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+
+</code></pre></div><h3 id=keras>keras</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#f92672>from</span> tensorflow.keras.datasets <span style=color:#f92672>import</span> boston_housing
+(x_train, y_train), (x_test, y_test) <span style=color:#f92672>=</span> boston_housing<span style=color:#f92672>.</span>load_data()
+
+<span style=color:#75715e># 正規化</span>
+mean_feature_train <span style=color:#f92672>=</span> x_train<span style=color:#f92672>.</span>mean(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+std_feature_train <span style=color:#f92672>=</span> x_train<span style=color:#f92672>.</span>std(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+mean_feature_test <span style=color:#f92672>=</span> x_test<span style=color:#f92672>.</span>mean(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+std_feature_test <span style=color:#f92672>=</span> x_test<span style=color:#f92672>.</span>std(axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+x_train <span style=color:#f92672>=</span> (x_train<span style=color:#f92672>-</span>mean_feature_train)<span style=color:#f92672>/</span>std_feature_train
+x_test <span style=color:#f92672>=</span> (x_test<span style=color:#f92672>-</span>mean_feature_test)<span style=color:#f92672>/</span>std_feature_test
+
+<span style=color:#f92672>from</span> tensorflow <span style=color:#f92672>import</span> keras
+<span style=color:#f92672>from</span> tensorflow.keras <span style=color:#f92672>import</span> layers, Input, Model, optimizers
+<span style=color:#75715e># 建立線性回歸模型</span>
+input <span style=color:#f92672>=</span> Input(shape<span style=color:#f92672>=</span>(x_train<span style=color:#f92672>.</span>shape[<span style=color:#ae81ff>1</span>],))
+output <span style=color:#f92672>=</span> layers<span style=color:#f92672>.</span>Dense(<span style=color:#ae81ff>1</span>)(input)
+model <span style=color:#f92672>=</span> Model(inputs<span style=color:#f92672>=</span>input, outputs<span style=color:#f92672>=</span>output)
+
+algorithm <span style=color:#f92672>=</span> optimizers<span style=color:#f92672>.</span>SGD(learning_rate<span style=color:#f92672>=</span><span style=color:#ae81ff>0.01</span>, momentum<span style=color:#f92672>=</span><span style=color:#ae81ff>1e-10</span>, nesterov<span style=color:#f92672>=</span>True, name<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;SGD&#39;</span>)
+model<span style=color:#f92672>.</span>compile(optimizer<span style=color:#f92672>=</span>algorithm, loss<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;mse&#39;</span>)
+<span style=color:#75715e># 預測結果</span>
+model<span style=color:#f92672>.</span>predict(x_test[:<span style=color:#ae81ff>8</span>])
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>array([[ 6.102955],
+</span><span style=color:#e6db74>       [19.943102],
+</span><span style=color:#e6db74>       [20.30687 ],
+</span><span style=color:#e6db74>       [33.413998],
+</span><span style=color:#e6db74>       [25.533064],
+</span><span style=color:#e6db74>       [19.329035],
+</span><span style=color:#e6db74>       [29.714052],
+</span><span style=color:#e6db74>       [25.394867]], dtype=float32)
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+<span style=color:#75715e># 實際值</span>
+<span style=color:#66d9ef>print</span>(y_test[:<span style=color:#ae81ff>8</span>])
+<span style=color:#e6db74>&#39;&#39;&#39;
+</span><span style=color:#e6db74>array([ 7.2, 18.8, 19. , 27. , 22.2, 24.5, 31.2, 22.9])
+</span><span style=color:#e6db74>&#39;&#39;&#39;</span>
+
+</code></pre></div><h2 id=參考>參考</h2><ul><li><a href=https://zh.wikipedia.org/wiki/%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95>wiki 最小平方法</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2020-08-24-data-clean/ title="30 天學習歷程-day06"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2020-08-26-math/ title="30 天學習歷程-day08"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

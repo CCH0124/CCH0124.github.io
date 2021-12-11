@@ -1,0 +1,168 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Apache 使用</h1><p class=mb-1>July 5, 2018</p><p>&mdash;</p></div><div class=content><h2 id=env>env</h2><ul><li>ubuntu 14.04</li><li>apache2</li><li>PHP 7</li></ul><h2 id=install>Install</h2><h5 id=apache-套件>Apache 套件</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo apt install apache2 -y
+</code></pre></div><h5 id=apache-版本>Apache 版本</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ apache2 -v
+Server version: Apache/2.4.7 <span style=color:#f92672>(</span>Ubuntu<span style=color:#f92672>)</span>
+Server built:   Sep <span style=color:#ae81ff>18</span> <span style=color:#ae81ff>2017</span> 16:37:54
+</code></pre></div><h5 id=php70-套件>PHP7.0 套件</h5><ul><li><code>apache</code> 為 <code>php7.0</code></li><li><code>nginx</code> 為 <code>php7.0-fpm</code></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo add-apt-repository ppa:ondrej/php <span style=color:#75715e>#`Debian` 及其衍生產品（如 `Ubuntu`）維護的 `PPA`</span>
+itachi@ubuntu:~$ sudo apt update
+itachi@ubuntu:~$ sudo apt install php7.0 -y
+</code></pre></div><h5 id=php-版本>PHP 版本</h5><ul><li>php -v</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ php -v
+PHP **7.0.24**-1+ubuntu14.04.1+deb.sury.org+1 <span style=color:#f92672>(</span>cli<span style=color:#f92672>)</span> <span style=color:#f92672>(</span>built: Sep <span style=color:#ae81ff>28</span> <span style=color:#ae81ff>2017</span> 16:33:02<span style=color:#f92672>)</span> <span style=color:#f92672>(</span> NTS <span style=color:#f92672>)</span>
+...
+</code></pre></div><ul><li>phpinfo 查看</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ itachi@ubuntu:~$ sudo vi /var/www/html/message.php
+&lt;?php
+  phpinfo<span style=color:#f92672>()</span>;
+?&gt;
+</code></pre></div><p>http://server_IP-address/message.php</p><p>做完之後此檔案必須刪除，有安全性問題。</p><h5 id=檢驗>檢驗</h5><p>http://your_server_IP_address</p><h5 id=apache-服務啟動與關閉>Apache 服務啟動與關閉</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo service apache2 stop <span style=color:#75715e>#停止  </span>
+itachi@ubuntu:~$ sudo service apache2 start <span style=color:#75715e>#啟動  </span>
+itachi@ubuntu:~$ sudo service apache2 restart <span style=color:#75715e>#重啟  </span>
+</code></pre></div><h2 id=配置文件>配置文件</h2><h5 id=apache-預設配置檔文件>Apache 預設配置檔文件</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ ls /etc/apache2/
+apache2.conf    conf-enabled  magic           mods-enabled  sites-available
+conf-available  envvars       mods-available  ports.conf    sites-enabled
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>$ tree /etc/apache2/
+/etc/apache2/
+├── apache2.conf
+├── conf-available
+│   ├── charset.conf
+│   ├── localized-error-pages.conf
+│   ├── other-vhosts-access-log.conf
+│   ├── security.conf
+│   └── serve-cgi-bin.conf
+├── conf-enabled
+│   ├── charset.conf -&gt; ../conf-available/charset.conf
+│   ├── localized-error-pages.conf -&gt; ../conf-available/localized-error-pages.conf
+│   ├── other-vhosts-access-log.conf -&gt; ../conf-available/other-vhosts-access-log.conf
+│   ├── security.conf -&gt; ../conf-available/security.conf
+│   └── serve-cgi-bin.conf -&gt; ../conf-available/serve-cgi-bin.conf
+├── envvars
+├── magic
+├── mods-available
+│   ├── access_compat.load
+│   ├── actions.conf
+......
+│   ├── userdir.conf
+│   ├── userdir.load
+│   ├── usertrack.load
+│   ├── vhost_alias.load
+│   └── xml2enc.load
+├── mods-enabled
+│   ├── access_compat.load -&gt; ../mods-available/access_compat.load
+│   ├── alias.conf -&gt; ../mods-available/alias.conf
+│   ├── alias.load -&gt; ../mods-available/alias.load
+│   ├── auth_basic.load -&gt; ../mods-available/auth_basic.load
+│   ├── authn_core.load -&gt; ../mods-available/authn_core.load
+│   ├── authn_file.load -&gt; ../mods-available/authn_file.load
+│   ├── authz_core.load -&gt; ../mods-available/authz_core.load
+│   ├── authz_host.load -&gt; ../mods-available/authz_host.load
+│   ├── authz_user.load -&gt; ../mods-available/authz_user.load
+│   ├── autoindex.conf -&gt; ../mods-available/autoindex.conf
+│   ├── autoindex.load -&gt; ../mods-available/autoindex.load
+│   ├── deflate.conf -&gt; ../mods-available/deflate.conf
+│   ├── deflate.load -&gt; ../mods-available/deflate.load
+│   ├── dir.conf -&gt; ../mods-available/dir.conf
+│   ├── dir.load -&gt; ../mods-available/dir.load
+│   ├── env.load -&gt; ../mods-available/env.load
+│   ├── filter.load -&gt; ../mods-available/filter.load
+│   ├── mime.conf -&gt; ../mods-available/mime.conf
+│   ├── mime.load -&gt; ../mods-available/mime.load
+│   ├── mpm_event.conf -&gt; ../mods-available/mpm_event.conf
+│   ├── mpm_event.load -&gt; ../mods-available/mpm_event.load
+│   ├── negotiation.conf -&gt; ../mods-available/negotiation.conf
+│   ├── negotiation.load -&gt; ../mods-available/negotiation.load
+│   ├── setenvif.conf -&gt; ../mods-available/setenvif.conf
+│   ├── setenvif.load -&gt; ../mods-available/setenvif.load
+│   ├── status.conf -&gt; ../mods-available/status.conf
+│   └── status.load -&gt; ../mods-available/status.load
+├── ports.conf
+├── sites-available
+│   ├── 000-default.conf
+│   └── default-ssl.conf
+└── sites-enabled
+    └── 000-default.conf -&gt; ../sites-available/000-default.conf
+
+<span style=color:#ae81ff>6</span> directories, <span style=color:#ae81ff>175</span> files
+
+</code></pre></div><h5 id=服務配置>服務配置</h5><ul><li><code>/etc/apache2</code>：Apache 配置目錄。所有的Apache 配置文件都在這。</li><li><code>/etc/apache2/apache2.conf</code>：主要的Apache配置文件。可以修改 Apache 全域配置。該文件負責加載配置目錄中的許多其他文件。</li><li><code>/etc/apache2/ports.conf</code>：該文件指定了 Apache 監聽的端口。默認情況下，Apache 監聽端口 80，當啟用提供 SSL 功能的模塊時，在端口 443 上監聽。</li><li><code>/etc/apache2/sites-available/</code>：可以存儲每個站點 <strong><code>虛擬主機</code></strong> 的目錄。除非鏈接到目錄，否則 Apache 不會使用此目錄中的配置文件 <code>sites-enabled</code>。通常，所有服務配置都在此目錄中完成，然後通過使用該 <code>a2ensite</code> 命令鏈接到其他目錄來啟用。</li><li><code>/etc/apache2/sites-enabled/</code>：存儲啟用每個站點 <strong><code>虛擬主機</code></strong> 的目錄。通常，這些是通過鏈接到 <code>sites-available</code> 目錄中的配置文件創建的<code>a2ensite</code>。Apache 在啟動或重新加載以編譯完整配置時讀取此目錄中的配置文件和鏈接。</li><li><code>/etc/apache2/conf-available/</code> 和 <code>/etc/apache2/conf-enabled/</code>：這些目錄與 <code>sites-available</code> 和目錄具有相同的關係 <code>sites-enabled</code>，但用於存儲不屬於<code>虛擬主機</code>的配置區塊。<code>conf-available</code> 目錄中的文件可以使用該 <code>a2enconf</code> 命令啟用，並使用該 <code>a2disconf</code> 命令禁用。</li><li><code>/etc/apache2/mods-available/</code> 和 <code>/etc/apache2/mods-enabled/</code>：這些目錄分別包含可用和啟用的模組結尾的文件 <code>.load</code> 包含片段以加載特定的模組，而結尾的文件 <code>.conf</code> 包含這些模塊的配置。使用 <code>a2enmod</code> 和 <code>a2dismod</code> 命令可以啟用和禁用模塊。</li></ul><h5 id=預設-documentroot>預設 DocumentRoot</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ ls /var/www/html/
+index.html
+</code></pre></div><h5 id=apache-的配置文件中描述>Apache 的配置文件中描述</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ cat /etc/apache2/sites-enabled/000-default.conf | grep -n <span style=color:#e6db74>&#34;/var/www/html&#34;</span>
+12:     DocumentRoot /var/www/html <span style=color:#75715e>#第12行</span>
+</code></pre></div><h2 id=rewrite-redirect>rewrite redirect</h2><h5 id=rewrite-mod>rewrite mod</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo a2enmod rewrite <span style=color:#75715e>#啟動</span>
+Enabling module rewrite.
+To activate the new configuration, you need to run:
+  service apache2 restart
+</code></pre></div><h5 id=檢查載入>檢查載入</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ ls /etc/apache2/mods-enabled/ | grep <span style=color:#e6db74>&#34;rewrite&#34;</span>
+rewrite.load
+</code></pre></div><h5 id=documentroot>DocumentRoot</h5><ul><li><code>/var/www/</code> 下新增目錄</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo mkdir /var/www/mysite
+</code></pre></div><ul><li>修改 <code>apache2.conf</code></li></ul><p>新增下面描述</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo vi /etc/apache2/apache2.conf
+&lt;Directory /var/www/mysite&gt;
+        Options Indexes FollowSymLinks
+        AllowOverride All <span style=color:#75715e># None 更改 All .htaccess 才能執行</span>
+        Require all granted
+&lt;/Directory&gt;
+</code></pre></div><ul><li>修改 <code>DocumentRoot</code></li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo vi /etc/apache2/sites-enabled/000-default.conf
+DocumentRoot /var/www/mysite <span style=color:#75715e>#原本 /var/www/html</span>
+</code></pre></div><h5 id=redirect>redirect</h5><ul><li>新增 <code>.htaccess</code></li></ul><p><code>RewriteCond</code>：定義一條複寫測試規則。<br><code>RewriteRule</code>：取得複寫字串，並套入重寫規則。</p><p>1.完全導向</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ vi /var/www/mysite/.htaccess
+RewriteEngine on <span style=color:#75715e>#啟用 `mod_rewrite`</span>
+RewriteBase / <span style=color:#75715e>#設定比對基本目錄</span>
+RewriteRule ^<span style=color:#f92672>(</span>.*<span style=color:#f92672>)</span> http://www.google.com$1 <span style=color:#f92672>[</span>R<span style=color:#f92672>=</span>301,L<span style=color:#f92672>]</span> <span style=color:#75715e>#重新導向到 google</span>
+ErrorDocument <span style=color:#ae81ff>404</span> /404.php <span style=color:#75715e>#使用者輸入的檔案在此目錄下找不到，則導向到 404.php</span>
+
+&lt;Files .htaccess&gt; <span style=color:#75715e>#.htaccess 檔案</span>
+        Require all granted <span style=color:#75715e>#允許所有存取  </span>
+&lt;/Files&gt;
+</code></pre></div><p>2.針對檔案</p><p><code>THE_REQUEST</code>：類似 <code>GET / HTTP/1.1</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>RewriteEngine on
+RewriteBase /
+RewriteCond %<span style=color:#f92672>{</span>THE_REQUEST<span style=color:#f92672>}</span> ^<span style=color:#f92672>[</span>A-Z<span style=color:#f92672>]{</span>3,9<span style=color:#f92672>}</span><span style=color:#ae81ff>\ </span>/.*test<span style=color:#ae81ff>\.</span>php<span style=color:#ae81ff>\ </span>HTTP/ <span style=color:#75715e>#針對 test.php 檔，* 表示開頭任意但結尾要是 test.php</span>
+RewriteRule .*test<span style=color:#ae81ff>\.</span>php$ https://www.google.com <span style=color:#f92672>[</span>R<span style=color:#f92672>=</span>301,L<span style=color:#f92672>]</span>
+ErrorDocument <span style=color:#ae81ff>404</span> /404.php
+
+&lt;Files .htaccess&gt;
+        Require all granted
+&lt;/Files&gt;
+</code></pre></div><ul><li><code>Apache Service</code> 重啟</li></ul><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo service apache2 restart <span style=color:#75715e>#重啟 </span>
+</code></pre></div><h2 id=基本-proxypass>基本 proxypass</h2><h5 id=啟動-mod>啟動 mod</h5><p>mod_proxy：<code>Apache</code> 的代理模組，用於管理連接並重新導向它們。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo a2enmod proxy <span style=color:#75715e>#非 mod_proxy，它會顯示不存在。</span>
+Enabling module proxy.
+To activate the new configuration, you need to run:
+  service apache2 restart
+</code></pre></div><h5 id=檢查載入-1>檢查載入</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ ls /etc/apache2/mods-enabled/ | grep <span style=color:#e6db74>&#34;proxy&#34;</span>
+proxy.conf
+proxy.load
+</code></pre></div><h5 id=實驗>實驗</h5><p>新增目錄 <code>wp</code> 與 <code>itachi.html</code> 檔案</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo mkdir /var/www/mysite/wp
+itachi@ubuntu:~$ sudo touch /var/www/mysite/wp/itachi.html
+itachi@ubuntu:~$ sudo vi /var/www/mysite/wp/itachi.html
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Page Title&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;h1&gt;This is a Heading&lt;/h1&gt;
+  &lt;p&gt;This is a paragraph.&lt;/p&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre></div><h5 id=語法>語法</h5><p>ProxyPass：遠端服務的 <code>mirror</code><br>ProxyPassReverse：類似重新導向</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo vim /etc/apache2/sites-enabled/000-default.conf
+<span style=color:#75715e>#新增下兩行</span>
+ProxyPass /wp/ http://192.168.7.200/404.php
+ProxyPassReverse /wp/ http://192.168.7.200/404.php
+</code></pre></div><h2 id=基本安全>基本安全</h2><p>1.當你輸入的 URL 出現 <code>404</code> ，也沒做 <code>ErrorDocument 404</code> 設定。<br>出現<strong>敏感資訊</strong>
+Apache/2.4.7 (Ubuntu) Server at 192.168.7.200 Port 80
+解決</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo vi /etc/apache2/conf-enabled/security.conf <span style=color:#75715e>#檔案位置  </span>
+<span style=color:#75715e>#參數 Full | OS | Minimal | Minor | Major | Prod ，顯示敏感資訊的多寡。</span>
+ServerTokens Prod <span style=color:#75715e># 預設 OS</span>
+<span style=color:#75715e>#參數 On | Off | EMail</span>
+ServerSignature Off <span style=color:#75715e># 預設 On，敏感資訊全部顯示</span>
+</code></pre></div><p>2.目錄清單
+把當前目錄檔案全列出
+解決</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>itachi@ubuntu:~$ sudo cat /var/www/mysite/.htaccess
+RewriteEngine on
+RewriteBase /
+...
+Options -Indexes <span style=color:#75715e>#新增此行 - 為關閉目錄清單；+ 為開啟目錄清單</span>
+...
+</code></pre></div><p>結果：出現 <code>403</code></p><p>3.<code>Apache</code>更新<br>4.<code>Log</code> 檔的分析</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/project/2017-07-06-ms-17-010/ title="MS-17-010 實作"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/project/2018-07-06-dhcp/ title="DHCP 使用"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

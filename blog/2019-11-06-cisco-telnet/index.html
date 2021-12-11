@@ -1,0 +1,49 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>cisco telnet</h1><p class=mb-1>November 6, 2019</p><p>&mdash;</p></div><div class=content><h2 id=拓樸>拓樸</h2><figure><img src=/images/GNS3/telnet.png width=auto height=auto></figure><p>本實驗將 ubuntu16 與 VMware 的虛擬機做鏈接，因此 <code>R1</code> 和 ubuntu16 為同一個網段。本實驗練習設定以及用 <code>wireshark</code> 觀察 <code>telnet</code>。</p><h2 id=遠端設備>遠端設備</h2><p>原則上有以下方式可以連接設備</p><ul><li>Console Terminal</li><li>Remote Terminal</li><li>Telnet</li><li>SSH</li></ul><h2 id=r1-設定>R1 設定</h2><h5 id=ip-配置>IP 配置</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 0/0</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#ip address 192.168.6.200 255.255.255.0</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no shutdown</span>
+</code></pre></div><h5 id=啟用遠端>啟用遠端</h5><p>line vty 用來設定 0 到 4 的介面，藉由 login 設定登入時輸入帳號與密碼。要取消 <code>telnet</code> 使用 <code>no login local</code> 指令。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#line vty 0 4</span>
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#login</span>
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#exit</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#username cisco7200 privilege 15 password cisco7200</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#exit</span>
+R1#wr
+Building configuration...
+<span style=color:#f92672>[</span>OK<span style=color:#f92672>]</span>
+</code></pre></div><blockquote><p><code>login</code> 和 <code>login local</code> 在認證方面有些許差異。</p></blockquote><h2 id=ubuntu16-pc-遠端測試>ubuntu16 PC 遠端測試</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>login as: cch
+cch@192.168.6.128<span style=color:#e6db74>&#39;s password:
+</span><span style=color:#e6db74>Welcome to Ubuntu 16.04.4 LTS (GNU/Linux 4.4.0-116-generic x86_64)
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74> * Documentation:  https://help.ubuntu.com
+</span><span style=color:#e6db74> * Management:     https://landscape.canonical.com
+</span><span style=color:#e6db74> * Support:        https://ubuntu.com/advantage
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>210 packages can be updated.
+</span><span style=color:#e6db74>131 updates are security updates.
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>Last login: Wed Nov 13 17:01:39 2019
+</span><span style=color:#e6db74>To run a command as administrator (user &#34;root&#34;), use &#34;sudo &lt;command&gt;&#34;.
+</span><span style=color:#e6db74>See &#34;man sudo_root&#34; for details.
+</span><span style=color:#e6db74>
+</span><span style=color:#e6db74>cch@ubuntu:~$ telnet 192.168.6.200
+</span><span style=color:#e6db74>Trying 192.168.6.200...
+</span><span style=color:#e6db74>Connected to 192.168.6.200.
+</span><span style=color:#e6db74>Escape character is &#39;</span>^<span style=color:#f92672>]</span><span style=color:#960050;background-color:#1e0010>&#39;</span>.
+
+
+User Access Verification
+
+Username: cisco7200
+Password:
+R1#sho
+R1#show bri
+R1#show ip int br
+R1#show ip int brief
+Interface                  IP-Address      OK? Method Status                Protocol
+FastEthernet0/0            192.168.6.200   YES manual up                    up
+R1#
+</code></pre></div><h2 id=wireshark-觀察>wireshark 觀察</h2><p><img src=https://i.imgur.com/J7pQsLx.png alt></p><p>在做遠端連線時會透過三項交握來做一個連線。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-10-05-docker-overview/ title="Docker 基礎介紹"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-11-15-cisco-ssh/ title=SSH><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

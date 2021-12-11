@@ -1,0 +1,249 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>flutter Button route 應用</h1><p class=mb-1>September 1, 2019</p><p>&mdash;</p></div><div class=content><h2 id=目標>目標</h2><p>在手機底部做一個能夠左右滑動的多個按鈕集合。希望按下第一個按鈕能切換至他的頁面；第二個按鈕能切換至他的頁面以此類推</p><h2 id=flutter-路由方式>flutter 路由方式</h2><ol><li>Route
+route 是應用程式的<code>螢幕</code>或<code>頁面</code>的抽象，<code>Navigator</code> 是管理 <code>route</code> 的 <code>widget</code></li><li>Navigator
+建立維護由 stack 的歷史記錄的 Widget。<code>Navigator</code> 可以 push 和 pop 出 route，幫助使用者從一個螢幕畫面移動到另一個屏幕畫面</li><li>Material Page Route
+一種樣式 route，用 <code>platform-adaptive transition</code> 替換整個螢幕畫面</li></ol><h3 id=什麼是-platform-adaptive-transition>什麼是 platform-adaptive transition？</h3><p>從一個螢幕畫面路由到其他螢幕換面時看到的轉換。</p><ul><li>Android<ul><li>頁面的入口轉換將頁面向上滑動並淡入。退出的轉換是相同的，但滑動是相反</li></ul></li><li>iOS<ul><li>頁面從右側滑入並反向退出。當另一頁進入以覆蓋它時，頁面也會在視覺中向左移動</li></ul></li></ul><p>此轉換僅因 <code>MaterialPageRoute</code> 而發生。要修改此轉換動畫，需使用 <code>MaterialPageRoute</code> 或 <code>PageRouteBuilder</code></p><h2 id=flutter-code>flutter Code</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>import</span> <span style=color:#e6db74>&#39;package:flutter/material.dart&#39;</span>;
+<span style=color:#66d9ef>import</span> <span style=color:#e6db74>&#39;package:flutter/painting.dart&#39;</span>;
+<span style=color:#66d9ef>import</span> <span style=color:#e6db74>&#39;package:flutter/widgets.dart&#39;</span>;
+<span style=color:#75715e>/**
+</span><span style=color:#75715e> * 定義一個按鈕的結構
+</span><span style=color:#75715e> * title 該按鈕名稱
+</span><span style=color:#75715e> * routeName 該按鈕路由名稱
+</span><span style=color:#75715e> */</span>
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>BottomButtonModel</span> {
+  <span style=color:#66d9ef>String</span> title;
+  <span style=color:#66d9ef>String</span> routeName;
+  <span style=color:#75715e>/// 建構方法(Constructor)
+</span><span style=color:#75715e></span>  BottomButtonModel(<span style=color:#66d9ef>String</span> title, <span style=color:#66d9ef>String</span> routeName) {
+    <span style=color:#66d9ef>this</span>.title <span style=color:#f92672>=</span> title;
+    <span style=color:#66d9ef>this</span>.routeName <span style=color:#f92672>=</span> routeName;
+  }
+}
+
+<span style=color:#75715e>/**
+</span><span style=color:#75715e> * 用 List 資料結構放入按鈕資料結構
+</span><span style=color:#75715e> */</span>
+List<span style=color:#f92672>&lt;</span>BottomButtonModel<span style=color:#f92672>&gt;</span> bottomButtonItems <span style=color:#f92672>=</span> [
+  BottomButtonModel(<span style=color:#e6db74>&#34;F1&#34;</span>, <span style=color:#e6db74>&#34;F1&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F2&#34;</span>, <span style=color:#e6db74>&#34;F2&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F3&#34;</span>, <span style=color:#e6db74>&#34;F3&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F4&#34;</span>, <span style=color:#e6db74>&#34;F4&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F5&#34;</span>, <span style=color:#e6db74>&#34;F5&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F6&#34;</span>, <span style=color:#e6db74>&#34;F6&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F7&#34;</span>, <span style=color:#e6db74>&#34;F7&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F8&#34;</span>, <span style=color:#e6db74>&#34;F8&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F9&#34;</span>, <span style=color:#e6db74>&#34;F9&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F0&#34;</span>, <span style=color:#e6db74>&#34;F0&#34;</span>),
+  BottomButtonModel(<span style=color:#e6db74>&#34;F.&#34;</span>, <span style=color:#e6db74>&#34;Fdot&#34;</span>),
+];
+
+<span style=color:#75715e>/**
+</span><span style=color:#75715e> * 建立底部按鈕滑動功能
+</span><span style=color:#75715e> */</span>
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>BottomButtonListBuild</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  BottomButtonListBuildState createState() {
+    <span style=color:#75715e>// TODO: implement createState
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> BottomButtonListBuildState();
+  }
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>BottomButtonListBuildState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>BottomButtonListBuild<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> Material(
+      child: <span style=color:#66d9ef>new</span> Container(
+        color: Colors.grey,
+        child: <span style=color:#66d9ef>new</span> SingleChildScrollView( <span style=color:#75715e>/// 滑動的 Widget
+</span><span style=color:#75715e></span>          scrollDirection: Axis.horizontal, <span style=color:#75715e>/// 設定橫向
+</span><span style=color:#75715e></span>          child: <span style=color:#66d9ef>new</span> Row( <span style=color:#75715e>/// 用 Row Widget 布局，將 Button 由左至右，非由上而下
+</span><span style=color:#75715e></span>            verticalDirection: VerticalDirection.down,
+            children: bottomButtonItems
+                .map((f) <span style=color:#f92672>=&gt;</span> BottomButton(
+                      title: f.title,
+                      routeName: f.routeName,
+                    ))
+                .toList(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+<span style=color:#75715e>/**
+</span><span style=color:#75715e> * 建構 Button
+</span><span style=color:#75715e> */</span> 
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>BottomButton</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> title;
+  <span style=color:#75715e>// final Function opPress;
+</span><span style=color:#75715e></span>  <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>String</span> routeName;
+  BottomButton({<span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.title, <span style=color:#960050;background-color:#1e0010>@</span>required <span style=color:#66d9ef>this</span>.routeName});
+
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  _BottomButtonState createState() <span style=color:#f92672>=&gt;</span> _BottomButtonState();
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>_BottomButtonState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>BottomButton<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>new</span> Container(
+      margin: EdgeInsets.only(left: <span style=color:#ae81ff>5.0</span>, right: <span style=color:#ae81ff>5.0</span>), <span style=color:#75715e>/// 邊距
+</span><span style=color:#75715e></span>      child: <span style=color:#66d9ef>new</span> RaisedButton(
+        padding: <span style=color:#66d9ef>new</span> EdgeInsets.fromLTRB(<span style=color:#ae81ff>10.0</span>, <span style=color:#ae81ff>0.0</span>, <span style=color:#ae81ff>10.0</span>, <span style=color:#ae81ff>0.0</span>), <span style=color:#75715e>/// 該 button 的至 container 邊距
+</span><span style=color:#75715e></span>        clipBehavior: Clip.antiAlias, <span style=color:#75715e>/// 將該按鈕圓弧化
+</span><span style=color:#75715e></span>        colorBrightness: Brightness.light, <span style=color:#75715e>/// 亮度屬性
+</span><span style=color:#75715e></span>        textColor: Colors.black,
+        color: Colors.white,
+        splashColor: Colors.yellow,
+        shape: <span style=color:#66d9ef>new</span> RoundedRectangleBorder(
+            borderRadius: <span style=color:#66d9ef>new</span> BorderRadius.circular(<span style=color:#ae81ff>30.0</span>)),
+        child: <span style=color:#66d9ef>new</span> Text(
+          widget.title,
+        ),
+        onPressed: () {
+          <span style=color:#75715e>// widget.opPress;
+</span><span style=color:#75715e></span>          <span style=color:#75715e>/**
+</span><span style=color:#75715e>           * 路由部分
+</span><span style=color:#75715e>           * arguments 用來傳遞參數用
+</span><span style=color:#75715e>           */</span>
+          Navigator.pushNamed(context, <span style=color:#e6db74>&#39;/&#39;</span> <span style=color:#f92672>+</span> widget.routeName,
+              arguments: <span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span>, <span style=color:#66d9ef>String</span><span style=color:#f92672>&gt;</span>{<span style=color:#e6db74>&#39;title&#39;</span><span style=color:#f92672>:</span> widget.title});
+        },
+      ),
+    );
+  }
+}
+
+</code></pre></div><h2 id=建立-page-測試>建立 Page 測試</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>F1Page</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  _F1PageState createState() <span style=color:#f92672>=&gt;</span> _F1PageState();
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>_F1PageState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>F1Page<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> Scaffold(
+      appBar: AppBar(
+        elevation: <span style=color:#ae81ff>0.0</span>,
+        backgroundColor: drawerBackgroundColor,
+        title: Text(<span style=color:#e6db74>&#34;F1&#34;</span>),
+      ),
+      drawer: <span style=color:#66d9ef>new</span> NavDrawer(), <span style=color:#75715e>/// 自訂義的，用來測試傳值，可將此拿掉
+</span><span style=color:#75715e></span>      body: <span style=color:#66d9ef>new</span> Column(
+        children: <span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span>[
+          <span style=color:#66d9ef>new</span> Text(<span style=color:#e6db74>&#34;F1&#34;</span>),
+        ],
+      )
+      bottomNavigationBar: BottomButtonListBuild(),
+    );
+  }
+}
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>F2Page</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  _F2PageState createState() <span style=color:#f92672>=&gt;</span> _F2PageState();
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>_F2PageState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>F2Page<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> Scaffold(
+      appBar: AppBar(
+        elevation: <span style=color:#ae81ff>0.0</span>,
+        backgroundColor: drawerBackgroundColor,
+        title: Text(<span style=color:#e6db74>&#34;F2&#34;</span>),
+      ),
+      drawer: <span style=color:#66d9ef>new</span> NavDrawer(),
+      body: <span style=color:#66d9ef>new</span> Column(
+        children: <span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span>[
+          <span style=color:#66d9ef>new</span> Text(<span style=color:#e6db74>&#34;F2&#34;</span>),
+        ],
+      ),
+      bottomNavigationBar: BottomButtonListBuild(),
+    );
+  }
+}
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#66d9ef>class</span> <span style=color:#a6e22e>F3Page</span> <span style=color:#66d9ef>extends</span> StatefulWidget {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  _F3PageState createState() <span style=color:#f92672>=&gt;</span> _F3PageState();
+}
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>_F3PageState</span> <span style=color:#66d9ef>extends</span> State<span style=color:#f92672>&lt;</span>F3Page<span style=color:#f92672>&gt;</span> {
+  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#75715e>// TODO: implement build
+</span><span style=color:#75715e></span>    <span style=color:#66d9ef>return</span> Scaffold(
+      appBar: AppBar(
+        elevation: <span style=color:#ae81ff>0.0</span>,
+        backgroundColor: drawerBackgroundColor,
+        title: Text(<span style=color:#e6db74>&#34;F3&#34;</span>),
+      ),
+      body: <span style=color:#66d9ef>new</span> Column(
+        children: <span style=color:#f92672>&lt;</span>Widget<span style=color:#f92672>&gt;</span>[
+          <span style=color:#66d9ef>new</span> Text(<span style=color:#e6db74>&#34;F3&#34;</span>)
+        ],
+      )
+      ,
+      bottomNavigationBar: BottomButtonListBuild(),
+    );
+  }
+}
+</code></pre></div><h2 id=named-routing>Named Routing</h2><p>本篇使用的是 <code>Named Routing</code>。使用 <code>Navigator.pushNamed</code> 路由到螢幕新頁面並使用 <code>Navigator.pop</code> 返回。<code>Navigator</code> 維護基於 stack 的 route 歷史記錄。<code>Navigator.pushNamed</code> 需要兩個必需的參數（<code>BuildContext</code>,<code>String</code>,<code>{Object}</code>）和一個可選的 <code>Argument</code>(用來傳遞資訊至螢幕的新頁面)。在 <code>String</code> 的位置，傳遞在路由中預定義的 <code>String</code>，就是定義該路徑的路徑名稱。</p><p>如果在的路線 <code>'/'</code> 中，不必定義初始 route 位置。它將 <code>'/'</code> 作為初始路線。如果希望你的初始路線不同於 <code>'/'</code>，那麼可以如下定義。預設將 F1Page 打開。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart>routes: <span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span>, WidgetBuilder<span style=color:#f92672>&gt;</span>{
+        <span style=color:#e6db74>&#39;/&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F1Page(),
+        <span style=color:#e6db74>&#39;/F1&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F1Page(),
+        <span style=color:#e6db74>&#39;/F2&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F2Page(),
+        <span style=color:#e6db74>&#39;/F3&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F3Page(),
+      },
+</code></pre></div><p>初始 route 和 F1 相同，可以在任何地方使用任何位置(路徑)。需要注意，如果是初始 route，那麼已經定義了 <code>route</code> 或 <code>onGenerateRoute</code>，route 中應該有 <code>/</code>。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart>routes: <span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span>, WidgetBuilder<span style=color:#f92672>&gt;</span>{
+        <span style=color:#e6db74>&#39;/F1&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F1Page(),
+        <span style=color:#e6db74>&#39;/F2&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F2Page(),
+        <span style=color:#e6db74>&#39;/F3&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F3Page(),
+      },
+</code></pre></div><p>如果想要在任何 route 不匹配時它應該顯示 404 錯誤螢幕頁面，那麼可以在 <code>UnknownRoute</code> 上使用。但因為我做的沒有此問題，因此不配置。</p><h2 id=主程式>主程式</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart><span style=color:#75715e>//MyApp()
+</span><span style=color:#75715e></span><span style=color:#66d9ef>void</span> main() <span style=color:#f92672>=&gt;</span> runApp(<span style=color:#66d9ef>new</span> MaterialApp(
+      initialRoute: <span style=color:#e6db74>&#39;/F1&#39;</span>,
+      routes: <span style=color:#f92672>&lt;</span><span style=color:#66d9ef>String</span>, WidgetBuilder<span style=color:#f92672>&gt;</span>{
+        <span style=color:#e6db74>&#39;/&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F1Page(),
+        <span style=color:#e6db74>&#39;/F1&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F1Page(),
+        <span style=color:#e6db74>&#39;/F2&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F2Page(),
+        <span style=color:#e6db74>&#39;/F3&#39;</span><span style=color:#f92672>:</span> (context) <span style=color:#f92672>=&gt;</span> F3Page(),
+      },
+    ));
+
+<span style=color:#66d9ef>class</span> <span style=color:#a6e22e>MyApp</span> <span style=color:#66d9ef>extends</span> StatelessWidget {
+  <span style=color:#75715e>// This widget is the root of your application.
+</span><span style=color:#75715e></span>  <span style=color:#960050;background-color:#1e0010>@</span>override
+  Widget build(BuildContext context) {
+    <span style=color:#66d9ef>return</span> MaterialApp(
+      title: <span style=color:#e6db74>&#39;Flutter Demo&#39;</span>,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: F1Page(),
+    );
+  }
+}
+</code></pre></div><h2 id=ongenerateroute-方式>onGenerateRoute 方式</h2><p>為給定的 route 設置創建 route。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dart data-lang=dart>onGenerateRoute: (RouteSettings settings) {
+        <span style=color:#66d9ef>switch</span> (settings.name) {
+          <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#39;/&#39;</span><span style=color:#f92672>:</span>
+            <span style=color:#66d9ef>return</span> MaterialPageRoute(builder: (context) <span style=color:#f92672>=&gt;</span> F1Page());
+            <span style=color:#66d9ef>break</span>;
+          <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#39;/F1&#39;</span><span style=color:#f92672>:</span>
+            <span style=color:#66d9ef>return</span> MaterialPageRoute(builder: (context) <span style=color:#f92672>=&gt;</span> F1Page());
+            <span style=color:#66d9ef>break</span>;
+          <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#39;/F2&#39;</span><span style=color:#f92672>:</span>
+            <span style=color:#66d9ef>return</span> MaterialPageRoute(builder: (context) <span style=color:#f92672>=&gt;</span> F2Page());
+            <span style=color:#66d9ef>break</span>;
+          <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#39;/F3&#39;</span><span style=color:#f92672>:</span>
+            <span style=color:#66d9ef>return</span> MaterialPageRoute(builder: (context) <span style=color:#f92672>=&gt;</span> F3Page());
+            <span style=color:#66d9ef>break</span>;
+        }
+      },
+</code></pre></div><h2 id=畫面>畫面</h2><p>主要這邊說明的是 route 部分。</p><p><a href=https://i.imgur.com/KaHV2RM.gif>結果鏈接</a></p><h2 id=ref>ref</h2><p><a href=https://blog.usejournal.com/flutter-advance-routing-and-navigator-df0f86f0974f>routing 方式</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-07-15-du/ title=du><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-09-01-schedule/ title="at 和 crontab 使用"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

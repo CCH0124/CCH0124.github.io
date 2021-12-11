@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>ICMP on</title><link>https://cch0124.github.io/tags/icmp/</link><description>Recent content in ICMP on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Mon, 16 Jan 2017 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/icmp/index.xml" rel="self" type="application/rss+xml"/><item><title>ping 指令</title><link>https://cch0124.github.io/blog/2017-01-16-ping/</link><pubDate>Mon, 16 Jan 2017 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/blog/2017-01-16-ping/</guid><description>ping 是網路上常見的診斷工具。
+用來判斷網路是否可連線 是否有設備連接 ping 是網路中必要的工具。
+以下會介紹 ping 的使用以及 ICMP 協定。
+ping work 發送 ICMP(Internet Control Message Protocol) 封包至目的端，最後的訊息可以判斷網路狀態的優良。 ICMP 主要用於確定數據是否及時到達預定目的地。當兩個設備透過 Internet 連線時，如果任何數據未到達其預期目的地，則 ICMP 會生成錯誤回傳。常用的終端應用程式 traceroute 和 ping 都使用 ICMP 進行操作。
+ping [options] [destination] ping options
+-c 指定要發送的 packet 數量 -s 更改 packet 的大小 -v 詳細訊息 -w 指定命令執行結束的時間（以秒為單位）無論命令發送或接收的 packet 數量 -i 可以指定要使用的網路介面 ping destination</description></item></channel></rss>

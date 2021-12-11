@@ -1,0 +1,94 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>SSH</h1><p class=mb-1>November 8, 2019</p><p>&mdash;</p></div><div class=content><h2 id=拓樸>拓樸</h2><figure><img src=/images/GNS3/SSH.png width=auto height=auto></figure><p>官網說明，啟用 <code>SSH</code> 需要四個步驟：</p><ul><li>配置 <code>hostname</code></li><li>配置 <code>DNS domain</code></li><li>產生要使用的 <code>SSH key</code></li><li><code>vty</code> 啟用 <code>SSH transport</code> 表明支援</li></ul><p><code>SSH</code> 與 <code>telnet</code> 比較之下，重點在於 <code>SSH</code> 有加密的機制，因此在傳遞資訊方面較為安全。</p><h2 id=r1-設定>R1 設定</h2><h5 id=介面卡設定>介面卡設定</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 0/0</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#ip address 192.168.6.200 255.255.255.0</span>
+R1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#no shutdown</span>
+*Mar  <span style=color:#ae81ff>1</span> 00:03:03.563: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+*Mar  <span style=color:#ae81ff>1</span> 00:03:04.563: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to up
+</code></pre></div><h5 id=ssh-設定>SSH 設定</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip domain-name itachi.com # 定義域名</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#crypto key generate rsa general-keys modulus 1024 # 產生 RSA key</span>
+The name <span style=color:#66d9ef>for</span> the keys will be: R1.itachi.com
+
+% The key modulus size is <span style=color:#ae81ff>1024</span> bits
+% Generating <span style=color:#ae81ff>1024</span> bit RSA keys, keys will be non-exportable...<span style=color:#f92672>[</span>OK<span style=color:#f92672>]</span>
+
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#</span>
+*Mar  <span style=color:#ae81ff>1</span> 00:05:13.471: %SSH-5-ENABLED: SSH 1.99 has been enabled
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip ssh time-out 15 # 登入此設備時，15 秒內無動作則在輸入一次</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip ssh authentication-retries ?</span>
+  &lt;0-5&gt;  Number of authentication retries
+
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip ssh authentication-retries 2 # 驗證失敗次數</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip ssh maxstartups 3 # 限制能夠連線到此設備數量</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip ssh port 2222 rotary 1 # 更換 port 號，rotary 1 對應的 port 號為 2222</span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip ssh version ?</span>
+  &lt;1-2&gt;  Protocol version
+
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#ip ssh version 2 # SSH Version</span>
+</code></pre></div><h5 id=遠端介面設定>遠端介面設定</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#username itachi privilege 15 password 123456 </span>
+R1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#line vty 0 4</span>
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#rotary 1 # 0 - 4 介面都藉由 2222 port 登入</span>
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#login</span>
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#login local # local 下資料庫驗證</span>
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#privilege ?</span>
+  level  Assign default privilege level <span style=color:#66d9ef>for</span> line
+
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#privilege level ?</span>
+  &lt;0-15&gt;  Default privilege level <span style=color:#66d9ef>for</span> line
+
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#privilege level 15</span>
+R1<span style=color:#f92672>(</span>config-line<span style=color:#f92672>)</span><span style=color:#75715e>#transport input ssh # 預設 vtys 的傳輸是 Telnet，限制只有 SSH 能夠連線 0 到 4</span>
+R1#wr
+Building configuration...
+<span style=color:#f92672>[</span>OK<span style=color:#f92672>]</span>
+
+</code></pre></div><h5 id=驗證-ssh>驗證 SSH</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>1#show ip ssh
+SSH Enabled - version 2.0
+Authentication timeout: <span style=color:#ae81ff>15</span> secs; Authentication retries: <span style=color:#ae81ff>2</span>
+</code></pre></div><h2 id=ubuntu-ssh-遠端-r1>ubuntu ssh 遠端 R1</h2><p>因為 <code>cisco</code> 的加密方式有點不安全，在 <code>ubuntu SSH</code> 配置上預設無該演算法，因此必須加 <code>-oKexAlgorithms=+diffie-hellman-group1-sha1</code> 參數。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ ssh -oKexAlgorithms<span style=color:#f92672>=</span>+diffie-hellman-group1-sha1 -l itachi -p <span style=color:#ae81ff>2222</span> 192.168.6.200
+The authenticity of host <span style=color:#e6db74>&#39;192.168.6.200 (192.168.6.200)&#39;</span> can<span style=color:#e6db74>&#39;t be established.
+</span><span style=color:#e6db74>RSA key fingerprint is SHA256:MrBhp+LzbnJyQoTFU1LURcpwLaN1aZxha0+YykOPf3k.
+</span><span style=color:#e6db74>Are you sure you want to continue connecting (yes/no)? yes
+</span><span style=color:#e6db74>Warning: Permanently added &#39;</span>192.168.6.200<span style=color:#960050;background-color:#1e0010>&#39;</span> <span style=color:#f92672>(</span>RSA<span style=color:#f92672>)</span> to the list of known hosts.
+Password:
+
+R1#sh
+R1#show ip int
+R1#show ip interface br
+R1#show ip interface brief
+Interface                  IP-Address      OK? Method Status                Protocol
+FastEthernet0/0            192.168.6.200   YES manual up                    up
+Serial0/0                  unassigned      YES unset  administratively down down
+FastEthernet0/1            unassigned      YES unset  administratively down down
+Serial0/1                  unassigned      YES unset  administratively down down
+Serial0/2                  unassigned      YES unset  administratively down down
+FastEthernet1/0            unassigned      YES unset  administratively down down
+Serial2/0                  unassigned      YES unset  administratively down down
+Serial2/1                  unassigned      YES unset  administratively down down
+Serial2/2                  unassigned      YES unset  administratively down down
+Serial2/3                  unassigned      YES unset  administratively down down
+R1#
+</code></pre></div><h2 id=r1-查看介面狀況>R1 查看介面狀況</h2><p>查看 <code>SSH session</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show ssh
+Connection Version Mode Encryption  Hmac         State                 Username
+<span style=color:#ae81ff>0</span>          2.0     IN   aes128-cbc  hmac-sha1    Session started       itachi
+<span style=color:#ae81ff>0</span>          2.0     OUT  aes128-cbc  hmac-sha1    Session started       itachi
+%No SSHv1 server connections running.
+</code></pre></div><p>顯示當前 <code>session</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show line vty <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>4</span>
+   Tty Typ     Tx/Rx    A Modem  Roty AccO AccI   Uses   Noise  Overruns   Int
+*   <span style=color:#ae81ff>162</span> VTY              -    -      <span style=color:#ae81ff>1</span>    -    -      <span style=color:#ae81ff>6</span>       <span style=color:#ae81ff>0</span>     0/0       -
+    <span style=color:#ae81ff>163</span> VTY              -    -      <span style=color:#ae81ff>1</span>    -    -      <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>0</span>     0/0       -
+    <span style=color:#ae81ff>164</span> VTY              -    -      <span style=color:#ae81ff>1</span>    -    -      <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>0</span>     0/0       -
+    <span style=color:#ae81ff>165</span> VTY              -    -      <span style=color:#ae81ff>1</span>    -    -      <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>0</span>     0/0       -
+    <span style=color:#ae81ff>166</span> VTY              -    -      <span style=color:#ae81ff>1</span>    -    -      <span style=color:#ae81ff>0</span>       <span style=color:#ae81ff>0</span>     0/0       -
+</code></pre></div><p><code>show users</code> 顯示登入該設備的使用者</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>R1#show users
+    Line       User       Host<span style=color:#f92672>(</span>s<span style=color:#f92672>)</span>              Idle       Location
+*  <span style=color:#ae81ff>0</span> con <span style=color:#ae81ff>0</span>                idle                 00:00:00
+ <span style=color:#ae81ff>162</span> vty <span style=color:#ae81ff>0</span>     itachi     idle                 00:03:00 192.168.6.129
+
+  Interface    User               Mode         Idle     Peer Address
+</code></pre></div><h2 id=wireshark>Wireshark</h2><p><img src=https://i.imgur.com/MfC5p9d.png alt></p><p>上面圖片有過濾。在相互使用 SSH 通訊前通常 SSH 使用 TCP 作為傳輸協定。</p><p>165 和 166 個封包為 SSH 版本交換
+165 至 178 個封包，首先先發出 <code>Key Exchange Init</code>，相互告訴對方自己的加密演算法、MAC 演算法等等</p><h2 id=ref>Ref</h2><ul><li><a href=https://www.cisco.com/c/en/us/support/docs/security-vpn/secure-shell-ssh/4145-ssh.html>ssh doc</a></li><li><a href=https://en.wikipedia.org/wiki/Secure_Shell>ssh wiki</a></li><li><a href=https://www.wireshark.org/docs/dfref/s/ssh.html>ssh wireshark</a></li></ul></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-11-06-cisco-telnet/ title="cisco telnet"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-11-08-listview-listtitle/ title="navigation drawer"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

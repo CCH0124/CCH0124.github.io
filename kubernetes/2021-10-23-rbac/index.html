@@ -1,0 +1,143 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes 之訪問安全控制 - RBAC</h1><p class=mb-1>October 16, 2021</p><p>&mdash;</p></div><div class=content><p>RBAC(Role-Based Access Control)，它將權限授予角色(role)上，可以想像它是一個責任。對 RBAC 來說，使用者(User)是一個獨立可存取資源的主體(Subject)。這過程中被允許對一或多個 Object 執行的操作可以稱做許可(Permission)，一個使用者可藉由授權而擁有多個 role。</p><pre><code>  人
+  O
+ \|/
+ / \         action(verb)
+Subject --------------------&gt; Object
+</code></pre><p>RBAC 中 User、Role 和 Permission 關係如下</p><pre><code>                            ___________________________
+       -----&gt; Role         |       Permissions         |
+     /             \       |                           |
+User                -----&gt; | Operations -----&gt; Objects |
+     \             /       |                           |
+       -----&gt; Role         |___________________________|
+</code></pre><p>RBAC 是一個限定操作的機制，用於定義誰(subject)能或不能<em>操作(verb)<em>哪個</em>物件(object)</em>。動作的發出者(subject)可以是一個 <em>User Accoun</em> 或是 <em>Service Account</em>；verb 表示要執行的操作 create、apply、delete、update、patch、edit 和 get 等；object 是指要被操作的目標資源，以 Kubernetes API 來看是以 URL 作為對象。</p><p>RBAC 支援 <em>Role</em> 和 <em>ClusterRole</em> 兩種角色，前者是 <em>namespace 級別</em>後者則是<em>集群級別</em>，對這兩類給權限時，需要用到 <em>RoleBinding</em> 和 <em>ClusterRoleBinding</em>。RoleBinding 將 role 上的 Permissions 綁定到一個或一組使用者上，此綁定只能隸屬於某一個 <code>namespace</code>。<em>ClusterRoleBinding</em> 則用於及群集別。</p><p>在一個 <code>namespace</code> 下可以包含多個 <code>Role</code> 和 <code>RoleBinding</code> 對象，集群級別也是可存在多個 <code>ClusterRole</code> 和 <code>ClusterRoleBinding</code>。一個使用者可以經由 <code>RoleBinding</code> 或 <code>ClusterRoleBinding</code> 關連至多個角色，並實現多重授權。</p><h3 id=role-和-rolebinding>Role 和 RoleBinding</h3><p>Role 僅是一組 permission 權限的集合，在 Role 類型的 yaml 檔中使用 <code>rules</code> 字段定義授權規則。下面是一個 Kubernetes Dashboard 的 <code>Role</code> 範例，它監視了 <code>secrets</code>、<code>configmaps</code> 和 <code>services</code> 資源的權限。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Role</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>rbac.authorization.k8s.io/v1</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>k8s-app</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+<span style=color:#f92672>rules</span>:
+  <span style=color:#75715e># Allow Dashboard to get, update and delete Dashboard exclusive secrets.</span>
+  - <span style=color:#f92672>apiGroups</span>: [<span style=color:#e6db74>&#34;&#34;</span>]
+    <span style=color:#f92672>resources</span>: [<span style=color:#e6db74>&#34;secrets&#34;</span>]
+    <span style=color:#f92672>resourceNames</span>: [<span style=color:#e6db74>&#34;kubernetes-dashboard-key-holder&#34;</span>, <span style=color:#e6db74>&#34;kubernetes-dashboard-certs&#34;</span>, <span style=color:#e6db74>&#34;kubernetes-dashboard-csrf&#34;</span>]
+    <span style=color:#f92672>verbs</span>: [<span style=color:#e6db74>&#34;get&#34;</span>, <span style=color:#e6db74>&#34;update&#34;</span>, <span style=color:#e6db74>&#34;delete&#34;</span>]
+    <span style=color:#75715e># Allow Dashboard to get and update &#39;kubernetes-dashboard-settings&#39; config map.</span>
+  - <span style=color:#f92672>apiGroups</span>: [<span style=color:#e6db74>&#34;&#34;</span>]
+    <span style=color:#f92672>resources</span>: [<span style=color:#e6db74>&#34;configmaps&#34;</span>]
+    <span style=color:#f92672>resourceNames</span>: [<span style=color:#e6db74>&#34;kubernetes-dashboard-settings&#34;</span>]
+    <span style=color:#f92672>verbs</span>: [<span style=color:#e6db74>&#34;get&#34;</span>, <span style=color:#e6db74>&#34;update&#34;</span>]
+    <span style=color:#75715e># Allow Dashboard to get metrics.</span>
+  - <span style=color:#f92672>apiGroups</span>: [<span style=color:#e6db74>&#34;&#34;</span>]
+    <span style=color:#f92672>resources</span>: [<span style=color:#e6db74>&#34;services&#34;</span>]
+    <span style=color:#f92672>resourceNames</span>: [<span style=color:#e6db74>&#34;heapster&#34;</span>, <span style=color:#e6db74>&#34;dashboard-metrics-scraper&#34;</span>]
+    <span style=color:#f92672>verbs</span>: [<span style=color:#e6db74>&#34;proxy&#34;</span>]
+  - <span style=color:#f92672>apiGroups</span>: [<span style=color:#e6db74>&#34;&#34;</span>]
+    <span style=color:#f92672>resources</span>: [<span style=color:#e6db74>&#34;services/proxy&#34;</span>]
+    <span style=color:#f92672>resourceNames</span>: [<span style=color:#e6db74>&#34;heapster&#34;</span>, <span style=color:#e6db74>&#34;http:heapster:&#34;</span>, <span style=color:#e6db74>&#34;https:heapster:&#34;</span>, <span style=color:#e6db74>&#34;dashboard-metrics-scraper&#34;</span>, <span style=color:#e6db74>&#34;http:dashboard-metrics-scraper&#34;</span>]
+    <span style=color:#f92672>verbs</span>: [<span style=color:#e6db74>&#34;get&#34;</span>]
+</code></pre></div><p><code>rules</code> 下定義了規則其字段有。</p><ol><li>apiGroups
+包含 API 組的名稱，可以使用列表方式定義，如果以 <code>""</code> 表示是 core API group。</li><li>resource
+要將規範應用的目標資源種類（pods、deployments&mldr;），同樣可以列表方式呈現。<code>ResourceAll</code> 表示所有資源</li><li>resourceNames
+要將規範應用的目標資源種類下名稱，如果為空表示所有資源</li><li>verbs
+資源類型的操作，有 get、list、create、update、patch、watch、proxy、redirect、delete 和 deletecollection</li><li>nonResourceURLs
+定義用戶應該有權限訪問的網址列表，非 <code>namespace</code> 級別，因此適用於 ClusterRole 和 ClusterRoleBinding</li></ol><p>在範例中 <code>resources: ["services/proxy"]</code> 表示 proxy 是 services 的子資源，因此使用 <code>resource/subre-source</code> 格式呈現。</p><p>以下是一個透過 <code>kubectl create role</code> 建立 role 資源的快速方式</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>kubectl create role pods-reader --verb<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;get,list,watch&#34;</span> --resource<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;pods,pods/log&#34;</span> -n test
+kubectl create role service-admin --verb<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;*&#34;</span> --resource<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;service,services/*&#34;</span> -n test
+role.rbac.authorization.k8s.io/service-admin created
+
+kubectl -n test describe role service-admin
+Name:         service-admin
+Labels:       &lt;none&gt;
+Annotations:  &lt;none&gt;
+PolicyRule:
+  Resources   Non-Resource URLs  Resource Names  Verbs
+  ---------   -----------------  --------------  -----
+  services/*  <span style=color:#f92672>[]</span>                 <span style=color:#f92672>[]</span>              <span style=color:#f92672>[</span>*<span style=color:#f92672>]</span>
+  services    <span style=color:#f92672>[]</span>                 <span style=color:#f92672>[]</span>              <span style=color:#f92672>[</span>*<span style=color:#f92672>]</span>
+</code></pre></div><p>建立 role 後需要綁定 Role-Binding 到 subject 上才有作用。<code>RoleBinding</code> 用於將 <code>Role</code> 中定義的權限賦予一個或一組用戶，它由一組 <code>subject</code> 以及一個要引用來賦予這組 <code>subject</code> 的 <code>Role</code> 或 <code>ClusterRole</code> 組成。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: reader-resource
+  namespace: test
+subjects: <span style=color:#75715e># 要綁定的 subject</span>
+  - kind: User
+    name: kube-user1
+    apiGroup: rbac.authorization.k8s.io
+roleRef: <span style=color:#75715e># 要綁定的 Role 或 ClusterRole 資源</span>
+  kind: Role
+  name: pods-reader
+  apiGroup: rbac.authorization.k8s.io
+</code></pre></div><p>透過指令方式</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>kubectl create rolebinding reader-resource --role<span style=color:#f92672>=</span>pods-reader --user<span style=color:#f92672>=</span>kube-user1 -n testing
+</code></pre></div><ul><li>subjects<ul><li>apiGroup ServiceAccount 為 &ldquo;"；User 和 Group 為 &ldquo;rbac.authorization.k8s.io&rdquo;</li><li>kind 所屬類別，User、Group 和 ServiceAccount</li><li>name 名稱</li><li>namespace 所屬的 namespace，User、Group 須為空
+roleRef 的字段與 subjects 大同小異</li></ul></li></ul><p>Role 和 RoleBinding 屬於 namespace 級別，有時須注意非 namespace 級別的資源，如 <code>PersistentVolume</code>、<code>NameSpace</code> 和 <code>Node</code> 等，而這些資源就得用 <code>ClusterRole</code> 和 <code>ClusterRoleBinding</code> 進行配置。</p><h2 id=clusterrole-和-clusterrolebinding>ClusterRole 和 ClusterRoleBinding</h2><p><code>ClusterRole</code> 能夠管理和 <code>Role</code> 資源一樣的准許權限外，還可以管理集群資源的授權。下面為一個 kubernetes dashboard 範例，由於不屬於 namespace 級別，因此不會有其字段。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml>---
+
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>ClusterRole</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>rbac.authorization.k8s.io/v1</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>k8s-app</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+<span style=color:#f92672>rules</span>:
+  <span style=color:#75715e># Allow Metrics Scraper to get metrics from the Metrics server</span>
+  - <span style=color:#f92672>apiGroups</span>: [<span style=color:#e6db74>&#34;metrics.k8s.io&#34;</span>]
+    <span style=color:#f92672>resources</span>: [<span style=color:#e6db74>&#34;pods&#34;</span>, <span style=color:#e6db74>&#34;nodes&#34;</span>]
+    <span style=color:#f92672>verbs</span>: [<span style=color:#e6db74>&#34;get&#34;</span>, <span style=color:#e6db74>&#34;list&#34;</span>, <span style=color:#e6db74>&#34;watch&#34;</span>]
+
+---
+
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>rbac.authorization.k8s.io/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>RoleBinding</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>labels</span>:
+    <span style=color:#f92672>k8s-app</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+<span style=color:#f92672>roleRef</span>:
+  <span style=color:#f92672>apiGroup</span>: <span style=color:#ae81ff>rbac.authorization.k8s.io</span>
+  <span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Role</span>
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+<span style=color:#f92672>subjects</span>:
+  - <span style=color:#f92672>kind</span>: <span style=color:#ae81ff>ServiceAccount</span>
+    <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+    <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+
+---
+
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>rbac.authorization.k8s.io/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>ClusterRoleBinding</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+<span style=color:#f92672>roleRef</span>:
+  <span style=color:#f92672>apiGroup</span>: <span style=color:#ae81ff>rbac.authorization.k8s.io</span>
+  <span style=color:#f92672>kind</span>: <span style=color:#ae81ff>ClusterRole</span>
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+<span style=color:#f92672>subjects</span>:
+  - <span style=color:#f92672>kind</span>: <span style=color:#ae81ff>ServiceAccount</span>
+    <span style=color:#f92672>name</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+    <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>kubernetes-dashboard</span>
+
+---
+</code></pre></div><p><code>RoleBinding</code> 也能將 subject 綁定 <code>ClusterRole</code> 資源，但權限會被 <code>RoleBinding</code> 所限制，也就是 <code>ClusterRole</code> 所賦予權限只能使用在 <code>RoleBinding</code> 所在的 <code>namespace</code>。系統預設下建立許多的 <code>ClusterRole</code> 資源</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>○ → kubectl get clusterrole 
+NAME                                                                   CREATED AT
+admin                                                                  2021-11-27T08:03:26Z
+cilium                                                                 2021-11-27T08:03:31Z
+cilium-operator                                                        2021-11-27T08:03:31Z
+cluster-admin                                                          2021-11-27T08:03:26Z
+edit                                                                   2021-11-27T08:03:26Z
+kubeadm:get-nodes                                                      2021-11-27T08:03:28Z
+...
+</code></pre></div><h2 id=創建使用者與綁定角色範例>創建使用者與綁定角色範例</h2><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>openssl genrsa -out itachi.key <span style=color:#ae81ff>2048</span>
+openssl req -new -key itachi.key -out itachi.csr -subj <span style=color:#e6db74>&#34;/CN=itachi/O=test&#34;</span>
+sudo openssl x509 -req -in itachi.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key  -CAcreateserial -out itachi.crt -days <span style=color:#ae81ff>30</span>
+kubectl config set-credentials itachi --client-certificate itachi.crt --client-key itachi.key
+kubectl config set-context itachi-context --cluster<span style=color:#f92672>=</span>kubernetes --namespace<span style=color:#f92672>=</span>test --user<span style=color:#f92672>=</span>itachi
+kubectl --context<span style=color:#f92672>=</span>itachi-context get pod
+Error from server <span style=color:#f92672>(</span>Forbidden<span style=color:#f92672>)</span>: pods is forbidden: User <span style=color:#e6db74>&#34;itachi&#34;</span> cannot list resource <span style=color:#e6db74>&#34;pods&#34;</span> in API group <span style=color:#e6db74>&#34;&#34;</span> in the namespace <span style=color:#e6db74>&#34;test&#34;</span>
+</code></pre></div><p>發生無權限存取。此時將 <code>Role</code> 範例的 User 設定成 itachi 即可</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>kubectl --context<span style=color:#f92672>=</span>itachi-context get pods
+No resources found in test namespace.
+</code></pre></div><p>刪除使用者</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>kubectl config unset users.itachi
+</code></pre></div></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-17-etcd/ title="kubernetes - day27"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2021-10-16-security/ title="kubernetes 之訪問安全控制"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

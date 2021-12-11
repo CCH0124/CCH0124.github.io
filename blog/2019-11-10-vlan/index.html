@@ -1,0 +1,125 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>VLAN 介紹</h1><p class=mb-1>November 10, 2019</p><p>&mdash;</p></div><div class=content><p>VLAN(Virtual LAN) 是交換器上一個很重要的技術，它可以去規劃一個區域網路內的組織，也就是可將不同類型的部門網路進行邏輯上的網路切分。<code>VLAN</code> 的技術可將一台交換器上的埠分成幾個群，而每個群又可透過 <code>VLAN</code> 特性再做一些詳細設定，<code>VLAN</code> 邏輯上根據切分的群就有幾個廣播網域(Broadcast Domain)，所以這也讓不同的 <code>VLAN</code> 再域設下不能直接相互通訊。透過 <code>VLAN</code> 技術切分的廣播網域相比原本同一 <code>LAN</code> 下的廣播域對網路負擔要來的小。</p><h3 id=vlan-資料轉發>VLAN 資料轉發</h3><p>在多個交換器之間設定的 <code>VLAN</code>，則域設下只有同一 <code>VLAN</code> 才能通訊。在預設下交換器都屬於同一 <code>VLAN</code> 中，因此針對於接收到的封包對所有埠做 flooding 動作是對的，因此做了 <code>VLAN</code> 後，<code>VLAN</code> 間傳遞封包只會在該 <code>VLAN</code> 中進行 flooding。另外一個重點是 <code>trunk</code>，它用來對跨越多個交換器的 VLAN 進行轉發，要設置 <code>trunk</code> 則接口需要是 <code>FastEthernet</code> 以上才可設定。</p><h3 id=trunk-資料轉發>trunk 資料轉發</h3><p><code>trunk</code> 會在封包內增加一個標籤，用來指名這封包是屬於哪個 <code>VLAN</code>，而這標邊被新增後將傳往下個設備。下個設備收到之後，再根據標籤來得知此封包是屬於哪個 <code>VLAN</code>，然後再轉發至所屬的 <code>VLAN</code>。</p><p>這邊將透過下面架構進行 <code>VLAN</code> 操作，這邊大致上會以 ESW1 做設定，ESW2 則是對應這邊不再多做說明與設置。</p><figure><img src=/images/GNS3/vlan.png width=auto height=auto></figure><p>查看 ESW1 交換器 VLAN 訊息，發現所有接口預設都是 VLAN 1，在這種情況下我們的路由器 R1 至 R6 都能相互通訊。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1#show vlan-switch
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+<span style=color:#ae81ff>1</span>    default                          active    Fa1/0, Fa1/1, Fa1/2, Fa1/3
+                                                Fa1/4, Fa1/5, Fa1/6, Fa1/7
+                                                Fa1/8, Fa1/9, Fa1/10, Fa1/11
+                                                Fa1/12, Fa1/13, Fa1/14, Fa1/15
+<span style=color:#ae81ff>1002</span> fddi-default                     active
+<span style=color:#ae81ff>1003</span> token-ring-default               active
+<span style=color:#ae81ff>1004</span> fddinet-default                  active
+<span style=color:#ae81ff>1005</span> trnet-default                    active
+
+VLAN Type  SAID       MTU   Parent RingNo BridgeNo Stp  BrdgMode Trans1 Trans2
+---- ----- ---------- ----- ------ ------ -------- ---- -------- ------ ------
+<span style=color:#ae81ff>1</span>    enet  <span style=color:#ae81ff>100001</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>1002</span>   <span style=color:#ae81ff>1003</span>
+<span style=color:#ae81ff>1002</span> fddi  <span style=color:#ae81ff>101002</span>     <span style=color:#ae81ff>1500</span>  -      -      -        -    -        <span style=color:#ae81ff>1</span>      <span style=color:#ae81ff>1003</span>
+<span style=color:#ae81ff>1003</span> tr    <span style=color:#ae81ff>101003</span>     <span style=color:#ae81ff>1500</span>  <span style=color:#ae81ff>1005</span>   <span style=color:#ae81ff>0</span>      -        -    srb      <span style=color:#ae81ff>1</span>      <span style=color:#ae81ff>1002</span>
+<span style=color:#ae81ff>1004</span> fdnet <span style=color:#ae81ff>101004</span>     <span style=color:#ae81ff>1500</span>  -      -      <span style=color:#ae81ff>1</span>        ibm  -        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>
+<span style=color:#ae81ff>1005</span> trnet <span style=color:#ae81ff>101005</span>     <span style=color:#ae81ff>1500</span>  -      -      <span style=color:#ae81ff>1</span>        ibm  -        <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>
+</code></pre></div><p>接著我們配置 VLAN 觀察，R1 和 R4 我們讓它預設；R2 和 R5 設至為 VLAN 20；R3 和 R6 為 VLAN 30。</p><p>建立 VLAN。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1#vlan database
+ESW1<span style=color:#f92672>(</span>vlan<span style=color:#f92672>)</span><span style=color:#75715e>#vlan 20 name R2&amp;R5</span>
+VLAN <span style=color:#ae81ff>20</span> added:
+    Name: R2&amp;R5
+ESW1<span style=color:#f92672>(</span>vlan<span style=color:#f92672>)</span><span style=color:#75715e>#vlan 30 name R3&amp;R6</span>
+VLAN <span style=color:#ae81ff>30</span> added:
+    Name: R3&amp;R6
+ESW1<span style=color:#f92672>(</span>vlan<span style=color:#f92672>)</span><span style=color:#75715e>#</span>
+</code></pre></div><p>查看是否建立</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1#show vlan-switch
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+<span style=color:#ae81ff>1</span>    default                          active    Fa1/0, Fa1/1, Fa1/2, Fa1/3
+                                                Fa1/4, Fa1/5, Fa1/6, Fa1/7
+                                                Fa1/8, Fa1/9, Fa1/10, Fa1/11
+                                                Fa1/12, Fa1/13, Fa1/14, Fa1/15
+<span style=color:#ae81ff>20</span>   R2&amp;R5                            active <span style=color:#75715e># this</span>
+<span style=color:#ae81ff>30</span>   R3&amp;R6                            active <span style=color:#75715e># this</span>
+...
+</code></pre></div><p>接著要設定接口至 VLAN，關鍵指令為 <code>switchport mode</code>。該關鍵指令有四個值，在建立之前我們了解以下</p><ol><li>Trunk
+表示此埠要被設至為 <code>802.1Q</code> 協定。它同時也會將另一個對接的接口協商要使用哪種 <code>Trunk</code>。</li><li>Access
+連接電腦端點才會設定的模式，此模式可用於設置 <code>Port Security</code>。</li><li>Dynamic desirable
+本機埠和對接埠進行自動協調，用來將非 <code>Trunk</code> 協調成 <code>Trunk</code>，如果對接埠為 <code>Access</code> 則將不會形成 <code>Trunk</code></li><li>Dynamic auto
+當自己的埠設定為 <code>Dynamic auto</code> 時，對接埠為 <code>Trunk</code> 或 <code>Desirable</code>，將會協調成 <code>Trunk</code>，如果對接埠是 <code>Access</code> 或 <code>Auto</code>，<code>Trunk</code> 無法協調成功。</li></ol><table><thead><tr><th></th><th>Trunk</th><th>Access</th><th>Desirable</th><th>Auto</th></tr></thead><tbody><tr><td>Trunk</td><td>True</td><td></td><td>True</td><td>True</td></tr><tr><td>Access</td><td></td><td></td><td></td><td></td></tr><tr><td>Desirable</td><td>True</td><td></td><td>True</td><td>True</td></tr><tr><td>Auto</td><td>True</td><td></td><td>True</td><td></td></tr></tbody></table><p>我們設置相關埠 VLAN，如下</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/1</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport mode access</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport access vlan 20</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#exit</span>
+ESW1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/2</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport mode access</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport access vlan 30</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#exit</span>
+</code></pre></div><blockquote><p>每一個埠只能屬於某一個 VLAN</p></blockquote><p>查看有無分配</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#do sh vlan-switch</span>
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+<span style=color:#ae81ff>1</span>    default                          active    Fa1/0, Fa1/3, Fa1/4, Fa1/5
+                                                Fa1/6, Fa1/7, Fa1/8, Fa1/9
+                                                Fa1/10, Fa1/11, Fa1/12, Fa1/13
+                                                Fa1/14, Fa1/15
+<span style=color:#ae81ff>20</span>   R2&amp;R5                            active    Fa1/1
+<span style=color:#ae81ff>30</span>   R3&amp;R6                            active    Fa1/2
+<span style=color:#ae81ff>1002</span> fddi-default                     active
+<span style=color:#ae81ff>1003</span> token-ring-default               active
+...
+</code></pre></div><p>設置完之後嘗試互 ping，發現只有 VALN 1 的埠可以相互連接，不是要有 <code>trunk</code> 才能讓跨多交換器的 VLAN 通訊嗎？原因是沒有被貼上 VLAN 標籤的封包都會被送往預設 VLAN 也就是 VLAN 1，因此 VLAN 1 的埠可以通訊。</p><p>屬於 VLAN 20 或 VLAN 30 的路由器相互也不能通，原因大致上是設定了 VLAN 但是交換器接收到了卻無法辨別這 VLAN 要送往哪邊，因此要透過 <code>trunk</code> 讓交換器知道 VLAN 的標籤，然後正確的從埠做轉發。</p><p>設置 ESW1 和 ESW2 相互連接的埠為 <code>trunk</code></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/15</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport mode trunk</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport trunk encapsulation dot1q</span>
+
+ESW2<span style=color:#f92672>(</span>config<span style=color:#f92672>)</span><span style=color:#75715e>#interface fastEthernet 1/15</span>
+ESW2<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport mode trunk</span>
+ESW2<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport trunk encapsulation dot1q</span>
+</code></pre></div><p>查看 <code>trunk</code> 接口訊息</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1#show interfaces trunk
+
+Port      Mode         Encapsulation  Status        Native vlan
+Fa1/15    on           802.1q         trunking      <span style=color:#ae81ff>1</span>
+
+Port      Vlans allowed on trunk
+Fa1/15    1-1005
+
+Port      Vlans allowed and active in management domain
+Fa1/15    1,20,30
+
+Port      Vlans in spanning tree forwarding state and not pruned
+Fa1/15    1,20,30
+</code></pre></div><p>設置完之後屬於 VLAN 20 或 VLAN 30 的路由器能夠在相同 VLAN ID 中進行通訊。至於 VLAN 20 無法與 VLAN 30 的路由器通訊，是另一個話題。我們利用 Wireshark 從 <code>trunk</code> 的鏈路進行簡單的觀察。</p><p>下圖顯示出經過 <code>trunk</code> 時會攜帶一個 VLAN 標籤。</p><p><img src=https://i.imgur.com/z07QEHx.png alt></p><p>下圖在 VLAN 1 進行通訊時，不攜帶該 VLAN 標籤。</p><p><img src=https://i.imgur.com/B9OPLDz.png alt></p><p>綜合以上，我們可以設定出在多個交換器中相同 VLAN ID 的終端相互通訊。</p><p>我們在使用 <code>show interfaces trunk</code> 發現有一個 <code>Vlans allowed on trunk</code> 字段，它可以限制 VLAN ID 為多少時可以通過，預設是全部 <code>1-1005</code>。我們可以嘗試只讓 VLAN 30 和 VLAN 1 通過，設定如下</p><p>需在 trunk 埠上設定，同時查看 <code>trunk</code> 接口資訊發現確實更改。此時嘗試互 ping VLAN 20 的路由器，發現無法通訊。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport trunk allowed vlan 1-19,30-1005</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#do sh int trunk</span>
+
+Port      Mode         Encapsulation  Status        Native vlan
+Fa1/15    on           802.1q         trunking      <span style=color:#ae81ff>1</span>
+
+Port      Vlans allowed on trunk
+Fa1/15    1-19,30-1005
+
+Port      Vlans allowed and active in management domain
+Fa1/15    1,30
+
+Port      Vlans in spanning tree forwarding state and not pruned
+Fa1/15    1,30
+</code></pre></div><p>以下是 <code>switchport trunk allowed vlan</code> 可設定方式</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell><span style=color:#75715e>#switchport trunk allowed vlan ?</span>
+  WORD    VLAN IDs of the allowed VLANs when this port is in trunking mode
+  add     add VLANs to the current list
+  all     all VLANs
+  except  all VLANs except the following
+  remove  remove VLANs from the current list
+</code></pre></div><h2 id=其他資訊>其他資訊</h2><p>VLAN 1 是 <code>trunk</code> 上的一個 <code>Native VLAN</code>，其表示不會放至標籤至 <code>trunk</code> 鏈結上。但，該值是可以設定的，對於 <code>trunk</code> 鏈接來說雙方的埠所設定的 <code>Native VLAN</code> 需一致。我們下面嘗試一下吧!</p><p>將 <code>Native VLAN</code> 改為 VLAN 20，同時將 <code>trunk</code> 鏈結設定全部可通過。透過查看 <code>trunk</code> 接口可以得知現在已經更改為 20。對於預設 <code>Native vlan</code> 是包括所有的埠，對於資訊安全有疑慮，最好是做更改。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport trunk native vlan 20</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#switchport trunk allowed vlan all</span>
+ESW1<span style=color:#f92672>(</span>config-if<span style=color:#f92672>)</span><span style=color:#75715e>#do sh int trunk</span>
+
+Port      Mode         Encapsulation  Status        Native vlan
+Fa1/15    on           802.1q         trunking      <span style=color:#ae81ff>20</span>
+
+Port      Vlans allowed on trunk
+Fa1/15    1-1005
+
+Port      Vlans allowed and active in management domain
+Fa1/15    1,20,30
+
+Port      Vlans in spanning tree forwarding state and not pruned
+Fa1/15    <span style=color:#ae81ff>30</span>
+
+</code></pre></div></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/blog/2019-11-08-listview-listtitle/ title="navigation drawer"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/blog/2019-11-17-sudoers/ title="淺談 sudoers"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

@@ -1,0 +1,239 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>Net Namespaces</h1><p class=mb-1>July 3, 2019</p><p>&mdash;</p></div><div class=content><h1 id=namespaces>Namespaces</h1><h6 id=tags-sdn>tags: <code>SDN</code></h6><p><code>Namespaces</code> 是 <code>Linux kernel</code> 的一項功能，它對 <code>kernel</code> 資源進行區分隔離，使得一組行程看到一組資源，而另一組行程看到一組不同的資源。
+好比一棟房子有多個房間，一個房間表示一組資源，妹妹住一間、哥哥住一間，彼此之間是相互看不到內部資源的，為每一個人提供隱私。</p><p>可分為下面幾列</p><ul><li>pid Namespaces</li><li>net Namespaces</li><li>ipc Namespaces</li><li>mnt Namespaces</li><li>uts Namespaces</li><li>user Namespaces</li></ul><blockquote><p><code>Namespaces</code> 不限制對 <code>CPU</code>、<code>memory</code> 和 <code>disk</code> 等物理上資源的存取。該存取由 <code>cgroups</code> 的 kernel 功能計算和限制。</p></blockquote><h2 id=experiment>Experiment</h2><h3 id=create-network-namespace>Create network namespace</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns add red <span style=color:#75715e># create a new named network namespace</span>
+cch@ubuntu:~$ sudo ip netns add blue
+cch@ubuntu:~$ sudo ip netns list <span style=color:#75715e># show all of the named network namespaces</span>
+blue
+red
+</code></pre></div><p><img src=https://i.imgur.com/50TCfDt.jpg alt></p><p>此圖是利用上面指令達成的構圖。建立 red 和 blue 的 namespace。</p><blockquote><p><code>ip netns list</code> 其實是顯示 <code>/var/run/netns</code> 下 <code>Namespace</code>。</p></blockquote><h3 id=exec-in-network-namespace>Exec in network namespace</h3><h5 id=run-cmd-in-the-named-network-namespace>Run cmd in the named network namespace</h5><p>查看該 namespace 的介面卡</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec red ip link
+1: lo: &lt;LOOPBACK&gt; mtu <span style=color:#ae81ff>65536</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style=color:#ae81ff>1</span>
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</code></pre></div><blockquote><p><code>ip netns</code> 是行程網路 <code>namespace</code> 管理</p></blockquote><h5 id=local-information>Local information</h5><p>透過比較 <code>ARP</code>、<code>Route</code> 此方式，可以比較出 namespace 中的環境與本機差異。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+192.168.137.2            ether   00:50:56:ef:e2:19   C                     ens33
+192.168.137.1            ether   00:50:56:c0:00:08   C                     ens33
+cch@ubuntu:~$ route
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         192.168.137.2   0.0.0.0         UG    <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> ens33
+172.17.0.0      *               255.255.0.0     U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> docker0
+192.168.137.0   *               255.255.255.0   U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> ens33
+cch@ubuntu:~$ sudo ip netns exec red route
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+</code></pre></div><h5 id=create-veth>Create veth</h5><p><code>veth</code> 設備是虛擬網路設備。可以充當網路 namespace 之間的隧道，讓彼此藉由此通道進行溝通，但也可以用作獨立的網路設備。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip link add veth-red type veth peer name veth-blue <span style=color:#75715e># Create veth pair</span>
+cch@ubuntu:~$ sudo ip link show type veth
+4: veth-blue@veth-red: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu <span style=color:#ae81ff>1500</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style=color:#ae81ff>1000</span>
+    link/ether 7a:40:fb:ab:41:4c brd ff:ff:ff:ff:ff:ff
+5: veth-red@veth-blue: &lt;BROADCAST,MULTICAST,M-DOWN&gt; mtu <span style=color:#ae81ff>1500</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style=color:#ae81ff>1000</span>
+    link/ether b6:ad:e3:c8:8e:a8 brd ff:ff:ff:ff:ff:ff
+cch@ubuntu:~$ sudo ip link set veth-red netns red <span style=color:#75715e># Move the global namespace to this namespace</span>
+cch@ubuntu:~$ sudo ip link set veth-blue netns blue
+cch@ubuntu:~$ sudo ip -n red addr add 172.10.10.1/24 dev veth-red <span style=color:#75715e># execution cmd</span>
+cch@ubuntu:~$ sudo ip -n blue addr add 172.10.10.5/24 dev veth-blue
+cch@ubuntu:~$ sudo ip -n red link set veth-red up
+cch@ubuntu:~$ sudo ip -n blue link set veth-blue up
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec red ping -c1 172.10.10.5 <span style=color:#75715e># execution cmd</span>
+PING 172.10.10.5 <span style=color:#f92672>(</span>172.10.10.5<span style=color:#f92672>)</span> 56<span style=color:#f92672>(</span>84<span style=color:#f92672>)</span> bytes of data.
+<span style=color:#ae81ff>64</span> bytes from 172.10.10.5: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>64</span> time<span style=color:#f92672>=</span>0.027 ms
+
+--- 172.10.10.5 ping statistics ---
+<span style=color:#ae81ff>1</span> packets transmitted, <span style=color:#ae81ff>1</span> received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev <span style=color:#f92672>=</span> 0.027/0.027/0.027/0.000 ms
+cch@ubuntu:~$ sudo ip netns exec red arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+172.10.10.5              ether   5a:59:3d:3e:e6:2f   C                     veth-red
+</code></pre></div><h5 id=compare-arp>Compare ARP</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec red arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+172.10.10.5              ether   5a:59:3d:3e:e6:2f   C                     veth-red
+cch@ubuntu:~$ sudo ip netns exec blue arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+172.10.10.1              ether   6e:ef:a9:4c:44:ce   C                     veth-blue
+cch@ubuntu:~$ arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+192.168.137.254          ether   00:50:56:e3:40:5b   C                     ens33
+192.168.137.1            ether   00:50:56:c0:00:08   C                     ens33
+192.168.137.2            ether   00:50:56:ef:e2:19   C                     ens33
+
+</code></pre></div><p><img src=https://i.imgur.com/ME1Mbv3.jpg alt></p><p>透過上面，將 <code>red</code> 與 <code>blue</code> 建立一個橋梁，讓它們能夠相互溝通。</p><h2 id=ovs>OVS</h2><p>一種虛擬交換器，可用來作為 L2 switch，可切割網域、QoS 或是流量監控，同時支持 openFlow 協定。</p><p><img src=https://i.imgur.com/Um3k70a.jpg alt></p><p>如果有多個 namespace，要如何讓它們能夠相互通訊?可以藉由創建虛擬交換機方式實現。</p><h3 id=create-virtual-switch>create virtual switch</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ovs-vsctl add-br v-net-0
+cch@ubuntu:~$ sudo ovs-vsctl show
+8680f06e-e248-422a-9792-d0f2c5777dd3
+    Bridge <span style=color:#e6db74>&#34;v-net-0&#34;</span>
+        Port <span style=color:#e6db74>&#34;v-net-0&#34;</span>
+            Interface <span style=color:#e6db74>&#34;v-net-0&#34;</span>
+                type: internal
+    ovs_version: <span style=color:#e6db74>&#34;2.11.90&#34;</span>
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ ip link | grep v-net-0 -A <span style=color:#ae81ff>3</span>
+21: v-net-0: &lt;BROADCAST,MULTICAST&gt; mtu <span style=color:#ae81ff>1500</span> qdisc noop state DOWN mode DEFAULT group default qlen <span style=color:#ae81ff>1000</span>
+    link/ether e2:28:23:77:27:4a brd ff:ff:ff:ff:ff:ff
+</code></pre></div><p><img src=https://i.imgur.com/i4LMIou.jpg alt></p><p>透過上述，用 <code>OVS</code> 建立一個虛擬交換器。</p><h5 id=delete-bridge>delete bridge</h5><p>將先前建立的橋樑給刪除，只要將一端刪除，另一端也會隨著消失。</p><p>這邊是將環境還原至一開始只存在兩個 namespace 的地方。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip -n red link del veth-red
+</code></pre></div><h3 id=configuration-environment>Configuration environment</h3><p>建立橋梁，與虛擬交換器環境結合。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip link add veth-red type veth peer name veth-red-br
+cch@ubuntu:~$ sudo ip link add veth-blue type veth peer name veth-blue-br
+cch@ubuntu:~$ sudo ip link set veth-red netns red
+cch@ubuntu:~$ sudo ovs-vsctl add-port v-net-0 veth-red-br
+cch@ubuntu:~$ sudo ip link set veth-blue netns blue
+cch@ubuntu:~$ sudo ovs-vsctl add-port v-net-0 veth-blue-br
+cch@ubuntu:~$ sudo ovs-vsctl show
+8680f06e-e248-422a-9792-d0f2c5777dd3
+    Bridge <span style=color:#e6db74>&#34;v-net-0&#34;</span>
+        Port veth-blue-br
+            Interface veth-blue-br
+        Port <span style=color:#e6db74>&#34;v-net-0&#34;</span>
+            Interface <span style=color:#e6db74>&#34;v-net-0&#34;</span>
+                type: internal
+        Port veth-red-br
+            Interface veth-red-br
+    ovs_version: <span style=color:#e6db74>&#34;2.11.90&#34;</span>
+cch@ubuntu:~$ sudo ip link show type veth
+24: veth-red-br@if25: &lt;BROADCAST,MULTICAST&gt; mtu <span style=color:#ae81ff>1500</span> qdisc noop master ovs-system state DOWN mode DEFAULT group default qlen <span style=color:#ae81ff>1000</span>
+    link/ether 76:bb:f6:db:46:05 brd ff:ff:ff:ff:ff:ff link-netnsid <span style=color:#ae81ff>0</span>
+26: veth-blue-br@if27: &lt;BROADCAST,MULTICAST&gt; mtu <span style=color:#ae81ff>1500</span> qdisc noop master ovs-system state DOWN mode DEFAULT group default qlen <span style=color:#ae81ff>1000</span>
+    link/ether ce:59:0d:c9:1f:bf brd ff:ff:ff:ff:ff:ff link-netnsid <span style=color:#ae81ff>1</span>
+cch@ubuntu:~$ sudo ip -n red addr add 172.10.10.1/24 dev veth-red
+cch@ubuntu:~$ sudo ip -n blue addr add 172.10.10.5/24 dev veth-blue
+cch@ubuntu:~$ sudo ip -n red link set veth-red up
+cch@ubuntu:~$ sudo ip -n blue link set veth-blue up
+</code></pre></div><p><img src=https://i.imgur.com/wAkyKdV.jpg alt></p><p>透過上述，將 red 和 blue 的橋樑與虛擬交換器建立。此時橋樑介面尚未啟動。</p><h3 id=test-connection>Test connection</h3><h5 id=start-interface>Start interface</h5><p>將橋樑介面啟動。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ifconfig v-net-0 up
+cch@ubuntu:~$ sudo ifconfig veth-red-br up
+cch@ubuntu:~$ sudo ifconfig veth-blue-br up
+</code></pre></div><h5 id=test-ping>Test ping</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec red ping -c1 172.10.10.5
+PING 172.10.10.5 <span style=color:#f92672>(</span>172.10.10.5<span style=color:#f92672>)</span> 56<span style=color:#f92672>(</span>84<span style=color:#f92672>)</span> bytes of data.
+<span style=color:#ae81ff>64</span> bytes from 172.10.10.5: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>64</span> time<span style=color:#f92672>=</span>0.214 ms
+
+--- 172.10.10.5 ping statistics ---
+<span style=color:#ae81ff>1</span> packets transmitted, <span style=color:#ae81ff>1</span> received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev <span style=color:#f92672>=</span> 0.214/0.214/0.214/0.000 ms
+</code></pre></div><h5 id=add-namespace>add namespace</h5><p>再新增兩個 namespace 進行實驗。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns add green
+cch@ubuntu:~$ sudo ip netns add yellow
+cch@ubuntu:~$ sudo ip netns list
+yellow
+green
+blue <span style=color:#f92672>(</span>id: 1<span style=color:#f92672>)</span>
+red <span style=color:#f92672>(</span>id: 0<span style=color:#f92672>)</span>
+</code></pre></div><h5 id=configuration-environment-1>Configuration environment</h5><p>將新增的兩個 namespace 建立環境。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip link add veth-green type veth peer name veth-green-br
+cch@ubuntu:~$ sudo ip link add veth-yellow type veth peer name veth-yellow-br
+cch@ubuntu:~$ sudo ip link set veth-green netns green
+cch@ubuntu:~$ sudo ip link set veth-yellow netns yellow
+cch@ubuntu:~$ sudo ovs-vsctl add-port v-net-0 veth-green-br
+cch@ubuntu:~$ sudo ovs-vsctl add-port v-net-0 veth-yellow-br
+cch@ubuntu:~$ sudo ip -n green addr add 172.10.10.10/24 dev veth-green
+cch@ubuntu:~$ sudo ip -n yellow addr add 172.10.10.20/24 dev veth-yellow
+cch@ubuntu:~$ sudo ip -n green link set veth-green up
+cch@ubuntu:~$ sudo ip -n yellow link set veth-yellow up
+cch@ubuntu:~$ sudo ifconfig veth-green-br up
+cch@ubuntu:~$ sudo ifconfig veth-yellow-br up
+cch@ubuntu:~$ sudo ip netns exec red ping -c1 172.10.10.20
+PING 172.10.10.20 <span style=color:#f92672>(</span>172.10.10.20<span style=color:#f92672>)</span> 56<span style=color:#f92672>(</span>84<span style=color:#f92672>)</span> bytes of data.
+<span style=color:#ae81ff>64</span> bytes from 172.10.10.20: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>64</span> time<span style=color:#f92672>=</span>0.611 ms
+
+--- 172.10.10.20 ping statistics ---
+<span style=color:#ae81ff>1</span> packets transmitted, <span style=color:#ae81ff>1</span> received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev <span style=color:#f92672>=</span> 0.611/0.611/0.611/0.000 ms
+</code></pre></div><h5 id=view-route-and-arp>View route and ARP</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec yellow ip route
+172.10.10.0/24 dev veth-yellow  proto kernel  scope link  src 172.10.10.20
+cch@ubuntu:~$ sudo ip netns exec yellow arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+172.10.10.1              ether   22:0f:19:e1:85:c1   C                     veth-yellow
+</code></pre></div><p><img src=https://i.imgur.com/VBEDq3d.jpg alt></p><p>最終的構圖。</p><h2 id=advanced>Advanced</h2><h5 id=test-the-local-host>Test the local host</h5><p>原因是 blue 裡路由表沒有 <code>192.168.137.0/24</code> 的資訊</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec blue ping 192.168.137.133
+connect: Network is unreachable
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec blue route
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+172.10.10.0     *               255.255.255.0   U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> veth-blue
+</code></pre></div><p>IP 設置為 <code>private IP</code>，這裡重新分配。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec red ip addr del 172.10.10.1/24 dev veth-red
+cch@ubuntu:~$ sudo ip netns exec blue ip addr del 172.10.10.5/24 dev veth-blue
+cch@ubuntu:~$ sudo ip netns exec green ip addr del 172.10.10.10/24 dev veth-green
+cch@ubuntu:~$ sudo ip netns exec yellow ip addr del 172.10.10.20/24 dev veth-yellow
+cch@ubuntu:~$ sudo ip -n red addr add 172.16.10.1/24 dev veth-red
+cch@ubuntu:~$ sudo ip -n blue addr add 172.16.10.5/24 dev veth-blue
+cch@ubuntu:~$ sudo ip -n green addr add 172.16.10.10/24 dev veth-green
+cch@ubuntu:~$ sudo ip -n yellow addr add 172.16.10.20/24 dev veth-yellow
+</code></pre></div><p>將交換機分配 IP 作為 <code>gateway</code>，讓不屬於 red、blue、green、yellow 的封包能夠從此地方出去，再藉由本地 host 轉發。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ifconfig v-net-0 172.16.10.254 netmask 255.255.255.0
+</code></pre></div><h5 id=setting-routeing>Setting routeing</h5><p>設置一條路由，讓 blue 能夠與本機 host 溝通。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec blue ip route add 192.168.137.0/24 via 172.16.10.254
+cch@ubuntu:~$ sudo ip netns exec blue route
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+172.16.10.0     *               255.255.255.0   U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> veth-blue
+192.168.137.0   172.16.10.254   255.255.255.0   UG    <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> veth-blue
+cch@ubuntu:~$ route <span style=color:#75715e># 本機 host 路由</span>
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         192.168.137.2   0.0.0.0         UG    <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> ens33
+172.16.10.0     *               255.255.255.0   U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> v-net-0
+172.17.0.0      *               255.255.0.0     U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> docker0
+192.168.137.0   *               255.255.255.0   U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> ens33
+cch@ubuntu:~$ sudo ip netns exec blue ping 192.168.137.133
+PING 192.168.137.133 <span style=color:#f92672>(</span>192.168.137.133<span style=color:#f92672>)</span> 56<span style=color:#f92672>(</span>84<span style=color:#f92672>)</span> bytes of data.
+<span style=color:#ae81ff>64</span> bytes from 192.168.137.133: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>64</span> time<span style=color:#f92672>=</span>0.103 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.137.133: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>64</span> time<span style=color:#f92672>=</span>0.096 ms
+<span style=color:#ae81ff>64</span> bytes from 192.168.137.133: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>64</span> time<span style=color:#f92672>=</span>0.103 ms
+^C
+--- 192.168.137.133 ping statistics ---
+<span style=color:#ae81ff>3</span> packets transmitted, <span style=color:#ae81ff>3</span> received, 0% packet loss, time 2000ms
+rtt min/avg/max/mdev <span style=color:#f92672>=</span> 0.096/0.100/0.103/0.012 ms
+
+</code></pre></div><h5 id=connect-to-the-external-network-and-the-same-area-network-host>Connect to the external network and the same area network host</h5><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec blue ping 8.8.8.8
+connect: Network is unreachable
+</code></pre></div><p>在 blue 裡並沒有默認路由讓封包出去，因此在 blue 裡設置默認路由，讓不知道該怎麼處裡的封包丟網默認路由。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec blue ip route add default via 172.16.10.254
+</code></pre></div><p>但是因為 <code>private IP</code> 關係，因此無法對外網做一個互相溝通的動作</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo tcpdump -i v-net-0 icmp
+<span style=color:#f92672>[</span>sudo<span style=color:#f92672>]</span> password <span style=color:#66d9ef>for</span> cch:
+tcpdump: verbose output suppressed, use -v or -vv <span style=color:#66d9ef>for</span> full protocol decode
+listening on v-net-0, link-type EN10MB <span style=color:#f92672>(</span>Ethernet<span style=color:#f92672>)</span>, capture size <span style=color:#ae81ff>262144</span> bytes
+21:40:48.014037 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 1, length <span style=color:#ae81ff>64</span>
+21:40:49.012938 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 2, length <span style=color:#ae81ff>64</span>
+21:40:50.012489 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 3, length <span style=color:#ae81ff>64</span>
+21:40:51.012496 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 4, length <span style=color:#ae81ff>64</span>
+21:40:52.013086 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 5, length <span style=color:#ae81ff>64</span>
+21:40:53.012835 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 6, length <span style=color:#ae81ff>64</span>
+21:40:54.012351 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 7, length <span style=color:#ae81ff>64</span>
+21:40:55.012690 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 8, length <span style=color:#ae81ff>64</span>
+21:40:56.012742 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 9, length <span style=color:#ae81ff>64</span>
+21:40:57.012232 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 10, length <span style=color:#ae81ff>64</span>
+21:40:58.012571 IP 172.16.10.5 &gt; dns.google: ICMP echo request, id 2610, seq 11, length <span style=color:#ae81ff>64</span>
+^C
+</code></pre></div><p>使用 <code>NAT</code> 封裝，讓 <code>private IP</code> 能夠對外連線。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo iptables -t nat -A POSTROUTING -s 172.16.10.0/24 -o ens33 -j MASQU
+ERADE
+$ sudo iptables -F 
+$ sudo iptables -P FORWARD ACCEPT
+$ sudo sysctl -w net.ipv4.ip_forward<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>
+cch@ubuntu:~$ sudo ip netns exec blue ping 8.8.8.8
+PING 8.8.8.8 <span style=color:#f92672>(</span>8.8.8.8<span style=color:#f92672>)</span> 56<span style=color:#f92672>(</span>84<span style=color:#f92672>)</span> bytes of data.
+<span style=color:#ae81ff>64</span> bytes from 8.8.8.8: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>127</span> time<span style=color:#f92672>=</span><span style=color:#ae81ff>232</span> ms
+<span style=color:#ae81ff>64</span> bytes from 8.8.8.8: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>127</span> time<span style=color:#f92672>=</span>34.1 ms
+<span style=color:#ae81ff>64</span> bytes from 8.8.8.8: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>127</span> time<span style=color:#f92672>=</span>59.7 ms
+<span style=color:#ae81ff>64</span> bytes from 8.8.8.8: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>4</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>127</span> time<span style=color:#f92672>=</span><span style=color:#ae81ff>194</span> ms
+<span style=color:#ae81ff>64</span> bytes from 8.8.8.8: icmp_seq<span style=color:#f92672>=</span><span style=color:#ae81ff>5</span> ttl<span style=color:#f92672>=</span><span style=color:#ae81ff>127</span> time<span style=color:#f92672>=</span><span style=color:#ae81ff>319</span> ms
+</code></pre></div><p>查看 <code>NAT</code> 規則</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo iptables -t nat -vnL POSTROUTING --line-number
+Chain POSTROUTING <span style=color:#f92672>(</span>policy ACCEPT <span style=color:#ae81ff>3</span> packets, <span style=color:#ae81ff>464</span> bytes<span style=color:#f92672>)</span>
+num   pkts bytes target     prot opt in     out     source               destination 
+<span style=color:#ae81ff>1</span>        <span style=color:#ae81ff>0</span>     <span style=color:#ae81ff>0</span> MASQUERADE  all  --  *      !docker0  172.17.0.0/16        0.0.0.0/0
+<span style=color:#ae81ff>2</span>        <span style=color:#ae81ff>2</span>   <span style=color:#ae81ff>168</span> MASQUERADE  all  --  *      ens33   172.16.10.0/24       0.0.0.0/0  
+</code></pre></div><p>透過上述的設定，同區網的主機基本上能夠連線溝通。那其實用了預設路由，就可以不用先前設置與本機 host 連線那段路由，讓封包透過預設路由出去即可。</p><p><img src=https://i.imgur.com/aTUu68S.jpg alt></p><p>整個架構上，如上圖</p><h2 id=additional>Additional</h2><h3 id=delete-namespace>Delete Namespace</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo ip netns del red
+</code></pre></div><h3 id=delete-addr>Delete Addr</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ip netns exec red ip addr del 172.10.10.1/24 dev veth-red
+</code></pre></div><h3 id=delete-port>Delete Port</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ovs-vsctl del-port v-net-0 red
+</code></pre></div><h3 id=delete-bridge-1>Delete Bridge</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo ovs-vsctl del-br ovs-br
+</code></pre></div><h3 id=view-routing-table>View Routing table</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ route
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         _gateway        0.0.0.0         UG    <span style=color:#ae81ff>100</span>    <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> ens33
+172.17.0.0      0.0.0.0         255.255.0.0     U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> docker0
+172.18.0.0      0.0.0.0         255.255.0.0     U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> br-e23b4bf51b20
+172.19.0.0      0.0.0.0         255.255.0.0     U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> br-59d8f43684ef
+192.168.137.0   0.0.0.0         255.255.255.0   U     <span style=color:#ae81ff>0</span>      <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> ens33
+_gateway        0.0.0.0         255.255.255.255 UH    <span style=color:#ae81ff>100</span>    <span style=color:#ae81ff>0</span>        <span style=color:#ae81ff>0</span> ens33
+</code></pre></div><p>Flags</p><ul><li>U (route is up)：該路由是啟動的</li><li>H (target is a host)：目標是一部主機 (IP) 而非網域</li><li>G (use gateway)：需要透過外部的主機 (gateway) 來轉遞封包</li><li>R (reinstate route for dynamic routing)：使用動態路由時，恢復路由資訊的旗標</li><li>D (dynamically installed by daemon or redirect)：已經由服務或轉 port 功能設定為動態路由</li><li>M (modified from routing daemon or redirect)：路由已經被修改了</li><li>! (reject route)：這個路由將不會被接受(用來抵擋不安全的網域)</li></ul><h3 id=remove-specific-route>Remove Specific Route</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ sudo ip route del default via 172.16.10.254
+</code></pre></div><h3 id=delete-nat>Delete NAT</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo iptables -t nat -D POSTROUTING <span style=color:#ae81ff>2</span> <span style=color:#75715e># delete numbet two</span>
+</code></pre></div><h3 id=view-nat-table>View NAT Table</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo iptables -t nat -vnL POSTROUTING --line-number
+
+-t nat：選擇 nat 表。
+-v：詳細輸出。
+-L：列出所選鏈中的所有規則，顯示 nat 表中的所有規則。
+-n：數字輸出。IP 地址和端口號將以數字格式打印
+--line-number：列出規則時，將行號添加到每個規則的開頭。可以使用行號來刪除 nat 規則。
+
+</code></pre></div><h3 id=view-chain>View Chain</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$  sudo iptables -L FORWARD --line-numbers
+</code></pre></div><h3 id=delete-chain>delete Chain</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cch@ubuntu:~$ sudo iptables -D FORWARD <span style=color:#ae81ff>1</span> <span style=color:#75715e># 刪除第一個規則</span>
+</code></pre></div><h2 id=ref>Ref</h2><p><a href=https://matthewarcus.wordpress.com/2018/02/04/veth-devices-network-namespaces-and-open-vswitch/>1</a></p><p><a href=http://crosbymichael.com/creating-containers-part-1.html>2</a></p><p><a href=https://blog.scottlowe.org/2013/09/04/introducing-linux-network-namespaces/>3</a></p><p><a href=https://www.netadmin.com.tw/netadmin/zh-tw/technology/A54919443A1C442389BD38E531D5B4FB>4</a></p><p><a href="https://www.youtube.com/watch?v=j_UUnlVC2Ss&list=PLoLSpL6iW1uCojnvEffg8RSgBEbU3GbgA&index=2&t=170s">5</a></p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/project/2018-12-24-apc-ups/ title="ups 應用"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/project/2019-07-28-rsync/ title="rsync 應用"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

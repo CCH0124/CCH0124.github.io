@@ -1,0 +1,69 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day04</h1><p class=mb-1>August 25, 2020</p><p>&mdash;</p></div><div class=content><p>操作環境有 GKE 與 kubeadm 自架群集操作，本篇文章將會帶讀者學會使用 <code>kubectl</code> 觀看集群相關的資訊。</p><h3 id=查看預設安裝的-pod-資源>查看預設安裝的 POD 資源</h3><p>GKE 的環境</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -n kube-system <span style=color:#75715e># -n 表示 namespace，kube-system 為指定的 namespace</span>
+NAME                                                        READY   STATUS    RESTARTS   AGE
+event-exporter-v0.3.0-5cd6ccb7f7-mp7p4                      2/2     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-scaler-6855f55bcc-mchvv                         1/1     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-v3.1.1-f8wc8                                    2/2     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-v3.1.1-g6mbn                                    2/2     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-v3.1.1-zq4xm                                    2/2     Running   <span style=color:#ae81ff>0</span>          13h
+heapster-gke-7c7bdf567c-cmqhm                               3/3     Running   <span style=color:#ae81ff>0</span>          13h
+kube-dns-5c446b66bd-5ltbw                                   4/4     Running   <span style=color:#ae81ff>0</span>          13h
+kube-dns-5c446b66bd-fqvwk                                   4/4     Running   <span style=color:#ae81ff>0</span>          13h
+kube-dns-autoscaler-6b7f784798-hr8ck                        1/1     Running   <span style=color:#ae81ff>0</span>          13h
+kube-proxy-gke-cluster-1-test-default-pool-255d7fb2-1f8l    1/1     Running   <span style=color:#ae81ff>0</span>          13h
+kube-proxy-gke-cluster-1-test-default-pool-255d7fb2-lbwc    1/1     Running   <span style=color:#ae81ff>0</span>          13h
+kube-proxy-gke-cluster-1-test-default-pool-255d7fb2-ppnm    1/1     Running   <span style=color:#ae81ff>0</span>          13h
+l7-default-backend-84c9fcfbb-kwrrs                          1/1     Running   <span style=color:#ae81ff>0</span>          13h
+metrics-server-v0.3.3-fdc67d4b6-264zw                       2/2     Running   <span style=color:#ae81ff>0</span>          13h
+prometheus-to-sd-ktwlz                                      2/2     Running   <span style=color:#ae81ff>0</span>          13h
+prometheus-to-sd-pfxlh                                      2/2     Running   <span style=color:#ae81ff>0</span>          13h
+prometheus-to-sd-tvgv7                                      2/2     Running   <span style=color:#ae81ff>0</span>          13h
+stackdriver-metadata-agent-cluster-level-646c549689-cfftk   2/2     Running   <span style=color:#ae81ff>0</span>          13h
+</code></pre></div><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get namespace 
+NAME              STATUS   AGE
+default           Active   13h
+kube-node-lease   Active   13h
+kube-public       Active   13h
+kube-system       Active   13h
+</code></pre></div><p><img src=https://i.imgur.com/VphvAO2.png alt> 雲端介面示意圖</p><p>kubeadm 預設 namespace 查看。</p><pre><code class="language-shell=" data-lang="shell=">$ kubectl get namespace
+NAME              STATUS   AGE
+default           Active   4d17h
+kube-node-lease   Active   4d17h
+kube-public       Active   4d17h
+kube-system       Active   4d17h
+</code></pre><h3 id=kubernetes-版本查看>Kubernetes 版本查看</h3><p>GKE</p><pre><code class="language-shell=" data-lang="shell=">$ kubectl version
+Client Version: version.Info{Major:&quot;1&quot;, Minor:&quot;18&quot;, GitVersion:&quot;v1.18.6&quot;, GitCommit:&quot;dff82dc0de47299ab66c83c626e08b245ab19037&quot;, GitTreeState:&quot;clean&quot;, BuildDate:&quot;2020-07-15T16:58:53Z&quot;, GoVersion:&quot;go1.13.9&quot;, Compiler:&quot;gc&quot;, Platform:&quot;linux/amd64&quot;}
+Server Version: version.Info{Major:&quot;1&quot;, Minor:&quot;15+&quot;, GitVersion:&quot;v1.15.12-gke.2&quot;, GitCommit:&quot;fb7add51f767aae42655d39972210dc1c5dbd4b3&quot;, GitTreeState:&quot;clean&quot;, BuildDate:&quot;2020-06-01T22:20:10Z&quot;, GoVersion:&quot;go1.12.17b4&quot;, Compiler:&quot;gc&quot;, Platform:&quot;linux/amd64&quot;}
+</code></pre><p>kubeadm</p><pre><code class="language-shell=" data-lang="shell=">$ kubectl version
+Client Version: version.Info{Major:&quot;1&quot;, Minor:&quot;18&quot;, GitVersion:&quot;v1.18.8&quot;, GitCommit:&quot;9f2892aab98fe339f3bd70e3c470144299398ace&quot;, GitTreeState:&quot;clean&quot;, BuildDate:&quot;2020-08-13T16:12:48Z&quot;, GoVersion:&quot;go1.13.15&quot;, Compiler:&quot;gc&quot;, Platform:&quot;linux/amd64&quot;}
+Server Version: version.Info{Major:&quot;1&quot;, Minor:&quot;18&quot;, GitVersion:&quot;v1.18.8&quot;, GitCommit:&quot;9f2892aab98fe339f3bd70e3c470144299398ace&quot;, GitTreeState:&quot;clean&quot;, BuildDate:&quot;2020-08-13T16:04:18Z&quot;, GoVersion:&quot;go1.13.15&quot;, Compiler:&quot;gc&quot;, Platform:&quot;linux/amd64&quot;}
+</code></pre><h3 id=kubernetes-api-資源>Kubernetes API 資源</h3><p>GKE 和 kubeadm 原則上會是相同，當中 <code>SHORTNAMES</code> 表示縮寫，可在下指令時用其縮寫表示資源。</p><pre><code class="language-shell=" data-lang="shell=">$ kubectl api-resources
+NAME                              SHORTNAMES   APIGROUP                       NAMESPACED   KIND
+bindings                                                                      true         Binding
+componentstatuses                 cs                                          false        ComponentStatus
+configmaps                        cm                                          true         ConfigMap
+endpoints                         ep                                          true         Endpoints
+...
+</code></pre><h3 id=kubernetes-api-版本>Kubernetes Api 版本</h3><pre><code class="language-shell=" data-lang="shell=">$ kubectl api-versions
+admissionregistration.k8s.io/v1beta1
+apiextensions.k8s.io/v1beta1
+apiregistration.k8s.io/v1
+apiregistration.k8s.io/v1beta1
+...
+</code></pre><p><img src=https://zhiweiyin318.github.io/k8s-notes/images/kubernetes-api.png alt></p><p>一個 <code>API</code> 對像在 <code>Etcd</code> 裡面完整的資源路徑由：<code>Group</code>（API 組），<code>verison</code>（API 版本）和 <code>Resource</code>（API 資源類型）三個部分組成。</p><ul><li><a href=https://kubernetes.io/docs/concepts/overview/kubernetes-api/>官網 API 相關資訊資訊</a></li></ul><h3 id=kubernetes-cluster-資訊>Kubernetes Cluster 資訊</h3><p>GKE 上</p><pre><code class="language-shell=" data-lang="shell=">$ kubectl cluster-info
+Kubernetes master is running at https://35.238.20.43
+GLBCDefaultBackend is running at https://35.238.20.43/api/v1/namespaces/kube-system/services/default-http-backend:http/proxy
+Heapster is running at https://35.238.20.43/api/v1/namespaces/kube-system/services/heapster/proxy
+KubeDNS is running at https://35.238.20.43/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://35.238.20.43/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+</code></pre><p>kubeadm 上</p><pre><code class="language-shell=" data-lang="shell=">$ kubectl cluster-info
+Kubernetes master is running at https://192.168.134.131:6443
+KubeDNS is running at https://192.168.134.131:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+</code></pre></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-08-24-kubernetes-pod/ title="kubernetes - day03"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-08-26-pod-controller-resource/ title="kubernetes - day05"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

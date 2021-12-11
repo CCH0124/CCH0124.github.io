@@ -1,0 +1,82 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - day07</h1><p class=mb-1>August 28, 2020</p><p>&mdash;</p></div><div class=content><h2 id=查看-namespace-與資源對象>查看 Namespace 與資源對象</h2><p>預設的 Kubernetes 提供了幾個 namespace 用於不同的目的，下面的結果在 GKE 或 kubeadm 上目前使用是一樣的，至於 namespace 名稱的用途可參考此<a href=https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/>鏈接</a></p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get namespace 
+NAME              STATUS   AGE
+default           Active   13h
+kube-node-lease   Active   13h
+kube-public       Active   13h
+kube-system       Active   13h
+</code></pre></div><p>針對某一個特定 <code>namespace</code> 進行詳細訊息查看</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe namespaces default
+</code></pre></div><p>如果使用了 <code>namespace</code> 將一些應用進行<em>隔離</em>，我們要查看特定 <code>namespace</code> 下資源時須使用 <code>-n</code> 參數進行切換，預設是在 <code>default</code> 上。下面結果是 <code>GKE</code> 的環境。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods -n kube-system
+NAME                                                        READY   STATUS    RESTARTS   AGE
+event-exporter-v0.3.0-5cd6ccb7f7-mp7p4                      2/2     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-scaler-6855f55bcc-mchvv                         1/1     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-v3.1.1-f8wc8                                    2/2     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-v3.1.1-g6mbn                                    2/2     Running   <span style=color:#ae81ff>0</span>          13h
+fluentd-gcp-v3.1.1-zq4xm                                    2/2     Running   <span style=color:#ae81ff>0</span>          13h
+heapster-gke-7c7bdf567c-cmqhm                               3/3     Running   <span style=color:#ae81ff>0</span>          13h
+kube-dns-5c446b66bd-5ltbw                                   4/4     Running   <span style=color:#ae81ff>0</span>          13h
+kube-dns-5c446b66bd-fqvwk                                   4/4     Running   <span style=color:#ae81ff>0</span>          13h
+...
+</code></pre></div><h2 id=namespace-資源管理>Namespace 資源管理</h2><p>我們拿上一章節的實驗來做說明。</p><p>定義 <code>namespace</code> 清單。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Namespace</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>test</span>
+</code></pre></div><p>使用 <code>create</code> 建立該清單的資源。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl creat -f namespace-example.yaml
+$ kubectl get namespace <span style=color:#75715e># 這邊會看到所建立的 test namespace 資源</span>
+</code></pre></div><p>直接建立</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl create namespace prod
+</code></pre></div><p>上面說了建立，在刪除方面只要刪除了 <code>namespace</code> 會刪除與其相關的資源。下面顯示了刪除的方式，<code>ns</code> 為 <code>namespace</code> 縮寫。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete ns test
+namespace <span style=color:#e6db74>&#34;test&#34;</span> deleted
+</code></pre></div><h2 id=pod-資源管理操作>POD 資源管理操作</h2><p>POD 是 Kubernetes 中的一個核心組件，可以將其用 <code>json</code> 或 <code>yaml</code> 各式定義乘資源清單，最後由聲明式或宣告式進行資源管理。整個流程如下圖，用戶透過 <code>create</code> 或 <code>apply</code> 將資源清單請求提交至 <code>API Server</code> 並將其保存至集群狀態儲存系統 <code>etcd</code> 中，之後由調度元件把用戶請求調度至最佳節點，而被選中節點將借助 <code>kubectl</code> 和 <code>CRI</code> 進行容器建立。這種由客戶端直接由 <code>API Server</code> 建立的 <code>POD</code> 稱作為<em>自主式 POD</em>。</p><figure><img src=/images/k8s/K8s-day07.jpg width=auto height=auto></figure><blockquote><p>我們使用 yaml 定義資源清單，但 Api Server 會將其轉 JSON 再執行</p></blockquote><h2 id=imperative-object-configuration>Imperative Object Configuration</h2><h3 id=建立-pod-資源>建立 POD 資源</h3><p>POD 是用於容器相關應用，因此在 <code>spec</code> 字段中需要定義 <code>containers</code>，它為容器的列表，可以建立多個容器。下面為一個 POD 資源清單範例</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Pod</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>pod-demo</span> <span style=color:#75715e># POD 名稱</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span> <span style=color:#75715e># 選擇 namespace</span>
+  <span style=color:#f92672>labels</span>: <span style=color:#75715e># 標籤</span>
+    <span style=color:#f92672>app</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>tier</span>: <span style=color:#ae81ff>frontend</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>containers</span>: <span style=color:#75715e># 定義容器</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>myapp</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx:1.18</span>
+  - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>busybox</span>
+    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>busybox:latest</span>
+    <span style=color:#f92672>command</span>: [<span style=color:#e6db74>&#34;bin/sh&#34;</span>, <span style=color:#e6db74>&#34;-c&#34;</span>, <span style=color:#e6db74>&#34;sleep 3600&#34;</span>]
+</code></pre></div><p>使用 <code>create</code> 建立 <code>POD</code>，<code>-f</code> 可以支援以路徑方式或 <code>URL</code>。</p><pre><code class="language-shell=" data-lang="shell=">$ kubectl create -f pod-demo.yaml
+pod/pod-demo created
+</code></pre><h3 id=查看-pod-狀態>查看 POD 狀態</h3><p><code>get</code> 通常用來顯示資源對象狀態訊息。使用 <code>-o wide</code> 時可以知道更多訊息。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pods pod-demo
+NAME       READY   STATUS    RESTARTS   AGE
+pod-demo   2/2     Running   <span style=color:#ae81ff>0</span>          10s
+$ kubectl get pods pod-demo -o wide
+NAME       READY   STATUS    RESTARTS   AGE     IP         NODE                                       NOMINATED NODE   READINESS GATES
+pod-demo   2/2     Running   <span style=color:#ae81ff>0</span>          9m11s   10.4.2.5   gke-cluster-1-default-pool-7dc8b11b-r7rg   &lt;none&gt;           &lt;none&gt;
+</code></pre></div><p><code>describe</code> 可以詳細的描述出 <code>POD</code> 資源的內容，像是 <code>Volume</code>、<code>QoS</code>等，當中 <code>event</code> 相當重要，其訊息可檢視出為何 <code>POD</code> 會故障等訊息以用來除錯。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl describe pods pod-demo
+Name:         pod-demo
+Namespace:    default
+Priority:     <span style=color:#ae81ff>0</span>
+Node:         gke-cluster-1-default-pool-7dc8b11b-r7rg/10.128.0.22
+Start Time:   Sun, <span style=color:#ae81ff>30</span> Aug <span style=color:#ae81ff>2020</span> 10:56:36 +0000
+Labels:       app<span style=color:#f92672>=</span>myapp
+              tier<span style=color:#f92672>=</span>frontend
+Annotations:  kubernetes.io/limit-ranger: LimitRanger plugin set: cpu request <span style=color:#66d9ef>for</span> container myapp; cpu request <span style=color:#66d9ef>for</span> container busybox
+...
+</code></pre></div><h3 id=更新-pod-資源>更新 POD 資源</h3><p>正在運行的 <code>POD</code> 上帶有非常多的字段，而並非所有字段都能修改。我們使用 <code>replace</code> 方式進行實驗，我們將修改容器 <code>image</code>。</p><p>先在 <code>yaml</code> 檔將 <code>image</code> 版本從 <code>1.18</code> 變成 <code>1.12</code>，在執行以下指令。但發現這樣使用出現了錯誤。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl replace pods -f pod-demo.yaml
+The Pod <span style=color:#e6db74>&#34;pod-demo&#34;</span> is invalid: spec: Forbidden: pod updates may not change fields other than <span style=color:#e6db74>`</span>spec.containers<span style=color:#f92672>[</span>*<span style=color:#f92672>]</span>.image<span style=color:#e6db74>`</span>, <span style=color:#e6db74>`</span>spec.initContainers<span style=color:#f92672>[</span>*<span style=color:#f92672>]</span>.image<span style=color:#e6db74>`</span>, <span style=color:#e6db74>`</span>spec.activeDeadlineSeconds<span style=color:#e6db74>`</span> or <span style=color:#e6db74>`</span>spec.tolerations<span style=color:#e6db74>`</span> <span style=color:#f92672>(</span>only additions to existing tolerations<span style=color:#f92672>)</span>
+  core.PodSpec<span style=color:#f92672>{</span>
+-       Volumes: nil,
+</code></pre></div><p>使用以下方式就可以避免上面的失敗。對於 <code>POD</code> 來說，能夠修改的欄位有限，自定義的 <code>yaml</code> 跟系統上面的 <code>yaml</code> 不一樣，因此無法覆蓋，會存在著少資源覆蓋多資源問題。因此在修改時應該是要跟系統 <code>yaml </code>一模一樣才對，透過 <code>-o yaml</code> 可以取得。在進行 <code>replace</code> 時，無定義的 <code>yaml</code> 都會被檢視出來，反正必須取得當前運行的 <code>yaml</code>，修改後呼叫 <code>replace</code> 覆蓋。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl get pod pod-demo -o yaml &gt; pod-replace-demo.yaml
+$ vi pod-replace-demo.yaml
+$ kubectl replace -f pod-replace-demo.yaml
+pod/pod-demo replaced
+$ kubectl describe pod pod-demo <span style=color:#75715e># 容器 image 已經更改</span>
+</code></pre></div><p>當然除了上面方法，還有加 <code>--force</code> 的方式，它會將 <code>POD</code> 資源先刪除並重新建立。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl replace -f pod-demo.yaml --force
+pod <span style=color:#e6db74>&#34;pod-demo&#34;</span> deleted
+pod/pod-demo replaced
+$ kubectl describe pod pod-demo <span style=color:#75715e># 容器 image 已經更改</span>
+</code></pre></div><p>而 <code>edit</code> 是另一種方式，像是使用 <code>vi</code>，它直接編輯了該 <code>POD</code> 完整資訊，因此可以直接利用此方式進行修改。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl edit pods pod-demo <span style=color:#75715e># 此方式也能進行修改</span>
+</code></pre></div><h3 id=刪除-pod-資源>刪除 POD 資源</h3><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl delete pod pod-demo
+pod <span style=color:#e6db74>&#34;pod-demo&#34;</span> deleted
+</code></pre></div><p>然而，<code>replace</code> 在現實中並非很理想，對於更改的配置難以追蹤，取而代之的是 <code>Declarative object configuration </code>，可以嘗試將上面的步驟用 <code>apply</code> 取代。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ kubectl apply -f pod-demo.yaml
+</code></pre></div><h2 id=總結>總結</h2><p>我們介紹了 <code>Namespace</code> 操作同時知道 <code>POD</code> 資源配置是由 <code>kind</code>、<code>apiVersion</code>、<code>metadata</code>、<code>spec</code> 和 <code>status</code> 組成。同時也比較 <code>Imperative</code> 和 <code>Declarative</code>。這邊也學習到使用 <code>create</code>、<code>delete</code>、<code>replace</code>、<code>edit</code>、<code>apply</code> 等指令應用。</p></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-08-27-resource-format/ title="kubernetes - day06"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2020-08-29-management-pod/ title="kubernetes - day08"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>JPA on</title><link>https://cch0124.github.io/tags/jpa/</link><description>Recent content in JPA on</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Tue, 08 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://cch0124.github.io/tags/jpa/index.xml" rel="self" type="application/rss+xml"/><item><title>Spring Boot JPA Note</title><link>https://cch0124.github.io/blog/2020-12-08-jpa-note/</link><pubDate>Tue, 08 Dec 2020 00:00:00 +0000</pubDate><guid>https://cch0124.github.io/blog/2020-12-08-jpa-note/</guid><description>JPA 基本註解 @Entity 用於實體類的聲明，指出該類為實體類，將其映射至指定的資料表上。配合著 @Table 註解可以聲明該數據表的名稱，否則預設以類名稱命名。
+@Id 將屬性映射為主鍵列。會配合 @GeneratedValue 來定義主鍵產生的策略，透過 strategy 進行設定，有以下方式
+IDENTITY AUTO JPA 自動選擇合適的策略 默認值 SEQUENCE TABLE @Basic 屬性到數據表中的字段映射，默認都會有此註解。
+@Column 可用來約束該屬性對應到數據表中的屬性功能，像是 unique、nullable、length 等。
+@Transient 表示該屬性並非一個要映射到數據表的字段。
+@Temporal 在 JAVA API 中無定義 Date 類型的精度。在資料庫中表示 Date 類型方式有 DATE、TIME、TIMESTAMP 三種精度。因此可藉由此註解調整精度。</description></item></channel></rss>
