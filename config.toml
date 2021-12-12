@@ -101,17 +101,16 @@ theme = ["aafu"]
         title = "Publications"
         icon = "fas fa-book"
         #The order below determines the order in which the items appear in "Publications" section
-        format = ["date", "authors", "title", "journal"]
+        #format = ["date", "authors", "title", "journal"]
+        format = ["date", "authors", "title"]
         #If you don't want to group publications, comment the line below by adding # at the beginning
-        types = ["Journal Articles", "Proceedings"]
-
-#        [[params.publication.list]]
-#            title = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
-#            authors = "F Last, F Second, P secondary"
-#            date = "2018"
-#            journal = "Journal of Field 52 (16), 9033-9044"
-#            url = "#"
-#            type = "Journal Articles"
+        types = ["Journal Articles", "Proceedings", "IT 鐵人賽"]
+        [[params.publication.list]]
+            title = "Kubernetes Learning"
+            date = "2020"
+            authors = "Kevin Chen"
+            url = "https://ithelp.ithome.com.tw/users/20104688/ironman/3727"
+            type = "IT 鐵人賽"
 
     # Project section
     [params.project]
