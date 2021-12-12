@@ -1,6 +1,6 @@
 ---
 title: 學習紀錄
-date: 2020-09-07
+date: 2021-12-12
 description: "學習紀錄"
 tags: [school]
 draft: false
@@ -10,22 +10,22 @@ draft: false
 
 ### 機器學習
 
-- [資料屬性](https://cch0124.github.io/know-data/)
-- [統計資料](https://cch0124.github.io/statistical-data/)
-- [統計資料圖表觀察](https://cch0124.github.io/chart/)
-- [資料的相異度與相似度](https://cch0124.github.io/data-similarity-dissimilarity/)
-- [資料前處裡](https://cch0124.github.io/data-pre-processing/)
-- [資料清理應用](https://cch0124.github.io/data-clean/)
-- [線性迴歸](https://cch0124.github.io/simple-linear-regression/)
-- [數學](https://cch0124.github.io/math/)
-- [什麼是分類](https://cch0124.github.io/what-classification/)
-- [什麼是集群](https://cch0124.github.io/clustering/)
+- [資料屬性](https://cch0124.github.io/blog/2020-08-17-know-data/)
+- [統計資料](https://cch0124.github.io/blog/2020-08-18-statistical-data/)
+- [統計資料圖表觀察](https://cch0124.github.io/blog/2020-08-19-chart/)
+- [資料的相異度與相似度](https://cch0124.github.io/blog/2020-08-20-data-similarity-dissimilarity/)
+- [資料前處裡](https://cch0124.github.io/blog/2020-08-21-data-pre-processing/)
+- [資料清理應用](https://cch0124.github.io/blog/2020-08-24-data-clean/)
+- [線性迴歸](https://cch0124.github.io/blog/2020-08-25-simple-linear-regression/)
+- [數學](https://cch0124.github.io/blog/2020-08-26-math/)
+- [什麼是分類](https://cch0124.github.io/blog/2020-08-27-what-classification/)
+- [什麼是集群](https://cch0124.github.io/blog/2020-08-28-clustering/)
 
 ### 實作
 
 - [Keras DDos Detection](https://github.com/CCH0124/Keras-DDoS)
-- [k-means](https://cch0124.github.io/k-means/)
-- [DBSCAN](https://cch0124.github.io/dbscan/)
+- [k-means](https://cch0124.github.io/blog/2019-12-31-k-means/)
+- [DBSCAN](https://cch0124.github.io/blog/2020-01-02-dbscan/)
 - [Activation 介紹與實作](https://github.com/CCH0124/tensorflow2.0-Operator/blob/master/Activation/activation.ipynb)
 - [Tensorflow function 操作](https://github.com/CCH0124/tensorflow2.0-Operator/tree/master/Tensorflow%20Function%20Operation)
 - [keras 神經網路建立](https://github.com/CCH0124/tensorflow2.0-Operator/blob/master/kreas/create_nn.ipynb)
@@ -38,33 +38,7 @@ draft: false
 
 ### Kubernetes
 
-- [Kubernetes 概觀](https://cch0124.github.io/kubernetes-overview/)
-- [kubernetes 1.18 版本基本安裝](https://cch0124.github.io/kubernetes-install/)
-- [kubernetes POD 資源基本介紹](https://cch0124.github.io/kubernetes-pod/)
-- [kubectl 基本操作](https://cch0124.github.io/k8s-bubectl-basic-operation/)
-- [POD 相關資源介紹](https://cch0124.github.io/pod-controller-resource/)
-- [資源定義與使用](https://cch0124.github.io/resource-format/)
-- [namespace 和 POD 基本資源操作](https://cch0124.github.io/namespace-pod-resource-operation/)
-- [POD 資源管理-part01](https://cch0124.github.io/management-pod/)
-- [POD 資源管理-part02](https://cch0124.github.io/label-selector/)
-- [POD 資源管理-part03](https://cch0124.github.io/pod-lifecycle/)
-- [POD 資源需求及資源限制](https://cch0124.github.io/pod-resource-limit-request/)
-- [POD 控制器](https://cch0124.github.io/pod-controller/)
-- [ReplicaSet 控制器](https://cch0124.github.io/replicaset/)
-- [Deployment 控制器](https://cch0124.github.io/deployment/)
-- [DaemonSet 控制器](https://cch0124.github.io/daemonset/)
-- [Job 和 CronJob 控制器](https://cch0124.github.io/job-cronjob/)
-- [Service 和 Ingress](https://cch0124.github.io/service-ingress/)
-- [Service 和 Ingress part02](https://cch0124.github.io/service-ingress-part2/)
-- [Service 和 Ingress part03](https://cch0124.github.io/service-ingress-part3/)
-- [Service Discovery and DNS](https://cch0124.github.io/service-discovery/)
-- [儲存與持久化儲存 part01](https://cch0124.github.io/volume/)
-- [儲存與持久化儲存 part02 - NFS](https://cch0124.github.io/volume-nfs/)
-- [儲存與持久化儲存 part03 - PV 與 PVC](https://cch0124.github.io/persistent-volume/)
-- [儲存與持久化儲存 part04 - Storage Class](https://cch0124.github.io/volume-storage-class/)
-- [ConfigMap 和 Secret](https://cch0124.github.io/configmap-secret/)
-- [StatefulSet 控制器](https://cch0124.github.io/statefulset/)
-- [etcd](https://cch0124.github.io/etcd/)
+- [Kubernetes 學習紀錄](https://cch0124.github.io/kubernetes/)
 
 ## 自我學習 GCP 和機器學習與 Kubernetes 應用
 
@@ -104,9 +78,9 @@ draft: false
 ## Coding
 
 ### Spring boot
-- [CRUD](https://github.com/CCH0124/spring-boot-training/tree/main/springboot-crud)
-- [員工管理系統](https://github.com/CCH0124/spring-boot-training/tree/main/EmployeesManagementSystem)
-- [spring-boot 容器以及其它運用](https://github.com/CCH0124/spring-boot-training/tree/main/psql-spring-boot)
+- [CRUD](https://github.com/CCH0124/spring-boot-learning/tree/main/springboot-crud)
+- [員工管理系統](https://github.com/CCH0124/spring-boot-learning/tree/main/spring-boot-employees-system)
+- [spring-boot 容器以及其它運用](https://github.com/CCH0124/spring-boot-learning/tree/main/psql-spring-boot)
     - 使用 Dockerfile 製作容器
     - 導入 jaeger 進行 API traceing
 
@@ -117,10 +91,10 @@ draft: false
 - [放視大賞 - OTP 隨機密碼](https://github.com/CCH0124/OTP)
 
 ### Database
-- [Database](https://github.com/CCH0124/programming-online/tree/main/LeetCode/Database)
+- [Database](https://github.com/CCH0124/codewars-sql)
 
 ### Shell
-- [shell - hackerrank](https://github.com/CCH0124/Programming-train/tree/main/Shell/shell-train)
+- [shell - hackerrank](https://github.com/CCH0124/Programming-learning/tree/main/Shell/shell-train/)
 - [shell - LeetCode](https://github.com/CCH0124/programming-online/tree/main/LeetCode/Shell)
 - [shell - codeware](https://github.com/CCH0124/programming-online/tree/main/codewars)
 - [shell 自己練習寫小工具](https://github.com/CCH0124/Shell-tool)
@@ -134,43 +108,44 @@ draft: false
 
 - [ELK](https://github.com/CCH0124/docker-elk-ES-cluster)
 - [wireshark 軟體使用](https://github.com/CCH0124/notes/tree/master/wireshark)
-    - [分析應用-01](https://cch0124.github.io/ann-wireshark/)
-    - [分析應用-02](https://cch0124.github.io/ann-skips-bail-wireshark/)
-    - [分析應用-03](https://cch0124.github.io/ann-AppleTV/)
-- [Namespace 模擬 Docker](https://cch0124.github.io/namespace/)
-- [Ansible](https://github.com/CCH0124/network-train/tree/main/ansible)
-- [Jenkins](https://github.com/CCH0124/network-train/tree/main/jenkins)
-- [firewall](https://cch0124.github.io/iptables/)
-- [Vagrant](https://github.com/CCH0124/network-train/tree/main/Vagrant)
-- [loggin-efk](https://github.com/CCH0124/network-train/tree/main/logging/efk)
-- [monitor](https://github.com/CCH0124/network-train/tree/main/monitor)
-- [terraform](https://github.com/CCH0124/network-train/tree/main/terraform)
-- [tracing - jaeger](https://github.com/CCH0124/network-train/tree/main/tracing)
+    - [分析應用-01](https://cch0124.github.io/blog/2020-05-17-ann-wireshark/)
+    - [分析應用-02](https://cch0124.github.io/blog/2020-05-18-ann-skips-bail-wireshark/)
+    - [分析應用-03](https://cch0124.github.io/blog/2020-08-02-ann-appletv/)
+- [Namespace 模擬 Docker](https://cch0124.github.io/project/2019-07-03-namespace/)
+- [Ansible](https://github.com/CCH0124/DevOps/tree/main/ansible)
+- [Jenkins](https://github.com/CCH0124/DevOps/tree/main/jenkins)
+- [firewall](https://cch0124.github.io/blog/2017-08-14-iptables/)
+- [Vagrant](https://github.com/CCH0124/DevOps/tree/main/Vagrant)
+- [logging-efk](https://github.com/CCH0124/DevOps/tree/main/logging/efk)
+- [monitor](https://github.com/CCH0124/DevOps/tree/main/monitor)
+- [terraform](https://github.com/CCH0124/DevOps/tree/main/terraform)
+- [tracing - jaeger](https://github.com/CCH0124/DevOps/tree/main/tracing)
 
 ### 網路筆記
 
-- [靜態路由](https://cch0124.github.io/static-route/)
-- [ARP](https://cch0124.github.io/arp/)
-- [DHCP](https://cch0124.github.io/dhcp/)
-- [PPP](https://cch0124.github.io/ppp/)
-- [RIP 與子網路切割](https://cch0124.github.io/RIP/)
-- [HSRP](https://cch0124.github.io/hsrp/)
-- [telnet](https://cch0124.github.io/cisco-telnet/)
-- [SSH](https://cch0124.github.io/cisco-ssh/)
-- [NAT Static](https://cch0124.github.io/static-nat/)
-- [NAT Dynamic](https://cch0124.github.io/nat-dynamic/)
-- [VLAN](https://cch0124.github.io/vlan/)
-- [VLAN router-on-a-stick](https://cch0124.github.io/router-on-a-stick/)
+- [靜態路由](https://cch0124.github.io/blog/2017-11-24-static-route/)
+- [ARP](https://cch0124.github.io/blog/2016-10-02-arp/)
+- [DHCP](https://cch0124.github.io/blog/2017-11-11-dhcp/)
+- [PPP](https://cch0124.github.io/blog/2017-11-04-ppp/)
+- [RIP 與子網路切割](https://cch0124.github.io/blog/2019-01-05-rip/)
+- [ACL](https://cch0124.github.io/blog/2019-01-22-acl/)
+- [HSRP](https://cch0124.github.io/blog/2019-04-06-hsrp/)
+- [telnet](https://cch0124.github.io/blog/2019-11-06-cisco-telnet/)
+- [SSH](https://cch0124.github.io/blog/2019-11-15-cisco-ssh/)
+- [NAT Static](https://cch0124.github.io/blog/2019-10-13-static-nat/)
+- [NAT Dynamic](https://cch0124.github.io/blog/2019-10-12-nat-dynamic/)
+- [VLAN](https://cch0124.github.io/blog/2019-11-10-vlan/)
+- [VLAN router-on-a-stick](https://cch0124.github.io/blog/2020-01-05-router-on-a-stick/)
 
 ## 實習
 
-- [交換器 image 遺失](https://cch0124.github.io/l3-switch-boot-image-not-found/)
-- [Apache 操作](https://cch0124.github.io/apache/)
-- [DHCP 操作](https://cch0124.github.io/dhcp/)
-- [ELK](https://cch0124.github.io/ELK/)
-    - [logstash 問題解決](https://cch0124.github.io/logstash-Multiple-Pipelines/)
-- [ESXi 備份至 NAS](https://cch0124.github.io/nas-esxi/)
-- [rsyslog 研究](https://cch0124.github.io/rsyslog/)
+- [交換器 image 遺失](https://cch0124.github.io/blog/2017-12-27-l3-switch-boot-image-not-found/)
+- [Apache 操作](https://cch0124.github.io/project/2018-07-05-apache/)
+- [DHCP 操作](https://cch0124.github.io/project/2018-07-06-dhcp/)
+- [ELK](https://cch0124.github.io/project/2018-07-11-elk/)
+    - [logstash 問題解決](https://cch0124.github.io/project/2018-12-22-logstash-multiple-pipelines/)
+- [ESXi 備份至 NAS](https://cch0124.github.io/project/2018-07-14-nas-esxi/)
+- [rsyslog 研究](https://cch0124.github.io/project/2018-07-18-rsyslog/)
 
 ## 學校
 
@@ -185,10 +160,10 @@ draft: false
 - [flutter-BMI](https://github.com/CCH0124/flutter-BMI)
 - [flutter-calculator](https://github.com/CCH0124/flutter-calculator)
 - [Card](https://github.com/CCH0124/flutter-english-card/tree/master/first_flutter)
-- [Flutter 學習筆記](https://cch0124.github.io/tags/#flutter)
+- [Flutter 學習筆記](https://cch0124.github.io/tags/flutter/)
 
 ### 實驗室
 
-- [NFS](https://cch0124.github.io/nfs/)
-- [rsync](https://cch0124.github.io/rsync/)
-- [UPS](https://cch0124.github.io/apc-ups/)
+- [NFS](https://cch0124.github.io/project/2020-04-27-nfs/)
+- [rsync](https://cch0124.github.io/project/2019-07-28-rsync/)
+- [UPS](https://cch0124.github.io/project/2018-12-24-apc-ups/)
