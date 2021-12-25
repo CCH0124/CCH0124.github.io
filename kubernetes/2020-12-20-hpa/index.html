@@ -1,0 +1,61 @@
+<!doctype html><html lang=en-us style=max-width:1000px;margin:auto><head><title>Kevin Blog</title><meta name=theme-color content><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><meta name=description content="Kevin learning"><meta name=author content="Kevin Chen"><meta name=generator content="aafu theme by Darshan in Hugo 0.83.0"><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/safari-pinned-tab.svg color=#252627><link rel="shortcut icon" href=/favicon.ico><link rel=stylesheet href=/css/bootstrap/bootstrap.min.css><link rel=stylesheet href=https://use.fontawesome.com/releases/v5.15.2/css/all.css integrity=sha384-vSIIfh2YWi9wW0r9iZe7RJPrKwp6bG+s9QZMoITbCckVJqGCCRhc+ccxNcdpHuYu crossorigin=anonymous><link rel=stylesheet href=https://cdn.rawgit.com/jpswalsh/academicons/master/css/academicons.min.css><link rel=stylesheet href="//fonts.googleapis.com/css?family=Didact+Gothic%7CRoboto:400%7CRoboto+Mono"><link rel=stylesheet href=/css/aafu_pinkish.css><link rel=stylesheet href=/css/aafu.css><script>var themeColor=document.querySelector("meta[name=theme-color]");window.onload=()=>{themeColor.content=getComputedStyle(document.body)["background-color"];let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")},window.onresize=()=>{let a=document.querySelector(".accordion.active");a&&(a.nextElementSibling.style.maxHeight=a.nextElementSibling.scrollHeight+"px")}</script></head><body class=container><main style="min-height:calc(100vh - 60px)"><div class="d-flex flex-row row p-2"><h3 class="main-menu mr-3"><a href=https://cch0124.github.io/>Home</a></h3><h3 class="main-menu mr-3"><a href=/blog>Blog</a></h3><h3 class="main-menu mr-3"><a href=/project>Project</a></h3><h3 class="main-menu mr-3"><a href=/life>Life</a></h3><h3 class="main-menu mr-3"><a href=/kubernetes>Kubernetes</a></h3><h3 class="main-menu mr-3"><a href=/code>Coding</a></h3></div><div class=mb-3><h1 class=top-h1 style=font-size:2.75em>kubernetes - HPA 自動縮放</h1><p class=mb-1>December 20, 2020</p><p>&mdash;</p></div><div class=content><p><code>Deployment</code>、<code>ReplicaSet</code>、<code>Replication Controller</code> 或 <code>StatefulSet</code> 等資源可以使用手動方式運行時調整，因此可根據業務規模進行調整。但這樣的調整需要依賴資源的監控來推敲合理的值進行調整。以下是 &ldquo;HPA 示意圖&rdquo; 官方提供</p><p><img src=https://d33wubrfki0l68.cloudfront.net/4fe1ef7265a93f5f564bd3fbb0269ebd10b73b4e/1775d/images/docs/horizontal-pod-autoscaler.svg alt></p><p>HPA(Horizontal Pod Autoscaler)，可讓控制器下的 Pod 進行伸縮的工具，HPA 可以針對 <code>CPU</code> 指標數據作為評估基準，或是從資源指標 API 和自訂義指標 API 中獲取的指標數據。</p><p>CA(Cluster Autoscaler) 是集群規模自動伸縮工具，能應用在 GCP、AWS 或 Azure 等上。</p><p>VPA(Vertical Pod Autoscaler) 是 Pod 應用垂直伸縮工具，透過調整 Pod 對象的 CPU 和 Memory 資源需求量完成擴展或收縮。</p><p>HPA 本身是一個 loop 的實現，週期由 <code>controller-manager</code> 的 <code>--horizontal-pod-autoscaler-sync-period</code> 定義，預設 30 秒。週期內 <code>controller-manager</code> 根據 HPA 定義中的指標查詢相應資源使用率。<code>controller-manager</code> 從資源指標或是自定義指標 API 中獲取數據。</p><p>HAP 可以藉由 <code>Heapster</code> 和 <code>REST</code> 接口獲取指標。使用 <code>Heapster</code> 時需要佈署；使用 <code>REST</code> 時，資源指標 API 和 API Server 部分需要先佈署。</p><h2 id=hpa-控制器>HPA 控制器</h2><p>我們可以藉由 <code>kubectl autoscale</code> 進行操作。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>replicas</span>: <span style=color:#ae81ff>2</span>
+  <span style=color:#f92672>selector</span>:
+    <span style=color:#f92672>matchLabels</span>:
+      <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx</span>
+  <span style=color:#f92672>template</span>:
+    <span style=color:#f92672>metadata</span>:
+      <span style=color:#f92672>labels</span>:
+        <span style=color:#f92672>app</span>: <span style=color:#ae81ff>nginx</span>
+    <span style=color:#f92672>spec</span>:
+      <span style=color:#f92672>containers</span>:
+      - <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx</span>
+        <span style=color:#f92672>image</span>: <span style=color:#ae81ff>nginx</span>
+        <span style=color:#f92672>ports</span>:
+        - <span style=color:#f92672>containerPort</span>: <span style=color:#ae81ff>80</span>
+        <span style=color:#f92672>resources</span>:
+          <span style=color:#f92672>requests</span>:
+            <span style=color:#f92672>memory</span>: <span style=color:#e6db74>&#34;256Mi&#34;</span>
+            <span style=color:#f92672>cpu</span>: <span style=color:#e6db74>&#34;50m&#34;</span>
+          <span style=color:#f92672>limits</span>:
+            <span style=color:#f92672>memory</span>: <span style=color:#e6db74>&#34;256Mi&#34;</span>
+            <span style=color:#f92672>cpu</span>: <span style=color:#e6db74>&#34;50m&#34;</span>
+</code></pre></div><p>以下是宣告一個 HPA 控制器自動控管其 Pod 的規模，當 CPU 使用率到 60% 時，會進行增長。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>$ kubectl autoscale deployment nginx --min<span style=color:#f92672>=</span><span style=color:#ae81ff>2</span> --max<span style=color:#f92672>=</span><span style=color:#ae81ff>5</span> --cpu-percent<span style=color:#f92672>=</span><span style=color:#ae81ff>60</span>
+$ kubectl get hpa nginx 
+NAME    REFERENCE          TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+nginx   Deployment/nginx   &lt;unknown&gt;/60%   <span style=color:#ae81ff>2</span>         <span style=color:#ae81ff>5</span>         <span style=color:#ae81ff>2</span>          30m
+</code></pre></div><p>而 HPA 資源字段主要包含，<code>maxReplicas</code>、<code>minReplicas</code>、<code>scaleTargetRef</code> 和 <code>targetCPUUtilizationPercentage</code> 等。</p><div class=highlight><pre style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=color:#ae81ff>kubectl get hpa nginx -o yaml</span>
+<span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>autoscaling/v1</span>
+<span style=color:#f92672>kind</span>: <span style=color:#ae81ff>HorizontalPodAutoscaler</span>
+<span style=color:#f92672>metadata</span>:
+  <span style=color:#f92672>annotations</span>:
+    <span style=color:#f92672>autoscaling.alpha.kubernetes.io/conditions</span>: <span style=color:#e6db74>&#39;[{&#34;type&#34;:&#34;AbleToScale&#34;,&#34;status&#34;:&#34;True&#34;,&#34;lastTransitionTime&#34;:&#34;2021-12-25T11:14:30Z&#34;,&#34;reason&#34;:&#34;SucceededGetScale&#34;,&#34;message&#34;:&#34;the
+</span><span style=color:#e6db74>      HPA controller was able to get the target&#39;&#39;s current scale&#34;},{&#34;type&#34;:&#34;ScalingActive&#34;,&#34;status&#34;:&#34;False&#34;,&#34;lastTransitionTime&#34;:&#34;2021-12-25T11:14:30Z&#34;,&#34;reason&#34;:&#34;FailedGetResourceMetric&#34;,&#34;message&#34;:&#34;the       
+</span><span style=color:#e6db74>      HPA was unable to compute the replica count: failed to get cpu utilization:
+</span><span style=color:#e6db74>      unable to get metrics for resource cpu: unable to fetch metrics from resource
+</span><span style=color:#e6db74>      metrics API: the server could not find the requested resource (get pods.metrics.k8s.io)&#34;}]&#39;</span>
+  <span style=color:#f92672>creationTimestamp</span>: <span style=color:#e6db74>&#34;2021-12-25T11:14:15Z&#34;</span>
+  <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx</span>
+  <span style=color:#f92672>namespace</span>: <span style=color:#ae81ff>default</span>
+  <span style=color:#f92672>resourceVersion</span>: <span style=color:#e6db74>&#34;48291&#34;</span>
+  <span style=color:#f92672>uid</span>: <span style=color:#ae81ff>d99a6f71-e29f-4390-8445-7d671b3a8514</span>
+<span style=color:#f92672>spec</span>:
+  <span style=color:#f92672>maxReplicas</span>: <span style=color:#ae81ff>5</span>
+  <span style=color:#f92672>minReplicas</span>: <span style=color:#ae81ff>2</span>
+  <span style=color:#f92672>scaleTargetRef</span>:
+    <span style=color:#f92672>apiVersion</span>: <span style=color:#ae81ff>apps/v1</span>
+    <span style=color:#f92672>kind</span>: <span style=color:#ae81ff>Deployment</span>
+    <span style=color:#f92672>name</span>: <span style=color:#ae81ff>nginx</span>
+  <span style=color:#f92672>targetCPUUtilizationPercentage</span>: <span style=color:#ae81ff>60</span>
+<span style=color:#f92672>status</span>:
+  <span style=color:#f92672>currentReplicas</span>: <span style=color:#ae81ff>2</span>
+  <span style=color:#f92672>desiredReplicas</span>: <span style=color:#ae81ff>0</span>
+</code></pre></div></div><div class="d-flex flex-row justify-content-around"><h3 class="mb-1 mt-1 text-left mr-4"><a href=/kubernetes/2020-09-17-etcd/ title="kubernetes - day27"><i class="nav-menu fas fa-chevron-circle-left"></i></a></h3><h3 class="mb-1 mt-1 text-left ml-4"><a href=/kubernetes/2021-10-16-security/ title="kubernetes 之訪問安全控制"><i class="nav-menu fas fa-chevron-circle-right"></i></a></h3></div></main><footer class="mt-2 mb-4 text-center"><span class=markdownify>short copyright message</span>
+<span>&#183;
+<i><a href=https://github.com/darshanbaral/aafu>aafu</a></i>
+by
+<a href=https://www.darshanbaral.com/>darshan</a></span></footer></body></html>
